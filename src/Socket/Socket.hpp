@@ -43,7 +43,6 @@ public:
     void * receiveFrom();
     
     void sendAll(std::string buf,int fd = -1);
-    std::string recvAll();
     
     void setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
 private:

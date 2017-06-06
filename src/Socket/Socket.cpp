@@ -314,30 +314,3 @@ void Socket::sendAll(std::string buf,int fd)
         }
     }
 }
-
-std::string Socket::recvAll()
-{
-    auto res = std::string();
-    while (true)
-    {
-        void *buf = nullptr;
-        if (type == SocketType::TCP)
-        {
-            buf = receive();
-        }
-        else
-        {
-            buf = receiveFrom();
-        }
-        
-        if (buf == nullptr)
-        {
-            break;
-        }
-        
-        auto strBuf = static_cast<char *>(buf);
-        res += strBuf;
-        delete strBuf;
-    }
-    return res;
-}
