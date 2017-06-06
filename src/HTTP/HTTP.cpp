@@ -1,5 +1,4 @@
 #include "HTTP.hpp"
-#include "../Socket/Socket.hpp"
 #include "../Utility/Utility.hpp"
 
 HTTP::HTTP(std::string _url,HTTPMethod _method)
@@ -32,63 +31,96 @@ HTTP::~HTTP()
 HTTPResponse * HTTP::request()
 {
     HTTPResponse *res = nullptr;
+    
     auto rawStr = rawHTTPStr();
-    if (!rawStr.empty())
+    if (rawStr.empty())
     {
-        auto socket = Socket(url->host, url->portNumber);
-        if (socket.connect())
+        Utility::throwError("raw request message is empty");
+    }
+    
+    auto socket = Socket(url->host, url->portNumber);
+    if (!socket.connect())
+    {
+        Utility::throwError("can not connect to server");
+    }
+
+    setSocketConfig(socket);
+    socket.sendAll(rawStr);
+
+    
+    auto strBuf = std::string();
+    int status = 0;
+    int size = 0;
+    int content_size = -1;
+    while (1)
+    {
+        if (content_size != -1 && size >= content_size)
         {
-            int recvBufSize = 1024 * 5;
-            socket.recvBuffSize = recvBufSize;
-            socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
-            
-            socket.sendAll(rawStr);
-            
-            auto strBuf = std::string();
-            int status = 0;
-            while (1)
+            if (!strBuf.empty() && status == 2 && res)
             {
-                auto recvbuf = socket.receive();
-                if (!recvbuf)
+                res->parseResponseBody(strBuf);
+            }
+            break;
+        }
+        
+        auto recvbuf = socket.receive();
+        if (!recvbuf)
+        {
+            if (!strBuf.empty() && status == 2 && res)
+            {
+                res->parseResponseBody(strBuf);
+            }
+            break;
+        }
+        else
+        {
+            auto tmpBuf = static_cast<char *>(recvbuf);
+            size += strlen(tmpBuf);
+            strBuf += tmpBuf;
+            delete tmpBuf;
+            
+            if (!strBuf.empty())
+            {
+                if (status == 0)
                 {
-                    if (!strBuf.empty() && status == 2 && res)
+                    auto idx = strBuf.find("\r\n");
+                    if (idx != std::string::npos)
                     {
-                        res->parseResponseBody(strBuf);
-                    }
-                    break;
-                }
-                else
-                {
-                    auto tmpBuf = static_cast<char *>(recvbuf);
-                    strBuf += tmpBuf;
-                    delete tmpBuf;
-                    
-                    if (!strBuf.empty())
-                    {
-                        if (status == 0)
+                        status = 1;
+                        auto line = strBuf.substr(0,idx);
+                        if (!res)
                         {
-                            auto idx = strBuf.find("\r\n");
-                            if (idx != std::string::npos)
-                            {
-                                status = 1;
-                                auto line = strBuf.substr(0,idx);
-                                if (!res)
-                                {
-                                    res = new HTTPResponse();
-                                }
-                                res->parseResponseLine(line);
-                                strBuf = strBuf.substr(idx + 2);
-                            }
+                            res = new HTTPResponse();
                         }
-                        else if (status == 1)
+                        res->parseResponseLine(line);
+                        strBuf = strBuf.substr(idx + 2);
+                    }
+                }
+                else if (status == 1)
+                {
+                    auto idx = strBuf.find("\r\n\r\n");
+                    if (idx != std::string::npos)
+                    {//if T-E: chunked, 就读, 直到流里有\r\n0\r\n\r\n
+                        status = 2;
+                        auto head = strBuf.substr(0,idx);
+                        res->parseResponseHead(head);
+                        strBuf = strBuf.substr(idx + 4);
+                        
+                        auto connection = res->header->find("Connection");
+                        if (connection != end(*res->header))
                         {
-                            auto idx = strBuf.find("\r\n\r\n");
-                            if (idx != std::string::npos)
+                            auto _connection = connection->second;
+                            if (!_connection.empty() && Utility::toLowerStr(_connection) == "keep-alive")
                             {
-                                status = 2;
-                                auto head = strBuf.substr(0,idx);
-                                res->parseResponseHead(head);
-                                strBuf = strBuf.substr(idx + 4);
+                                auto ite = res->header->find("Content-Length");
+                                if (ite != end(*res->header))
+                                {
+                                    auto value = ite->second;
+                                    if (!value.empty())
+                                    {
+                                        content_size = atoi(value.c_str());
+                                    }
+                                }
                             }
                         }
                     }
@@ -96,6 +128,7 @@ HTTPResponse * HTTP::request()
             }
         }
     }
+
     return res;
 }
 
@@ -160,4 +193,11 @@ void HTTP::addRequestHeader(std::string key,std::string val)
     {
         header->insert({key,val});
     }
+}
+
+void HTTP::setSocketConfig(Socket &socket)
+{
+    int recvBufSize = 1024 * 10;
+    socket.recvBuffSize = recvBufSize;
+    socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
 }

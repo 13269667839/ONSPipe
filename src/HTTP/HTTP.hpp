@@ -5,6 +5,7 @@
 #include <map>
 #include "URL.hpp"
 #include "HTTPResponse.hpp"
+#include "../Socket/Socket.hpp"
 
 enum class HTTPMethod : int
 {
@@ -30,6 +31,7 @@ private:
     std::string requestHead();
     std::string requestBody();
     void setDefaultHeader();
+    void setSocketConfig(Socket &socket);
 };
 
 #endif
