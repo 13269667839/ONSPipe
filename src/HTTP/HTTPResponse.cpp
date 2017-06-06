@@ -3,11 +3,6 @@
 
 HTTPResponse::HTTPResponse()
 {
-    setDefaultParameters();
-}
-
-void HTTPResponse::setDefaultParameters()
-{
     httpVersion = std::string();
     statusCode = 0;
     reason = std::string();
@@ -81,14 +76,24 @@ std::ostream & operator << (std::ostream &os,HTTPResponse *res)
 
 std::ostream & operator << (std::ostream &os,HTTPResponse res)
 {
-    os<<res.httpVersion<<' '<<res.statusCode<<' '<<res.reason<<std::endl;
-    if (res.header)
-    {
-        for (auto pair : *res.header)
-        {
-            os<<pair.first<<" : "<<pair.second<<std::endl;
-        }
-    }
-    os<<res.responseBody<<std::endl;
+    os<<res.toResponseMessage();
     return os;
+}
+
+std::string HTTPResponse::toResponseMessage()
+{
+    auto line = httpVersion + " " + std::to_string(statusCode) + " " + reason;
+    
+    auto head = std::string();
+    if (header && !header->empty())
+    {
+        auto arr = std::vector<std::string>();
+        for (auto pair : *header)
+        {
+            arr.push_back(pair.first + ": " + pair.second);
+        }
+        head = Utility::join(arr, "\r\n");
+    }
+
+    return line + "\r\n" + head + "\r\n" + responseBody + "\r\n";
 }

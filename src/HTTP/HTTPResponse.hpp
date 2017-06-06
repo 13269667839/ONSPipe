@@ -16,6 +16,8 @@ public:
     void parseResponseLine(std::string line);
     void parseResponseHead(std::string head);
     void parseResponseBody(std::string body);
+    
+    std::string toResponseMessage();
 public:
     //line
     std::string httpVersion;
@@ -24,8 +26,6 @@ public:
     
     std::map<std::string,std::string> *header;
     std::string responseBody;
-private:
-    void setDefaultParameters();
 };
 
 #endif
