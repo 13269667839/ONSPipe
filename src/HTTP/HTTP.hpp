@@ -27,9 +27,15 @@ public:
     std::string rawHTTPStr();
     void addRequestHeader(std::string key,std::string val);
 private:
+    // === combine request msg ===
     std::string requestLine();
     std::string requestHead();
     std::string requestBody();
+    
+    // === parse response msg ===
+    HTTPResponse * parseResponseLine(std::string &buf,std::string::size_type idx);
+    std::map<std::string,std::string> * parseResponseHead(std::string &buf,std::string::size_type idx);
+    
     void setDefaultHeader();
     void setSocketConfig(Socket &socket);
 };

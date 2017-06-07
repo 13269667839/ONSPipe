@@ -30,8 +30,6 @@ HTTP::~HTTP()
 
 HTTPResponse * HTTP::request()
 {
-    HTTPResponse *res = nullptr;
-    
     auto rawStr = rawHTTPStr();
     if (rawStr.empty())
     {
@@ -47,28 +45,27 @@ HTTPResponse * HTTP::request()
     setSocketConfig(socket);
     socket.sendAll(rawStr);
 
-    
+    HTTPResponse *res = nullptr;
     auto strBuf = std::string();
+    
+    //recv msg parser machine's status
     int status = 0;
-    int size = 0;
-    int content_size = -1;
+    
+    //content-length
+    size_t size = 0;
+    size_t content_size = -1;
+    
+    //transfer-encoding = chunked
+    bool isChunked = false;
+    
     while (1)
     {
-        if (content_size != -1 && size >= content_size)
-        {
-            if (!strBuf.empty() && status == 2 && res)
-            {
-                res->parseResponseBody(strBuf);
-            }
-            break;
-        }
-        
         auto recvbuf = socket.receive();
         if (!recvbuf)
         {
-            if (!strBuf.empty() && status == 2 && res)
+            if (status == 2 && res)
             {
-                res->parseResponseBody(strBuf);
+                res->responseBody = strBuf;
             }
             break;
         }
@@ -87,46 +84,85 @@ HTTPResponse * HTTP::request()
                     if (idx != std::string::npos)
                     {
                         status = 1;
-                        auto line = strBuf.substr(0,idx);
+                        res = parseResponseLine(strBuf, idx);
                         if (!res)
                         {
-                            res = new HTTPResponse();
+                            break;
                         }
-                        res->parseResponseLine(line);
-                        strBuf = strBuf.substr(idx + 2);
+                        
+                        auto headEndIndex = strBuf.find("\r\n\r\n");
+                        if (res->statusCode != 202 || (headEndIndex != std::string::npos && headEndIndex + 4 == strBuf.size()))
+                        {
+                            goto ParseResponseMessageHead;
+                        }
                     }
                 }
                 else if (status == 1)
                 {
+                ParseResponseMessageHead:
                     auto idx = strBuf.find("\r\n\r\n");
                     if (idx != std::string::npos)
-                    {//if T-E: chunked, 就读, 直到流里有\r\n0\r\n\r\n
+                    {
                         status = 2;
-                        auto head = strBuf.substr(0,idx);
-                        res->parseResponseHead(head);
-                        strBuf = strBuf.substr(idx + 4);
                         
-                        auto connection = res->header->find("Connection");
-                        if (connection != end(*res->header))
+                        auto resHead = parseResponseHead(strBuf, idx);
+                        if (resHead)
                         {
-                            auto _connection = connection->second;
-                            if (!_connection.empty() && Utility::toLowerStr(_connection) == "keep-alive")
+                            res->header = resHead;
+                            
+                            auto ite = res->header->find("content-length");
+                            if (ite != end(*res->header))
                             {
-                                auto ite = res->header->find("Content-Length");
-                                if (ite != end(*res->header))
+                                auto value = ite->second;
+                                if (!value.empty())
                                 {
-                                    auto value = ite->second;
-                                    if (!value.empty())
+                                    content_size = atoi(value.c_str());
+                                }
+                            }
+                            else
+                            {
+                                auto chunkIte = res->header->find("transfer-encoding");
+                                if (chunkIte != end(*res->header))
+                                {
+                                    auto value = chunkIte->second;
+                                    if (Utility::toLowerStr(value) == "chunked")
                                     {
-                                        content_size = atoi(value.c_str());
+                                        isChunked = true;
                                     }
                                 }
                             }
                         }
+                        
                     }
                 }
             }
         }
+        
+        if (res && status == 2)//close connect at clinet
+        {
+            bool canCloseConnect = false;
+            if (content_size != -1)//Content-Length: xxx
+            {
+                if (size >= content_size)
+                {
+                    canCloseConnect = true;
+                }
+            }
+            else if (isChunked)//transfer-encoding: chunked
+            {
+                if (strBuf.rfind("\r\n0\r\n\r\n") != std::string::npos)
+                {
+                    canCloseConnect = true;
+                }
+            }
+            
+            if (canCloseConnect)
+            {
+                res->responseBody = strBuf;
+                break;
+            }
+        }
+        
     }
 
     return res;
@@ -200,4 +236,77 @@ void HTTP::setSocketConfig(Socket &socket)
     int recvBufSize = 1024 * 10;
     socket.recvBuffSize = recvBufSize;
     socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
+}
+
+HTTPResponse * HTTP::parseResponseLine(std::string &buf,std::string::size_type idx)
+{
+    auto res = new HTTPResponse();
+    if (idx < buf.size())
+    {
+        auto line = buf.substr(0,idx);
+        
+        if (!line.empty())
+        {
+            auto arr = Utility::split(line, " ");
+            if (arr.size() < 2)
+            {
+                Utility::throwError("invalid response line");
+            }
+            
+            res->httpVersion = arr[0];
+            res->statusCode = atoi(arr[1].c_str());
+            
+            for (auto ite = begin(arr) + 2;ite != end(arr);++ite)
+            {
+                res->reason += *ite;
+            }
+        }
+        
+        if (idx + 2 < buf.size())
+        {
+            buf = buf.substr(idx + 2);
+        }
+    }
+    return res;
+}
+
+std::map<std::string,std::string> * HTTP::parseResponseHead(std::string &buf,std::string::size_type idx)
+{
+    std::map<std::string,std::string> *res = nullptr;
+    if (!buf.empty() && idx < buf.size())
+    {
+        auto head = buf.substr(0,idx);
+        
+        if (!head.empty())
+        {
+            auto arr = Utility::split(head, "\r\n");
+            
+            if (!arr.empty())
+            {
+                res = new std::map<std::string,std::string>();
+                
+                for (auto obj : arr)
+                {
+                    auto pair = Utility::split(obj, ": ");
+                    if (pair.size() == 2)
+                    {
+                        auto key = pair[0];
+                        auto val = pair[1];
+                        
+                        if (!key.empty() && !val.empty())
+                        {
+                            res->insert({Utility::toLowerStr(key),val});
+                        }
+                    }
+                }
+            }
+        }
+        
+        auto endIndex = idx + 4;
+        if (endIndex <= buf.size())
+        {
+            buf = buf.substr(endIndex);
+        }
+    }
+    return res;
 }

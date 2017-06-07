@@ -13,10 +13,6 @@ public:
     friend std::ostream & operator << (std::ostream &os,HTTPResponse *res);
     friend std::ostream & operator << (std::ostream &os,HTTPResponse res);
     
-    void parseResponseLine(std::string line);
-    void parseResponseHead(std::string head);
-    void parseResponseBody(std::string body);
-    
     std::string toResponseMessage();
 public:
     //line
