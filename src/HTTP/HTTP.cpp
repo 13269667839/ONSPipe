@@ -5,6 +5,7 @@ HTTP::HTTP(std::string _url,HTTPMethod _method)
 {
     url = nullptr;
     header = nullptr;
+    requestQuery = "";
     if (!_url.empty())
     {
         method = _method;
@@ -220,7 +221,7 @@ std::string HTTP::requestHead()
 
 std::string HTTP::requestBody()
 {
-    return "";
+    return requestQuery;
 }
 
 void HTTP::addRequestHeader(std::string key,std::string val)

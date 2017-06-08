@@ -19,6 +19,7 @@ public:
     HTTPMethod method;
     URL *url;
     std::map<std::string,std::string> *header;
+    std::string requestQuery;
 public:
     HTTP(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTP();
