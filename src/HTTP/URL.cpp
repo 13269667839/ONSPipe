@@ -10,10 +10,7 @@ URL::URL(std::string str)
     {
         originalURL = str;
         
-        auto schemeStep = setScheme(str);
-        auto hostStep = setHost(schemeStep);
-        auto pathStep = setPath(hostStep);
-        setQuery(pathStep);
+        parseURLStr(str);
     }
 }
 
@@ -27,85 +24,114 @@ void URL::setInitialParameter()
     query = std::string();
 }
 
-std::string URL::setScheme(std::string str)
+enum class URLParseState : int
 {
-    auto res = std::string();
-    auto idx = str.find("://");
-    if (idx != std::string::npos)
-    {
-        scheme = str.substr(0,idx);
-        scheme = Utility::toLowerStr(scheme);
-        if (idx + 3 < str.size())
-        {
-            res = str.substr(idx + 3);
-        }
-    }
-    else
-    {
-        Utility::throwError("invalid url");
-    }
-    return res;
-}
+    Initialize = 0,
+    Scheme,
+    Host,
+    Path,
+    Query
+};
 
-std::string URL::setHost(std::string str)
+void URL::parseURLStr(std::string urlStr)
 {
-    auto res = std::string();
-    if (!str.empty())
+    URLParseState state = URLParseState::Initialize;
+    std::string::size_type curIdx = 0;
+    
+    while (1)
     {
-        auto arr = Utility::split(str, "/");
-        if (!arr.empty())
+        switch (state)
         {
-            host = arr[0];
-            
-            auto idx = host.find(":");
-            if (idx != std::string::npos)
+            case URLParseState::Initialize:
             {
-                portNumber = atoi(host.substr(idx + 1).c_str());
-                host = host.substr(0,idx);
-            }
-            else
-            {
-                if (scheme == "http" || scheme == "https")
+                if (urlStr.find("://") != std::string::npos)
                 {
-                    portNumber = 80;
+                    state = URLParseState::Scheme;
+                }
+                else
+                {
+                    Utility::throwError("invalid url");
                 }
             }
-            
-            if (arr.size() > 1)
+            break;
+            case URLParseState::Scheme:
             {
-                arr.erase(begin(arr));
-                res = Utility::join(arr, "/");
+                auto idx = urlStr.find("://");
+                scheme = urlStr.substr(0,idx);
+                curIdx = idx + 3;
+                state = URLParseState::Host;
             }
+            break;
+            case URLParseState::Host:
+            {
+                auto idx = urlStr.find("/",curIdx);
+                
+                if (idx != std::string::npos)
+                {
+                    host = urlStr.substr(curIdx,idx - curIdx);
+                    
+                    auto colonIdx = host.find(":");
+                    if (colonIdx != std::string::npos)
+                    {
+                        auto arr = Utility::split(host, ":");
+                        if (arr.size() == 2)
+                        {
+                            host = arr[0];
+                            portNumber = atoi(arr[1].c_str());
+                        }
+                        else
+                        {
+                            Utility::throwError("invalid url");
+                        }
+                    }
+                    else
+                    {
+                        if (scheme == "http" || scheme == "https")
+                        {
+                            portNumber = 80;
+                        }
+                    }
+                    
+                    curIdx = idx + 1;
+                    
+                    state = URLParseState::Path;
+                }
+                else
+                {
+                    Utility::throwError("invalid url");
+                }
+            }
+            break;
+            case URLParseState::Path:
+            {
+                auto idx = urlStr.find("?",curIdx);
+                if (idx != std::string::npos)
+                {
+                    path += urlStr.substr(curIdx,idx - curIdx);
+                    curIdx = idx + 1;
+                }
+                else
+                {
+                    path += urlStr.substr(curIdx);
+                    curIdx = urlStr.size();
+                }
+                state = URLParseState::Query;
+            }
+            break;
+            case URLParseState::Query:
+            {
+                query = urlStr.substr(curIdx);
+                curIdx = urlStr.size();
+            }
+            break;
+            default:
+                break;
         }
-    }
-    return res;
-}
-
-std::string URL::setPath(std::string str)
-{
-    auto res = std::string();
-    if (!str.empty())
-    {
-        auto idx = str.find("?");
-        if (idx != std::string::npos)
+        
+        if (curIdx == urlStr.size())
         {
-            path += str.substr(0,idx);
-            res = str.substr(idx+1);
+            break;
         }
-        else
-        {
-            path += str;
-            res = "";
-        }
-    }
-    return res;
-}
-
-void URL::setQuery(std::string str)
-{
-    if (!str.empty())
-    {
-        query = str;
     }
 }
 

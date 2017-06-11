@@ -19,10 +19,7 @@ public:
     std::string query;
 private:
     void setInitialParameter();
-    std::string setScheme(std::string str);
-    std::string setHost(std::string str);
-    std::string setPath(std::string str);
-    void setQuery(std::string str);
+    void parseURLStr(std::string urlStr);
 };
 
 #endif
