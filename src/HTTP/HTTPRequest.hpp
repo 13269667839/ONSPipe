@@ -4,14 +4,7 @@
 #include <string>
 #include <map>
 #include <ostream>
-
-enum class HTTPReqMsgParseState : int
-{
-    Init = 0,
-    Line,
-    Header,
-    Body
-};
+#include "../Utility/Utility.hpp"
 
 class HTTPRequest
 {
@@ -30,7 +23,7 @@ public:
     // === line ===
     std::string HTTPMethod;
     std::string path;
-    std::string HTTPVersion;
+    std::string httpVersion;
     
     // === head ===
     std::map<std::string,std::string> *header;
@@ -41,7 +34,7 @@ private:
     std::string requestLine();
     std::string requestHeader();
     
-    HTTPReqMsgParseState parseState;
+    Utility::HTTPMessageParseState parseState;
     std::string recvHTTPReqMsgBuf;
     long content_length;
 };

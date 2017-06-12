@@ -1,15 +1,14 @@
 #include "HTTPRequest.hpp"
-#include "../Utility/Utility.hpp"
 
 HTTPRequest::HTTPRequest()
 {
-    parseState = HTTPReqMsgParseState::Init;
+    parseState = Utility::HTTPMessageParseState::Init;
     recvHTTPReqMsgBuf = std::string();
     content_length = -1;
     
     HTTPMethod = "GET";
     path = "/";
-    HTTPVersion = "HTTP/1.1";
+    httpVersion = "HTTP/1.1";
     
     header = nullptr;
     
@@ -46,12 +45,12 @@ std::string HTTPRequest::toRequestMessage()
 
 std::string HTTPRequest::requestLine()
 {
-    if (HTTPMethod.empty() || HTTPVersion.empty() || path.empty())
+    if (HTTPMethod.empty() || httpVersion.empty() || path.empty())
     {
         Utility::throwError("invalid http request line format");
     }
     
-    return HTTPMethod + " " + path + " " + HTTPVersion;
+    return HTTPMethod + " " + path + " " + httpVersion;
 }
 
 std::string HTTPRequest::requestHeader()
@@ -98,16 +97,16 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
     {
         recvHTTPReqMsgBuf += reqMsg;
         
-        if (parseState == HTTPReqMsgParseState::Init)
+        if (parseState == Utility::HTTPMessageParseState::Init)
         {
             auto idx = recvHTTPReqMsgBuf.find("\r\n");
             if (idx != std::string::npos)
             {
-                parseState = HTTPReqMsgParseState::Line;
+                parseState = Utility::HTTPMessageParseState::Line;
                 goto ParseLine;
             }
         }
-        else if (parseState == HTTPReqMsgParseState::Line)
+        else if (parseState == Utility::HTTPMessageParseState::Line)
         {
         ParseLine:
             auto idx = recvHTTPReqMsgBuf.find("\r\n");
@@ -120,7 +119,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 {
                     HTTPMethod = arr[0];
                     path = arr[1];
-                    HTTPVersion = arr[2];
+                    httpVersion = arr[2];
                 }
                 else
                 {
@@ -128,7 +127,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
                 
                 recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 2);
-                parseState = HTTPReqMsgParseState::Header;
+                parseState = Utility::HTTPMessageParseState::Header;
                 
                 if (recvHTTPReqMsgBuf.find("\r\n\r\n") != std::string::npos)
                 {
@@ -136,7 +135,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
             }
         }
-        else if (parseState == HTTPReqMsgParseState::Header)
+        else if (parseState == Utility::HTTPMessageParseState::Header)
         {
         ParseHeader:
             auto idx = recvHTTPReqMsgBuf.find("\r\n\r\n");
@@ -168,7 +167,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
                 
                 recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 4);
-                parseState = HTTPReqMsgParseState::Body;
+                parseState = Utility::HTTPMessageParseState::Body;
                 
                 if (!recvHTTPReqMsgBuf.empty() && content_length > 0)
                 {
@@ -180,7 +179,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
             }
         }
-        else if (parseState == HTTPReqMsgParseState::Body)
+        else if (parseState == Utility::HTTPMessageParseState::Body)
         {
         ParseBody:
             query += recvHTTPReqMsgBuf;

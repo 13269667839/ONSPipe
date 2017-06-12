@@ -1,8 +1,6 @@
 #ifndef HTTP_hpp
 #define HTTP_hpp
 
-#include <string>
-#include <map>
 #include "URL.hpp"
 #include "HTTPResponse.hpp"
 #include "../Socket/Socket.hpp"
@@ -32,10 +30,6 @@ private:
     std::string requestLine();
     std::string requestHead();
     std::string requestBody();
-    
-    // === parse response msg ===
-    HTTPResponse * parseResponseLine(std::string &buf,std::string::size_type idx);
-    std::map<std::string,std::string> * parseResponseHead(std::string &buf,std::string::size_type idx);
     
     void setDefaultHeader();
     void setSocketConfig(Socket &socket);
