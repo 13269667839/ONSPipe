@@ -3,6 +3,7 @@
 
 #include "URL.hpp"
 #include "HTTPResponse.hpp"
+#include "HTTPRequest.hpp"
 #include "../Socket/Socket.hpp"
 
 enum class HTTPMethod : int
@@ -16,22 +17,14 @@ class HTTP
 public:
     HTTPMethod method;
     URL *url;
-    std::map<std::string,std::string> *header;
-    std::string requestQuery;
+    HTTPRequest *httpRequest;
 public:
     HTTP(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTP();
     
-    HTTPResponse * request();
-    std::string rawHTTPStr();
-    void addRequestHeader(std::string key,std::string val);
+    HTTPResponse * sendRequest();
 private:
-    // === combine request msg ===
-    std::string requestLine();
-    std::string requestHead();
-    std::string requestBody();
-    
-    void setDefaultHeader();
+    void setHttpRequest();
     void setSocketConfig(Socket &socket);
 };
 
