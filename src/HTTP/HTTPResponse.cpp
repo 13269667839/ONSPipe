@@ -231,22 +231,15 @@ bool HTTPResponse::parseHttpResponseMsg(std::string msg)
         ParseHeader:
             if (headerState())
             {
-                if (recvBuf.empty())
+                if (content_length > 0 || isChunk)
                 {
-                    if (content_length > 0 || isChunk)
-                    {
-                        Utility::throwError("invalid http response format");
-                    }
-                    else
-                    {
-                        res = true;
-                    }
+                    goto ParseBody;
                 }
                 else
                 {
-                    if (content_length > 0 || isChunk)
+                    if (recvBuf.empty())
                     {
-                        goto ParseBody;
+                        res = true;
                     }
                 }
             }
