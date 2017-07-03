@@ -1,9 +1,9 @@
 #include "XMLParser.hpp"
 #include "../Utility/Utility.hpp"
 
-XMLParser::XMLParser()
+XMLParser::XMLParser(std::string _input,InputType _type)
 {
-    lex = nullptr;
+    lex = new XMLLex(_input,_type);
 }
 
 XMLParser::~XMLParser()

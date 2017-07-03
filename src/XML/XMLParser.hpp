@@ -7,13 +7,13 @@
 class XMLParser
 {
 public:
-    XMLParser();
+    XMLParser(std::string _input,InputType _type);
     ~XMLParser();
     
     XMLDocument *xmlTextToDocument();
-    
-    XMLLex *lex;
 private:
+    XMLLex *lex;
+    
     XMLTok * getNextToken();
     
     XMLDocument * parseTagStart(std::string lexStr,bool isSelfClose);

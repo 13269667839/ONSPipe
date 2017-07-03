@@ -12,7 +12,7 @@ XMLLex::XMLLex(std::string _input,InputType _type)
     state = TokType::Init;
     lastTokType = TokType::Init;
     
-    if (type == InputType::FileName)
+    if (type == InputType::File)
     {
         if (source.empty())
         {
@@ -25,7 +25,7 @@ XMLLex::XMLLex(std::string _input,InputType _type)
             Utility::throwError("file open error");
         }
     }
-    else if (type == InputType::XMLText)
+    else if (type == InputType::Text)
     {
         if (source.empty())
         {
@@ -59,11 +59,11 @@ int16_t XMLLex::getNextChar()
 {
     int16_t ch = EOF;
     
-    if (type == InputType::FileName)
+    if (type == InputType::File)
     {
         ch = stream->get();
     }
-    else if (type == InputType::XMLText)
+    else if (type == InputType::Text)
     {
         ch = source[*idx];
         (*idx)++;

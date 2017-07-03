@@ -1,9 +1,9 @@
 #include "JSONParser.hpp"
 #include "../Utility/Utility.hpp"
 
-JSONParser::JSONParser()
+JSONParser::JSONParser(SourceType _type,std::string _content)
 {
-    lex = nullptr;
+    lex = new JSONLexer(_type,_content);
 }
 
 JSONParser::~JSONParser()
@@ -11,6 +11,7 @@ JSONParser::~JSONParser()
     if (lex)
     {
         delete lex;
+        lex = nullptr;
     }
 }
 

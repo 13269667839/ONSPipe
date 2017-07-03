@@ -7,17 +7,17 @@
 class JSONParser
 {
 public:
-    JSONParser();
+    JSONParser(SourceType _type,std::string _content);
     ~JSONParser();
     
     JSObject * token2Object();
-public:
-    JSONLexer *lex;
 private:
     JSONToken * nextToken();
     JSString * elementObject(JSONToken *tok);
     JSArray * arrayObject();
     JSMap * mapObject();
+    
+    JSONLexer *lex;
 };
 
 #endif

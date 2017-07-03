@@ -1,15 +1,39 @@
 #ifndef XMLLexer_hpp
 #define XMLLexer_hpp
 
-#include "XMLToken.hpp"
+#include <string>
+
+enum class TokType : int
+{
+    Init = 0,
+    Comment,
+    FileAttribute,
+    TagStart,
+    TagDeclare,
+    TagEnd,
+    Content,
+    DocType,
+    CData
+};
+    
+struct XMLTok
+{
+public:
+    std::string content;
+    TokType type;
+    bool isSelfClose;
+        
+    XMLTok(std::string _content,TokType _type) : content(_content) , type(_type) , isSelfClose(false) {}
+};
+    
 #include <fstream>
 
 #define LEX_COMMENT
 
 enum class InputType : int
 {
-    FileName = 0,
-    XMLText
+    File = 0,
+    Text
 };
 
 class XMLLex
