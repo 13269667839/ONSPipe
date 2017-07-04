@@ -1,5 +1,5 @@
-#ifndef HTTP_hpp
-#define HTTP_hpp
+#ifndef HTTPClient_hpp
+#define HTTPClient_hpp
 
 #include "URL.hpp"
 #include "HTTPResponse.hpp"
@@ -12,15 +12,15 @@ enum class HTTPMethod : int
     POST
 };
 
-class HTTP
+class HTTPClient
 {
 public:
     HTTPMethod method;
     URL *url;
     HTTPRequest *httpRequest;
 public:
-    HTTP(std::string _url,HTTPMethod _method = HTTPMethod::GET);
-    ~HTTP();
+    HTTPClient(std::string _url,HTTPMethod _method = HTTPMethod::GET);
+    ~HTTPClient();
     
     HTTPResponse * sendRequest();
 private:

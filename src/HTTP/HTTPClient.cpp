@@ -1,6 +1,6 @@
-#include "HTTP.hpp"
+#include "HTTPClient.hpp"
 
-HTTP::HTTP(std::string _url,HTTPMethod _method)
+HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
 {
     url = nullptr;
     httpRequest = nullptr;
@@ -12,7 +12,7 @@ HTTP::HTTP(std::string _url,HTTPMethod _method)
     }
 }
 
-HTTP::~HTTP()
+HTTPClient::~HTTPClient()
 {
     if (url)
     {
@@ -27,7 +27,7 @@ HTTP::~HTTP()
     }
 }
 
-HTTPResponse * HTTP::sendRequest()
+HTTPResponse * HTTPClient::sendRequest()
 {
     setHttpRequest();
     if (!httpRequest)
@@ -40,10 +40,10 @@ HTTPResponse * HTTP::sendRequest()
     {
         Utility::throwError("can not connect to server");
     }
-
+    
     setSocketConfig(socket);
     socket.sendAll(httpRequest->toRequestMessage());
-
+    
     HTTPResponse *res = nullptr;
     while (1)
     {
@@ -70,18 +70,18 @@ HTTPResponse * HTTP::sendRequest()
             delete strBuf;
         }
     }
-
+    
     return res;
 }
 
-void HTTP::setSocketConfig(Socket &socket)
+void HTTPClient::setSocketConfig(Socket &socket)
 {
     int recvBufSize = 1024 * 10;
     socket.recvBuffSize = recvBufSize;
     socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
 }
 
-void HTTP::setHttpRequest()
+void HTTPClient::setHttpRequest()
 {
     if (!url || url->path.empty())
     {

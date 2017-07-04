@@ -1,5 +1,6 @@
 #include "HTTPResponse.hpp"
-#include "Utility.hpp"
+#include "../Utility/Utility.hpp"
+#include <cctype>
 
 HTTPResponse::HTTPResponse()
 {
@@ -98,13 +99,36 @@ bool HTTPResponse::bodyState()
     }
     else if (isChunk)
     {
-        if (responseBody.rfind("\r\n0\r\n\r\n") != std::string::npos)
+        auto idx = responseBody.rfind("\r\n0\r\n\r\n");
+        if (idx != std::string::npos)
         {
+            responseBody = responseBody.substr(0,idx);
+            removeChunkBodyMsg();
             res = true;
         }
     }
     
     return res;
+}
+
+void HTTPResponse::removeChunkBodyMsg()
+{
+    auto idx = responseBody.find("\r\n");
+    if (idx == std::string::npos || idx + 2 >= responseBody.size())
+    {
+        return;
+    }
+    
+    auto hexStr = responseBody.substr(0,idx);
+    for (auto ch : hexStr)
+    {
+        if (!ishexnumber(ch))
+        {
+            return;
+        }
+    }
+    
+    responseBody = responseBody.substr(idx + 2);
 }
 
 bool HTTPResponse::headerState()

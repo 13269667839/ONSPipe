@@ -43,6 +43,8 @@ private:
     bool lineState();
     bool headerState();
     bool bodyState();
+    
+    void removeChunkBodyMsg();
 };
 
 #endif

@@ -32,35 +32,47 @@ void SQLite::closeDB()
 
 static int sql_callback(void *arg,int count,char **columns,char **rows)
 {
-    if (arg)
+    if (!arg)
     {
-        ResultSet *set = static_cast<ResultSet *>(arg);
-        
-        auto eachRow = new std::map<std::string,std::string>();
-        for (int i = 0;i < count;++i)
-        {
-            char *row = rows[i];
-            char *column = columns[i];
-            eachRow->insert({row?row:"",column?column:""});
-        }
-        
-        if (!eachRow->empty())
-        {
-            set->appendRow(eachRow);
-        }
+        return 0;
     }
+    
+    ResultSet *set = static_cast<ResultSet *>(arg);
+    
+    if (!set)
+    {
+        return 0;
+    }
+    
+    auto eachRow = std::map<std::string,std::string>();
+    for (int i = 0;i < count;++i)
+    {
+        char *row = rows[i];
+        if (!row || strlen(row) == 0)
+        {
+            continue;
+        }
+        
+        char *column = columns[i];
+        eachRow.insert({row,column?column:""});
+    }
+    
+    if (!eachRow.empty())
+    {
+        set->push_back(eachRow);
+    }
+    
     return 0;
 }
 
-void SQLite::execSQL(std::string sql,std::function<void(ResultSet *set,char *errMsg)> _callback)
+void SQLite::execSQL(std::string sql,SQLiteCallback _callback)
 {
     if (!sql.empty() && _callback && db)
     {
-        ResultSet *set = new ResultSet();
+        auto set = ResultSet();
         char *err = nullptr;
-        sqlite3_exec(db, sql.c_str(), sql_callback, set, &err);
+        sqlite3_exec(db, sql.c_str(), sql_callback, &set, &err);
         _callback(set,err);
-        delete set;
     }
 }
 
@@ -69,13 +81,13 @@ std::vector<std::string> SQLite::allTablesName()
     auto names = std::vector<std::string>();
     if (db)
     {
-        execSQL("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", [&names](ResultSet *set,char *err)
+        execSQL("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", [&names](const ResultSet set,char *err)
         {
-            if (!err && set && !set->empty())
+            if (!err && !set.empty())
             {
-                for (auto row : *set->rows)
+                for (auto row : set)
                 {
-                    auto name = std::string(row->at("name"));
+                    auto name = row["name"];
                     if (!name.empty())
                     {
                         names.push_back(name);
