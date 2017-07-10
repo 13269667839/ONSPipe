@@ -1,7 +1,7 @@
 #include "JSONLexer.hpp"
 #include <cctype>
 #include <regex>
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 #pragma mark -- JSONToken
 JSONToken::JSONToken(TokenType _type,std::string _content)
@@ -25,7 +25,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
 {
     if (_content.empty())
     {
-        Utility::throwError("input is empty");
+        Util::throwError("input is empty");
     }
     
     type = _type;
@@ -41,7 +41,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
         if (!stream->is_open())
         {
             delete stream;
-            Utility::throwError("file open error");
+            Util::throwError("file open error");
         }
     }
     else
@@ -201,7 +201,7 @@ JSONToken * JSONLexer::initState(int ch)
         }
         else
         {
-            Utility::throwError("unexcept input behind -");
+            Util::throwError("unexcept input behind -");
         }
     }
     else if (ch == ',')
@@ -293,7 +293,7 @@ JSONToken * JSONLexer::stringState(char ch)
             {
                 if (ch == EOF)
                 {
-                    Utility::throwError("excepr \" at the end of string");
+                    Util::throwError("excepr \" at the end of string");
                 }
                 break;
             }
@@ -326,7 +326,7 @@ JSONToken * JSONLexer::booleanState(char ch)
         char _ch = nextChar();
         if (_ch == EOF)
         {
-            Utility::throwError("unexcept input");
+            Util::throwError("unexcept input");
             break;
         }
         else
@@ -348,7 +348,7 @@ JSONToken * JSONLexer::nullState()
         char ch = nextChar();
         if (ch == EOF)
         {
-            Utility::throwError("unexcept input at null state");
+            Util::throwError("unexcept input at null state");
         }
         else
         {

@@ -1,5 +1,5 @@
 #include "URL.hpp"
-#include "Utility.hpp"
+#include "../Utility/Util.hpp"
 #include <cstdlib>
 
 URL::URL(std::string str)
@@ -50,7 +50,7 @@ void URL::parseURLStr(std::string urlStr)
                 }
                 else
                 {
-                    Utility::throwError("invalid url");
+                    Util::throwError("invalid url");
                 }
             }
             break;
@@ -73,7 +73,7 @@ void URL::parseURLStr(std::string urlStr)
                     auto colonIdx = host.find(":");
                     if (colonIdx != std::string::npos)
                     {
-                        auto arr = Utility::split(host, ":");
+                        auto arr = Util::split(host, ":");
                         if (arr.size() == 2)
                         {
                             host = arr[0];
@@ -81,7 +81,7 @@ void URL::parseURLStr(std::string urlStr)
                         }
                         else
                         {
-                            Utility::throwError("invalid url");
+                            Util::throwError("invalid url");
                         }
                     }
                     else
@@ -98,7 +98,7 @@ void URL::parseURLStr(std::string urlStr)
                 }
                 else
                 {
-                    Utility::throwError("invalid url");
+                    Util::throwError("invalid url");
                 }
             }
             break;

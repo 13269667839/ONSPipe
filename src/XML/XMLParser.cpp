@@ -1,5 +1,5 @@
 #include "XMLParser.hpp"
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 XMLParser::XMLParser(std::string _input,InputType _type)
 {
@@ -39,7 +39,7 @@ std::string XMLParser::parseTagName(std::string &lexStr)
                 }
                 else
                 {
-                    Utility::throwError("invalid tag declare format");
+                    Util::throwError("invalid tag declare format");
                 }
             }
             else
@@ -76,7 +76,7 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
             {
                 if (buf.first.empty())
                 {
-                    Utility::throwError("empty attribute key at tag " + root->tagName);
+                    Util::throwError("empty attribute key at tag " + root->tagName);
                 }
                 
                 state = 2;
@@ -110,7 +110,7 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
                 }
                 else
                 {
-                    Utility::throwError("attribute value must inside of the quote");
+                    Util::throwError("attribute value must inside of the quote");
                 }
             }
             else if (i == attrStr.size() - 1)
@@ -125,7 +125,7 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
                 }
                 else
                 {
-                    Utility::throwError("attribute value must inside of the quote");
+                    Util::throwError("attribute value must inside of the quote");
                 }
             }
             else
@@ -179,7 +179,7 @@ XMLDocument * XMLParser::parseTagStart(std::string lexStr,bool isSelfClose)
                 {
                     if (tok->content != name)
                     {
-                        Utility::throwError("the end tag must have the same name to begin tag");
+                        Util::throwError("the end tag must have the same name to begin tag");
                     }
                     break;
                 }
@@ -223,7 +223,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
             {
                 if (buf.first.empty())
                 {
-                    Utility::throwError("empty attribute key at xml file attribute");
+                    Util::throwError("empty attribute key at xml file attribute");
                 }
                 
                 state = 2;
@@ -257,7 +257,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
                 }
                 else
                 {
-                    Utility::throwError("attribute value must inside of the quote");
+                    Util::throwError("attribute value must inside of the quote");
                 }
             }
             else if (i == lexStr.size() - 1)
@@ -272,7 +272,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
                 }
                 else
                 {
-                    Utility::throwError("attribute value must inside of the quote");
+                    Util::throwError("attribute value must inside of the quote");
                 }
             }
             else
@@ -337,7 +337,7 @@ XMLDocument * XMLParser::xmlTextToDocument()
                 {
                     if (tok->content != root->tagName)
                     {
-                        Utility::throwError("the end tag must have the same name to begin tag");
+                        Util::throwError("the end tag must have the same name to begin tag");
                     }
                 }
             }
@@ -346,7 +346,7 @@ XMLDocument * XMLParser::xmlTextToDocument()
         {
             if (root)
             {
-                Utility::throwError("node initilize before parse xml file attribute");
+                Util::throwError("node initilize before parse xml file attribute");
             }
             fileAttr = parseFileAttribute(tok->content);
         }

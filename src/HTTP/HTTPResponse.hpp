@@ -4,7 +4,7 @@
 #include <string>
 #include <ostream>
 #include <map>
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 class HTTPResponse
 {
@@ -31,7 +31,7 @@ public:
     std::string responseBody;
     
 private:
-    Utility::HTTPMessageParseState state;
+    HTTPMessageParseState state;
     std::string recvBuf;
     
     long content_length;

@@ -32,13 +32,14 @@ HTTPResponse * HTTPClient::sendRequest()
     setHttpRequest();
     if (!httpRequest)
     {
-        Utility::throwError("http request is not set");
+        Util::throwError("http request is not set");
+        return nullptr;
     }
     
     auto socket = Socket(url->host, url->portNumber);
     if (!socket.connect())
     {
-        Utility::throwError("can not connect to server");
+        Util::throwError("can not connect to server");
     }
     
     setSocketConfig(socket);
@@ -85,7 +86,8 @@ void HTTPClient::setHttpRequest()
 {
     if (!url || url->path.empty())
     {
-        Utility::throwError("url is null");
+        Util::throwError("url is null");
+        return;
     }
     
     if (!httpRequest)
@@ -107,7 +109,7 @@ void HTTPClient::setHttpRequest()
     //=== header ===
     if (url->host.empty())
     {
-        Utility::throwError("url's host is null");
+        Util::throwError("url's host is null");
     }
     httpRequest->addRequestHeader({"Host",url->host});
 }

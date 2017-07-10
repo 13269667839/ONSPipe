@@ -1,9 +1,9 @@
-#include "Utility.hpp"
+#include "Util.hpp"
 #include <algorithm>
 #include <cctype>
 #include <exception>
 
-std::vector<std::string> Utility::split(std::string src,std::string token)
+std::vector<std::string> Util::split(std::string src,std::string token)
 {
     std::vector<std::string> arr;
     if (!src.empty())
@@ -48,14 +48,14 @@ std::vector<std::string> Utility::split(std::string src,std::string token)
     return arr;
 }
 
-std::vector<std::string> Utility::split(std::string src,std::vector<std::string> tokens)
+std::vector<std::string> Util::split(std::string src,std::vector<std::string> tokens)
 {
     std::vector<std::string> arr;
     if (!src.empty() && !tokens.empty())
     {
         if (tokens.size() == 1)
         {
-            arr = Utility::split(src, *begin(tokens));
+            arr = Util::split(src, *begin(tokens));
         }
         else
         {
@@ -127,20 +127,20 @@ std::vector<std::string> Utility::split(std::string src,std::vector<std::string>
     return arr;
 }
 
-std::string Utility::toLowerStr(std::string src)
+std::string Util::toLowerStr(std::string src)
 {
     auto res = std::string();
     if (!src.empty())
     {
         auto chars = std::vector<char>(src.size());
         std::transform(begin(src), end(src), begin(chars), [](int ch)
-        {
-            if (isupper(ch))
-            {
-                return tolower(ch);
-            }
-            return ch;
-        });
+                       {
+                           if (isupper(ch))
+                           {
+                               return tolower(ch);
+                           }
+                           return ch;
+                       });
         
         if (!chars.empty())
         {
@@ -150,12 +150,12 @@ std::string Utility::toLowerStr(std::string src)
     return res;
 }
 
-void Utility::throwError(std::string msg)
+void Util::throwError(std::string msg)
 {
     throw std::logic_error(msg);
 }
 
-std::string Utility::join(std::vector<std::string> srcArr,std::string token)
+std::string Util::join(std::vector<std::string> srcArr,std::string token)
 {
     auto res = std::string();
     if (!srcArr.empty())

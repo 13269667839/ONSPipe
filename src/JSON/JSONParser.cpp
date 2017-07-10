@@ -1,5 +1,5 @@
 #include "JSONParser.hpp"
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 JSONParser::JSONParser(SourceType _type,std::string _content)
 {
@@ -34,7 +34,7 @@ JSArray * JSONParser::arrayObject()
         auto tok = nextToken();
         if (!tok)
         {
-            Utility::throwError("except ] before array end");
+            Util::throwError("except ] before array end");
         }
         else if (tok->type == TokenType::RightBracket)
         {
@@ -85,7 +85,7 @@ JSMap * JSONParser::mapObject()
         auto tok = nextToken();
         if (!tok)
         {
-            Utility::throwError("except } before map end");
+            Util::throwError("except } before map end");
         }
         else if (tok->type == TokenType::RightBrace)
         {
@@ -109,7 +109,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Utility::throwError("key must be string type");
+                    Util::throwError("key must be string type");
                 }
             }
             else if (flag == 1)
@@ -121,7 +121,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Utility::throwError("miss : between key and value");
+                    Util::throwError("miss : between key and value");
                 }
             }
             else if (flag == 2)
@@ -130,7 +130,7 @@ JSMap * JSONParser::mapObject()
                 {
                     if (key.empty())
                     {
-                        Utility::throwError("key is empty");
+                        Util::throwError("key is empty");
                     }
                     else
                     {
@@ -164,7 +164,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Utility::throwError("unexcept token at map parser function");
+                    Util::throwError("unexcept token at map parser function");
                 }
             }
         }
@@ -177,7 +177,7 @@ JSObject * JSONParser::token2Object()
 {
     if (!lex)
     {
-        Utility::throwError("lexer is null");
+        Util::throwError("lexer is null");
     }
     
     JSObject *obj = nullptr;
@@ -191,7 +191,7 @@ JSObject * JSONParser::token2Object()
         }
         else if (obj && tok)
         {
-            Utility::throwError("unexcept token");
+            Util::throwError("unexcept token");
             break;
         }
         

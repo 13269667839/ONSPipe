@@ -1,5 +1,5 @@
 #include "SQLite.hpp"
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 SQLite::SQLite(std::string _path)
 {
@@ -11,7 +11,7 @@ SQLite::SQLite(std::string _path)
         {
             auto errMsg = sqlite3_errmsg(db);
             closeDB();
-            Utility::throwError(errMsg);
+            Util::throwError(errMsg);
         }
     }
 }

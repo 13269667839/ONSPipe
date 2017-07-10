@@ -1,9 +1,12 @@
 #include "Socket.hpp"
 #include <unistd.h>
+#ifdef SOCKET_DEBUG
 #include <iostream>
+#endif
+#include <sys/errno.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 Socket::Socket(std::string addr,int port,SocketType _type)
 {
@@ -71,7 +74,7 @@ void Socket::setAddressInfo(std::string address,const char *port)
     if (res != 0)
     {
         std::string errMsg = "getaddrinfo: " + std::string(gai_strerror(res));
-        Utility::throwError(errMsg.c_str());
+        Util::throwError(errMsg.c_str());
     }
 }
 
@@ -121,9 +124,11 @@ bool Socket::bind()
             if (::bind(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
+#ifdef SOCKET_DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"bind to "<<s<<std::endl;
+#endif
             }
             return res;
         });
@@ -141,6 +146,7 @@ int Socket::accept()
     sockaddr_storage visitorAddr;
     socklen_t len = sizeof(visitorAddr);
     int new_fd = ::accept(socketfd, (sockaddr *)(&visitorAddr), &len);
+#ifdef SOCKET_DEBUG
     if (new_fd == -1)
     {
         std::cout<<"accept error"<<std::endl;
@@ -151,6 +157,7 @@ int Socket::accept()
         inet_ntop(visitorAddr.ss_family,get_in_addr((sockaddr *)&visitorAddr),s,sizeof(s));
         std::cout<<"connect from "<<s<<std::endl;
     }
+#endif
     return new_fd;
 }
 
@@ -158,7 +165,7 @@ bool Socket::connect()
 {
     if (type == SocketType::UDP)
     {
-        Utility::throwError("this function work at tcp mode");
+        Util::throwError("this function work at tcp mode");
     }
     
     if (addressInfo)
@@ -170,9 +177,11 @@ bool Socket::connect()
             if (::connect(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
+#ifdef SOCKET_DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"connect to "<<s<<std::endl;
+#endif
             }
             return res;
         });
@@ -185,7 +194,7 @@ ssize_t Socket::send(std::string buf,int fd)
 {
     if (type == SocketType::UDP)
     {
-        Utility::throwError("this function work at tcp mode");
+        Util::throwError("this function work at tcp mode");
     }
     
     ssize_t bytes = -1;
@@ -194,10 +203,12 @@ ssize_t Socket::send(std::string buf,int fd)
         int _sockfd = fd == -1?socketfd:fd;
         ssize_t len = buf.size();
         bytes = ::send(_sockfd, buf.c_str(), len, 0);
+#ifdef SOCKET_DEBUG
         if (bytes == -1)
         {
             std::cout<<"send error"<<std::endl;
         }
+#endif
     }
     return bytes;
 }
@@ -206,7 +217,7 @@ void * Socket::receive(int fd)
 {
     if (type == SocketType::UDP)
     {
-        Utility::throwError("this function work at tcp mode");
+        Util::throwError("this function work at tcp mode");
     }
     
     void *recvBuf = nullptr;
@@ -225,12 +236,14 @@ void * Socket::receive(int fd)
             if (bytes == -1)
             {
                 std::string err = "receive error : " + std::string(gai_strerror(errno));
-                Utility::throwError(err);
+                Util::throwError(err);
             }
+#ifdef SOCKET_DEBUG
             else if (bytes == 0)
             {
                 std::cout<<"connect is closed"<<std::endl;
             }
+#endif
         }
     }
     return recvBuf;
@@ -240,7 +253,7 @@ ssize_t Socket::sendto(std::string buf)
 {
     if (type == SocketType::TCP)
     {
-        Utility::throwError("this function work at udp mode");
+        Util::throwError("this function work at udp mode");
     }
     
     ssize_t bytes = -1;
@@ -253,7 +266,7 @@ ssize_t Socket::sendto(std::string buf)
             if (bytes == -1)
             {
                 std::string err = "receive error : " + std::string(gai_strerror(errno));
-                Utility::throwError(err);
+                Util::throwError(err);
             }
         }
     }
@@ -264,7 +277,7 @@ void * Socket::receiveFrom()
 {
     if (type == SocketType::TCP)
     {
-        Utility::throwError("this function work at udp mode");
+        Util::throwError("this function work at udp mode");
     }
     
     void *recvBuf = nullptr;
@@ -282,7 +295,7 @@ void * Socket::receiveFrom()
         else if (bytes == -1)
         {
             std::string err = "receive error : " + std::string(gai_strerror(errno));
-            Utility::throwError(err);
+            Util::throwError(err);
         }
     }
     

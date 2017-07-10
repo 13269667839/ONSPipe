@@ -1,6 +1,6 @@
 #include "XMLLexer.hpp"
 #include <cctype>
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 XMLLex::XMLLex(std::string _input,InputType _type)
 {
@@ -16,20 +16,20 @@ XMLLex::XMLLex(std::string _input,InputType _type)
     {
         if (source.empty())
         {
-            Utility::throwError("file name is nil");
+            Util::throwError("file name is nil");
         }
         
         stream = new std::ifstream(source);
         if (!stream->is_open())
         {
-            Utility::throwError("file open error");
+            Util::throwError("file open error");
         }
     }
     else if (type == InputType::Text)
     {
         if (source.empty())
         {
-            Utility::throwError("xml text is null");
+            Util::throwError("xml text is null");
         }
         
         idx = new std::string::size_type(0);
@@ -187,7 +187,7 @@ void XMLLex::tagStartState(int16_t ch,std::string &localCache)
                 }
                 else
                 {
-                    Utility::throwError("error on comment");
+                    Util::throwError("error on comment");
                 }
             }
         }
@@ -208,7 +208,7 @@ void XMLLex::tagStartState(int16_t ch,std::string &localCache)
                 }
                 else
                 {
-                    Utility::throwError("xml doctype error");
+                    Util::throwError("xml doctype error");
                 }
             }
         }

@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <ostream>
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 class HTTPRequest
 {
@@ -34,7 +34,7 @@ private:
     std::string requestLine();
     std::string requestHeader();
     
-    Utility::HTTPMessageParseState parseState;
+    HTTPMessageParseState parseState;
     std::string recvHTTPReqMsgBuf;
     long content_length;
 };

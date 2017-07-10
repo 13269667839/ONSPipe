@@ -5,6 +5,8 @@
 #include <netdb.h>
 #include <functional>
 
+//#define SOCKET_DEBUG
+
 enum class SocketType : int
 {
     TCP = 0,

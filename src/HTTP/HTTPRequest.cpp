@@ -2,7 +2,7 @@
 
 HTTPRequest::HTTPRequest()
 {
-    parseState = Utility::HTTPMessageParseState::Init;
+    parseState = HTTPMessageParseState::Init;
     recvHTTPReqMsgBuf = std::string();
     content_length = -1;
     
@@ -47,7 +47,7 @@ std::string HTTPRequest::requestLine()
 {
     if (HTTPMethod.empty() || httpVersion.empty() || path.empty())
     {
-        Utility::throwError("invalid http request line format");
+        Util::throwError("invalid http request line format");
     }
     
     return HTTPMethod + " " + path + " " + httpVersion;
@@ -57,7 +57,8 @@ std::string HTTPRequest::requestHeader()
 {
     if (!header || header->empty())
     {
-        Utility::throwError("invalid http request header format");
+        Util::throwError("invalid http request header format");
+        return "";
     }
     
     auto arr = std::vector<std::string>();
@@ -69,7 +70,7 @@ std::string HTTPRequest::requestHeader()
         }
     }
     
-    return Utility::join(arr, "\r\n");
+    return Util::join(arr, "\r\n");
 
 }
 
@@ -97,16 +98,16 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
     {
         recvHTTPReqMsgBuf += reqMsg;
         
-        if (parseState == Utility::HTTPMessageParseState::Init)
+        if (parseState == HTTPMessageParseState::Init)
         {
             auto idx = recvHTTPReqMsgBuf.find("\r\n");
             if (idx != std::string::npos)
             {
-                parseState = Utility::HTTPMessageParseState::Line;
+                parseState = HTTPMessageParseState::Line;
                 goto ParseLine;
             }
         }
-        else if (parseState == Utility::HTTPMessageParseState::Line)
+        else if (parseState == HTTPMessageParseState::Line)
         {
         ParseLine:
             auto idx = recvHTTPReqMsgBuf.find("\r\n");
@@ -114,7 +115,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
             {
                 auto line = recvHTTPReqMsgBuf.substr(0,idx);
                 
-                auto arr = Utility::split(line, " ");
+                auto arr = Util::split(line, " ");
                 if (arr.size() == 3)
                 {
                     HTTPMethod = arr[0];
@@ -123,11 +124,11 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
                 else
                 {
-                    Utility::throwError("invalid http request line format");
+                    Util::throwError("invalid http request line format");
                 }
                 
                 recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 2);
-                parseState = Utility::HTTPMessageParseState::Header;
+                parseState = HTTPMessageParseState::Header;
                 
                 if (recvHTTPReqMsgBuf.find("\r\n\r\n") != std::string::npos)
                 {
@@ -135,7 +136,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
             }
         }
-        else if (parseState == Utility::HTTPMessageParseState::Header)
+        else if (parseState == HTTPMessageParseState::Header)
         {
         ParseHeader:
             auto idx = recvHTTPReqMsgBuf.find("\r\n\r\n");
@@ -143,15 +144,15 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
             {
                 auto head = recvHTTPReqMsgBuf.substr(0,idx);
                 
-                auto arr = Utility::split(head, "\r\n");
+                auto arr = Util::split(head, "\r\n");
                 if (!arr.empty())
                 {
                     for (auto item : arr)
                     {
-                        auto pair = Utility::split(item, ": ");
+                        auto pair = Util::split(item, ": ");
                         if (pair.size() == 2)
                         {
-                            addRequestHeader({Utility::toLowerStr(pair[0]),pair[1]});
+                            addRequestHeader({Util::toLowerStr(pair[0]),pair[1]});
                         }
                     }
                     
@@ -163,11 +164,11 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
                 else
                 {
-                    Utility::throwError("invalid http request header format");
+                    Util::throwError("invalid http request header format");
                 }
                 
                 recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 4);
-                parseState = Utility::HTTPMessageParseState::Body;
+                parseState = HTTPMessageParseState::Body;
                 
                 if (!recvHTTPReqMsgBuf.empty() && content_length > 0)
                 {
@@ -179,7 +180,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
                 }
             }
         }
-        else if (parseState == Utility::HTTPMessageParseState::Body)
+        else if (parseState == HTTPMessageParseState::Body)
         {
         ParseBody:
             query += recvHTTPReqMsgBuf;

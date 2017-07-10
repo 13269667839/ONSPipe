@@ -1,5 +1,5 @@
 #include "JSObject.hpp"
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 
 #pragma mark -- JSObject
 JSObject::JSObject()
@@ -26,7 +26,7 @@ JSString::JSString(std::string _str,TokenType _type)
 {
     if (_type == TokenType::Array || _type == TokenType::Map)
     {
-        Utility::throwError("can not convert to string");
+        Util::throwError("can not convert to string");
     }
     
     strRef = _str.empty()?nullptr:new std::string(_str);

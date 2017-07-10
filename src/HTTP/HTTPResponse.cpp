@@ -1,5 +1,5 @@
 #include "HTTPResponse.hpp"
-#include "../Utility/Utility.hpp"
+#include "../Utility/Util.hpp"
 #include <cctype>
 
 HTTPResponse::HTTPResponse()
@@ -10,7 +10,7 @@ HTTPResponse::HTTPResponse()
     header = nullptr;
     responseBody = std::string();
     
-    state = Utility::HTTPMessageParseState::Init;
+    state = HTTPMessageParseState::Init;
     recvBuf = std::string();
     content_length = -1;
     isChunk = false;
@@ -54,7 +54,7 @@ std::string HTTPResponse::toResponseMessage()
         {
             arr.push_back(pair.first + ": " + pair.second);
         }
-        head = Utility::join(arr, "\r\n");
+        head = Util::join(arr, "\r\n");
     }
 
     return line + "\r\n" + head + "\r\n\r\n" + responseBody + "\r\n";
@@ -78,9 +78,9 @@ bool HTTPResponse::initState()
     auto idx = recvBuf.find("\r\n");
     if (idx == std::string::npos)
     {
-        Utility::throwError("invalid http response line format");
+        Util::throwError("invalid http response line format");
     }
-    state = Utility::HTTPMessageParseState::Line;
+    state = HTTPMessageParseState::Line;
     return true;
 }
 
@@ -141,14 +141,14 @@ bool HTTPResponse::headerState()
         
         auto headStr = recvBuf.substr(0,idx);
         recvBuf = recvBuf.substr(idx + 4);
-        state = Utility::HTTPMessageParseState::Body;
+        state = HTTPMessageParseState::Body;
         
-        auto arr = Utility::split(headStr, "\r\n");
+        auto arr = Util::split(headStr, "\r\n");
         if (!arr.empty())
         {
             for (auto item : arr)
             {
-                auto pair = Utility::split(item, ": ");
+                auto pair = Util::split(item, ": ");
                 
                 if (pair.size() >= 2)
                 {
@@ -161,12 +161,12 @@ bool HTTPResponse::headerState()
                     
                     if (!key.empty() && !value.empty())
                     {
-                        addResponseHead({Utility::toLowerStr(key),value});
+                        addResponseHead({Util::toLowerStr(key),value});
                     }
                 }
                 else
                 {
-                    Utility::throwError("invalid http response head format");
+                    Util::throwError("invalid http response head format");
                 }
             }
             
@@ -180,7 +180,7 @@ bool HTTPResponse::headerState()
                 ite = header->find("transfer-encoding");
                 if (ite != end(*header))
                 {
-                    auto val = Utility::toLowerStr(ite->second);
+                    auto val = Util::toLowerStr(ite->second);
                     if (val == "chunked")
                     {
                         isChunk = true;
@@ -190,7 +190,7 @@ bool HTTPResponse::headerState()
         }
         else
         {
-            Utility::throwError("invalid http response head format");
+            Util::throwError("invalid http response head format");
         }
     }
     
@@ -202,9 +202,9 @@ bool HTTPResponse::lineState()
     auto idx = recvBuf.find("\r\n");
     auto line = recvBuf.substr(0,idx);
     recvBuf = recvBuf.substr(idx + 2);
-    state = Utility::HTTPMessageParseState::Body;
+    state = HTTPMessageParseState::Body;
     
-    auto arr = Utility::split(line, " ");
+    auto arr = Util::split(line, " ");
     if (arr.size() >= 3)
     {
         httpVersion = arr[0];
@@ -216,7 +216,7 @@ bool HTTPResponse::lineState()
     }
     else
     {
-        Utility::throwError("invalid http response line format");
+        Util::throwError("invalid http response line format");
     }
     
     return recvBuf.find("\r\n\r\n") != std::string::npos;
@@ -235,14 +235,14 @@ bool HTTPResponse::parseHttpResponseMsg(std::string msg)
         recvBuf += msg;
         recvMsgLen += msg.size();
         
-        if (state == Utility::HTTPMessageParseState::Init)
+        if (state == HTTPMessageParseState::Init)
         {
             if (initState())
             {
                 goto ParseLine;
             }
         }
-        else if (state == Utility::HTTPMessageParseState::Line)
+        else if (state == HTTPMessageParseState::Line)
         {
         ParseLine:
             if (lineState())
@@ -250,7 +250,7 @@ bool HTTPResponse::parseHttpResponseMsg(std::string msg)
                 goto ParseHeader;
             }
         }
-        else if (state == Utility::HTTPMessageParseState::Header)
+        else if (state == HTTPMessageParseState::Header)
         {
         ParseHeader:
             if (headerState())
@@ -268,7 +268,7 @@ bool HTTPResponse::parseHttpResponseMsg(std::string msg)
                 }
             }
         }
-        else if (state == Utility::HTTPMessageParseState::Body)
+        else if (state == HTTPMessageParseState::Body)
         {
         ParseBody:
             res = bodyState();
