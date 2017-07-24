@@ -15,17 +15,19 @@ enum class HTTPMethod : int
 class HTTPClient
 {
 public:
-    HTTPMethod method;
-    URL *url;
-    HTTPRequest *httpRequest;
+    HTTPResponse * sendRequest();
+    void setRequestHeader(std::string key,std::string value);
 public:
     HTTPClient(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTPClient();
-    
-    HTTPResponse * sendRequest();
 private:
     void setHttpRequest();
     void setSocketConfig(Socket &socket);
+    void initHttpRequest();
+private:
+    HTTPMethod method;
+    URL *url;
+    HTTPRequest *httpRequest;
 };
 
 #endif
