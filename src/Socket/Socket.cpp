@@ -98,6 +98,7 @@ void Socket::setSocketFileDescription(socketFDIteration iter)
     }
 }
 
+#ifdef SOCKET_DEBUG
 //address of human readable format
 void * Socket::get_in_addr(sockaddr *sa)
 {
@@ -112,6 +113,7 @@ void * Socket::get_in_addr(sockaddr *sa)
     }
     return res;
 }
+#endif
 
 bool Socket::bind()
 {
@@ -213,7 +215,7 @@ ssize_t Socket::send(std::string buf,int fd)
     return bytes;
 }
 
-void * Socket::receive(int fd)
+std::tuple<void *,long> Socket::receive(int fd)
 {
     if (type == SocketType::UDP)
     {
@@ -222,10 +224,11 @@ void * Socket::receive(int fd)
     
     void *recvBuf = nullptr;
     int sockfd = fd == -1?socketfd:fd;
+    long bytes = -2;
     if (sockfd != -1)
     {
         int16_t tmpBuf[recvBuffSize];
-        auto bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
+        bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
         if (bytes > 0)
         {
             recvBuf = new int16_t[bytes]();
@@ -235,7 +238,7 @@ void * Socket::receive(int fd)
         {
             if (bytes == -1)
             {
-                std::string err = "receive error : " + std::string(gai_strerror(errno));
+                auto err = "receive error : " + std::string(gai_strerror(errno));
                 Util::throwError(err);
             }
 #ifdef SOCKET_DEBUG
@@ -246,7 +249,8 @@ void * Socket::receive(int fd)
 #endif
         }
     }
-    return recvBuf;
+    
+    return {recvBuf,bytes};
 }
 
 ssize_t Socket::sendto(std::string buf)
@@ -302,9 +306,9 @@ void * Socket::receiveFrom()
     return recvBuf;
 }
 
-void Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
+int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 {
-    setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
+    return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
 }
 
 void Socket::sendAll(std::string buf,int fd)

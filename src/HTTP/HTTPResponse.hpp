@@ -14,6 +14,8 @@ public:
     friend std::ostream & operator << (std::ostream &os,HTTPResponse *res);
     friend std::ostream & operator << (std::ostream &os,HTTPResponse &res);
     
+    void initParameter();
+    
     std::string toResponseMessage();
     
     bool parseHttpResponseMsg(std::string msg);

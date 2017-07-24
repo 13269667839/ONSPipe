@@ -12,6 +12,8 @@ public:
     HTTPRequest();
     ~HTTPRequest();
     
+    void initParameter();
+    
     std::string toRequestMessage();
     void addRequestHeader(std::pair<std::string,std::string> pair);
     

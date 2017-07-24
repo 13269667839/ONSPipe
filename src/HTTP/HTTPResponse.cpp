@@ -4,10 +4,24 @@
 
 HTTPResponse::HTTPResponse()
 {
+    header = nullptr;
+    
+    initParameter();
+}
+
+void HTTPResponse::initParameter()
+{
     httpVersion = std::string();
     statusCode = 0;
     reason = std::string();
-    header = nullptr;
+    if (header)
+    {
+        header->clear();
+    }
+    else
+    {
+        header = nullptr;
+    }
     responseBody = std::string();
     
     state = HTTPMessageParseState::Init;

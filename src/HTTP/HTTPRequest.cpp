@@ -2,17 +2,9 @@
 
 HTTPRequest::HTTPRequest()
 {
-    parseState = HTTPMessageParseState::Init;
-    recvHTTPReqMsgBuf = std::string();
-    content_length = -1;
-    
-    HTTPMethod = "GET";
-    path = "/";
-    httpVersion = "HTTP/1.1";
-    
     header = nullptr;
     
-    query = std::string();
+    initParameter();
 }
 
 HTTPRequest::~HTTPRequest()
@@ -23,6 +15,28 @@ HTTPRequest::~HTTPRequest()
         delete header;
         header = nullptr;
     }
+}
+
+void HTTPRequest::initParameter()
+{
+    parseState = HTTPMessageParseState::Init;
+    recvHTTPReqMsgBuf = std::string();
+    content_length = -1;
+    
+    HTTPMethod = "GET";
+    path = "/";
+    httpVersion = "HTTP/1.1";
+    
+    if (header)
+    {
+        header->clear();
+    }
+    else
+    {
+        header = nullptr;
+    }
+    
+    query = std::string();
 }
 
 void HTTPRequest::addRequestHeader(std::pair<std::string,std::string> pair)

@@ -4,6 +4,7 @@
 #include <string>
 #include <netdb.h>
 #include <functional>
+#include <tuple>
 
 //#define SOCKET_DEBUG
 
@@ -38,7 +39,7 @@ public:
     bool connect();
     
     ssize_t send(std::string buf,int fd = -1);
-    void * receive(int fd = -1);
+    std::tuple<void *,long> receive(int fd = -1);
     
     //=== UDP ===
     ssize_t sendto(std::string buf);
@@ -46,11 +47,13 @@ public:
     
     void sendAll(std::string buf,int fd = -1);
     
-    void setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
+    int setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
+#ifdef SOCKET_DEBUG
     void * get_in_addr(sockaddr *sa);
+#endif
 };
 
 #endif
