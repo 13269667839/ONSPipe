@@ -1,5 +1,73 @@
 #include "XMLDocument.hpp"
-#include <exception>
+
+std::ostream & operator << (std::ostream &os,XMLDocument *document)
+{
+    if (!document)
+    {
+        return os;
+    }
+    
+    if (document->fileAttribute && !document->fileAttribute->empty())
+    {
+        os<<"<?xml";
+        
+        for (auto pair : *document->fileAttribute)
+        {
+            os<<" "<<pair.first<<"="<<"\""<<pair.second<<"\"";
+        }
+        
+        os<<"?>"<<std::endl;
+    }
+    
+    if (document->tagName.empty())
+    {
+        return os;
+    }
+    
+    os<<"<" + document->tagName;
+    
+    if (document->attribute && !document->attribute->empty())
+    {
+        for (auto pair : *document->attribute)
+        {
+            os<<" "<<pair.first<<"="<<"\""<<pair.second<<"\"";
+        }
+    }
+    
+    if (document->isSelfClose)
+    {
+        os<<"/>"<<std::endl;
+        return os;
+    }
+    else
+    {
+        os<<">";
+    }
+    
+    os<<std::endl;
+    
+    if (document->children && !document->children->empty())
+    {
+        for (auto child : *document->children)
+        {
+            os<<child;
+        }
+    }
+    else
+    {
+        if (document->content && !document->content->empty())
+        {
+            os<<*document->content<<std::endl;
+        }
+    }
+    
+    if (!document->isSelfClose)
+    {
+        os<<"</" + document->tagName + ">"<<std::endl;
+    }
+    
+    return os;
+}
 
 void XMLDocument::addChildNode(XMLDocument *obj)
 {

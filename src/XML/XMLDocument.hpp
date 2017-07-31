@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <ostream>
 
 struct XMLDocument
 {
@@ -23,6 +24,8 @@ public:
     void setContent(std::string _content);
     void addChildNode(XMLDocument *obj);
 };
+
+std::ostream & operator << (std::ostream &os,XMLDocument *document);
 
 
 #endif
