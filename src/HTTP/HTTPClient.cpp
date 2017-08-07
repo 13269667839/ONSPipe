@@ -9,6 +9,7 @@ HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
     {
         method = _method;
         url = new URL(_url);
+        setHttpRequest();
     }
 }
 
@@ -29,22 +30,24 @@ HTTPClient::~HTTPClient()
 
 void HTTPClient::setRequestHeader(std::string key,std::string value)
 {
-    if (key.empty() || value.empty())
+    if (key.empty() || value.empty() || !httpRequest)
     {
         return;
     }
     
-    initHttpRequest();
-    
     httpRequest->addRequestHeader({key,value});
 }
 
-HTTPResponse * HTTPClient::sendRequest()
+HTTPResponse * HTTPClient::syncRequest()
 {
-    setHttpRequest();
     if (!httpRequest)
     {
         Util::throwError("http request is not set");
+        return nullptr;
+    }
+    else if (!url || url->path.empty())
+    {
+        Util::throwError("url is null");
         return nullptr;
     }
     
@@ -55,7 +58,31 @@ HTTPResponse * HTTPClient::sendRequest()
     }
     
     setSocketConfig(socket);
-    socket.sendAll(httpRequest->toRequestMessage());
+
+    auto clientMsg = httpRequest->toRequestMessage();
+    if (clientMsg.empty())
+    {
+        Util::throwError("http request message is null");
+        return nullptr;
+    }
+    auto len = clientMsg.size();
+    while (len > 0)
+    {
+        auto bytes = socket.send(clientMsg);
+        if (bytes >= 0)
+        {
+            len -= bytes;
+            if (bytes < clientMsg.size())
+            {
+                clientMsg = clientMsg.substr(bytes);
+            }
+        }
+        else
+        {
+            Util::throwError("socket send error : " + std::string(gai_strerror(errno)));
+            return nullptr;
+        }
+    }
     
     HTTPResponse *res = nullptr;
     while (1)
@@ -72,18 +99,18 @@ HTTPResponse * HTTPClient::sendRequest()
         else
         {
             auto strBuf = static_cast<char *>(recvbuf);
-
+            
             if (!res)
             {
                 res = new HTTPResponse();
             }
-
+            
             if (res->parseHttpResponseMsg(strBuf))
             {
                 delete strBuf;
                 break;
             }
-
+            
             delete strBuf;
         }
     }
@@ -98,14 +125,6 @@ void HTTPClient::setSocketConfig(Socket &socket)
     socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
 }
 
-void HTTPClient::initHttpRequest()
-{
-    if (!httpRequest)
-    {
-        httpRequest = new HTTPRequest();
-    }
-}
-
 void HTTPClient::setHttpRequest()
 {
     if (!url || url->path.empty())
@@ -114,7 +133,10 @@ void HTTPClient::setHttpRequest()
         return;
     }
     
-    initHttpRequest();
+    if (!httpRequest)
+    {
+        httpRequest = new HTTPRequest();
+    }
     
     //=== line ===
     httpRequest->HTTPMethod = method == HTTPMethod::GET?"GET":"POST";
@@ -132,5 +154,5 @@ void HTTPClient::setHttpRequest()
     {
         Util::throwError("url's host is null");
     }
-    httpRequest->addRequestHeader({"Host",url->host});
+    setRequestHeader("Host", url->host);
 }
