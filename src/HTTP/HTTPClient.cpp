@@ -1,4 +1,5 @@
 #include "HTTPClient.hpp"
+#include <thread>
 
 HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
 {
@@ -36,6 +37,42 @@ void HTTPClient::setRequestHeader(std::string key,std::string value)
     }
     
     httpRequest->addRequestHeader({key,value});
+}
+
+void HTTPClient::asyncRequest(RequestCallback callback)
+{
+    if (!callback)
+    {
+        return;
+    }
+    
+    auto thread_main = [](HTTPClient *client,RequestCallback callback)
+    {
+        HTTPResponse *res = nullptr;
+        auto err = std::string();
+        
+        try
+        {
+            res = client->syncRequest();
+        }
+        catch (std::logic_error error)
+        {
+            err = error.what();
+        }
+        
+        if (callback)
+        {
+            callback(res,err);
+        }
+        
+        if (res)
+        {
+            delete res;
+            res = nullptr;
+        }
+    };
+    
+    std::thread(thread_main,this,callback).detach();
 }
 
 HTTPResponse * HTTPClient::syncRequest()

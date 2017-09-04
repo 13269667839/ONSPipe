@@ -12,12 +12,15 @@ enum class HTTPMethod : int
     POST
 };
 
+using RequestCallback = std::function<void (HTTPResponse *res,std::string err)>;
+    
 class HTTPClient
 {
 public:
     void setRequestHeader(std::string key,std::string value);
     
     HTTPResponse * syncRequest();
+    void asyncRequest(RequestCallback callback);
 public:
     HTTPClient(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTPClient();
