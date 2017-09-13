@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cctype>
 #include <exception>
+#include <fstream>
 
 std::vector<std::string> Util::split(std::string src,std::string token)
 {
@@ -172,4 +173,18 @@ std::string Util::join(std::vector<std::string> srcArr,std::string token)
         }
     }
     return res;
+}
+
+std::vector<char> Util::readFileSync(std::string filePath)
+{
+    std::vector<char> chars;
+    
+    auto file = std::ifstream(filePath,std::ios::binary);
+    if (file.is_open())
+    {
+        chars = std::vector<char>(file.seekg(0,std::ios::end).tellg(),0);
+        file.seekg(0,std::ios::beg).read(&chars[0], static_cast<std::streamsize>(chars.size()));
+        file.close();
+    }
+    return chars;
 }

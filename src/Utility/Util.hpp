@@ -17,7 +17,6 @@ enum class HTTPMessageParseState : int
 class Util
 {
 public:
-#pragma mark -- STL extension
     static std::vector<std::string> split(std::string src,std::string token);
     
     static std::vector<std::string> split(std::string src,std::vector<std::string> tokens);
@@ -27,6 +26,8 @@ public:
     static void throwError(std::string msg);
     
     static std::string join(std::vector<std::string> srcArr,std::string token);
+    
+    static std::vector<char> readFileSync(std::string filePath);
 };
 
 #endif
