@@ -28,8 +28,6 @@ public:
     
 #include <fstream>
 
-#define LEX_COMMENT
-
 enum class InputType : int
 {
     File = 0,

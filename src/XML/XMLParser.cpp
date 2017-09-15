@@ -100,7 +100,13 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
         {
             if (isspace(ch))
             {
-                if (*begin(buf.second) == '\"' && *(end(buf.second) - 1) == '\"')
+                auto firstCh = *begin(buf.second);
+                auto lastCh = *(end(buf.second) - 1);
+                
+                auto isDoubleQuote = firstCh == '\"' && lastCh == '\"';
+                auto isSingleQuote = firstCh == '\'' && lastCh == '\'';
+                
+                if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 2);
                     root->setAttribute(buf);
@@ -108,14 +114,23 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
                     buf.second.clear();
                     state = 1;
                 }
-                else
+                else if (i == attrStr.size() - 1)
                 {
                     Util::throwError("attribute value must inside of the quote");
+                }
+                else
+                {
+                    buf.second += ch;
                 }
             }
             else if (i == attrStr.size() - 1)
             {
-                if (ch == '\"' && *begin(buf.second) == '\"')
+                auto firstCh = buf.second[0];
+                
+                auto isDoubleQuote = ch == '\"' && firstCh == '\"';
+                auto isSingleQuote = ch == '\'' && firstCh == '\'';
+                
+                if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 1);
                     root->setAttribute(buf);
@@ -132,7 +147,7 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
             {
                 if (buf.second.empty())
                 {
-                    if (ch == '\"')
+                    if (ch == '\"' || ch == '\'')
                     {
                         buf.second += ch;
                     }

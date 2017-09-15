@@ -196,7 +196,7 @@ void XMLLex::tagStartState(int16_t ch,std::string &localCache)
             localCache += ch;
             if (localCache.size() == 8)
             {
-                if (localCache == "!DOCTYPE")
+                if (localCache == "!DOCTYPE" || localCache == "!doctype")
                 {
                     state = TokType::DocType;
                     localCache.clear();
@@ -276,10 +276,8 @@ XMLTok * XMLLex::commentState(int16_t ch,std::string &localCache)
                 buf += ite;
                 if (buf == ">--")
                 {
-#ifndef LEX_COMMENT
                     auto content = localCache.substr(0,i);
                     tok = new XMLTok(content,TokType::Comment);
-#endif
                     state = TokType::Init;
                     break;
                 }
@@ -323,6 +321,19 @@ XMLTok * XMLLex::tagDeclareState(int16_t ch,std::string &localCache)
     if (ch == '>')
     {
         auto i = localCache.rfind('/');
+        
+        if (i != std::string::npos)
+        {
+            for (auto j = i + 1;j < localCache.size();++j)
+            {
+                if (!isspace(localCache[j]))
+                {
+                    i = std::string::npos;
+                    break;
+                }
+            }
+        }
+        
         if (i == std::string::npos)
         {
             tok = new XMLTok(localCache,TokType::TagDeclare);
