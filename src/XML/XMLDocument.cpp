@@ -57,7 +57,14 @@ std::ostream & operator << (std::ostream &os,XMLDocument *document)
     {
         if (document->content && !document->content->empty())
         {
-            os<<*document->content<<std::endl;
+            if (document->isCData)
+            {
+                os<<"<![CDATA["<<*document->content<<"]]>"<<std::endl;
+            }
+            else
+            {
+                os<<*document->content<<std::endl;
+            }
         }
     }
     
