@@ -379,7 +379,7 @@ XMLTok * XMLLex::contentState(int16_t ch,std::string &localCache)
         tok = new XMLTok(localCache,TokType::Content);
         state = TokType::TagStart;
     }
-    else if (ch > 32)
+    else if (ch >= 32)
     {
         localCache += ch;
     }

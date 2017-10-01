@@ -7,11 +7,12 @@
 class XMLParser
 {
 public:
-    XMLParser(std::string _input,InputType _type);
+    XMLParser(std::string _input,InputType _type,bool _isHTML = false);
     ~XMLParser();
     
     XMLDocument *xmlTextToDocument();
 private:
+    bool isHTML;
     XMLLex *lex;
     
     XMLTok * getNextToken();

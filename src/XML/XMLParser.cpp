@@ -1,8 +1,9 @@
 #include "XMLParser.hpp"
 #include "../Utility/Util.hpp"
 
-XMLParser::XMLParser(std::string _input,InputType _type)
+XMLParser::XMLParser(std::string _input,InputType _type,bool _isHTML)
 {
+    isHTML = _isHTML;
     lex = new XMLLex(_input,_type);
 }
 
@@ -194,7 +195,14 @@ XMLDocument * XMLParser::parseTagStart(std::string lexStr,bool isSelfClose)
                 {
                     if (tok->content != name)
                     {
-                        Util::throwError("the end tag must have the same name to begin tag");
+                        if (isHTML)
+                        {
+                            root->isSelfClose = true;
+                        }
+                        else
+                        {
+                            Util::throwError("the end tag must have the same name to begin tag");
+                        }
                     }
                     break;
                 }
