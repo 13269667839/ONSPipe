@@ -3,6 +3,8 @@
 #include <cctype>
 #include <exception>
 #include <fstream>
+#include <unistd.h>
+#include <sys/stat.h>
 
 std::vector<std::string> Util::split(std::string src,std::string token)
 {
@@ -187,4 +189,26 @@ std::vector<char> Util::readFileSync(std::string filePath)
         file.close();
     }
     return chars;
+}
+
+std::string Util::currentWorkDirectory()
+{
+    auto str = getcwd(nullptr, 0);
+
+    if (!str)
+    {
+        return std::string();
+    }
+
+    auto r_str = std::string(str);
+    delete str;
+    str = nullptr;
+
+    return r_str;
+}
+
+bool Util::isDirectory(std::string path)
+{
+    struct stat buf;
+    return lstat(path.c_str(),&buf) < 0?false:S_ISDIR(buf.st_mode);
 }

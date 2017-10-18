@@ -28,6 +28,10 @@ public:
     static std::string join(std::vector<std::string> srcArr,std::string token);
     
     static std::vector<char> readFileSync(std::string filePath);
+
+    static std::string currentWorkDirectory();
+
+    static bool isDirectory(std::string path);
 };
 
 #endif
