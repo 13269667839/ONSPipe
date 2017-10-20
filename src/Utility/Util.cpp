@@ -5,8 +5,9 @@
 #include <fstream>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
-std::vector<std::string> Util::split(std::string src,std::string token)
+std::vector<std::string> Util::split(std::string src, std::string token)
 {
     std::vector<std::string> arr;
     if (!src.empty())
@@ -14,9 +15,9 @@ std::vector<std::string> Util::split(std::string src,std::string token)
         if (!token.empty())
         {
             auto tokenIndex = std::string::npos;
-            for (std::string::size_type i = 0;i < src.size();++i)
+            for (std::string::size_type i = 0; i < src.size(); ++i)
             {
-                tokenIndex = src.find(token,i);
+                tokenIndex = src.find(token, i);
                 if (tokenIndex == std::string::npos)
                 {
                     if (i < src.size())
@@ -32,9 +33,9 @@ std::vector<std::string> Util::split(std::string src,std::string token)
                 }
                 else
                 {
-                    auto subStr = src.substr(i,tokenIndex - i);
+                    auto subStr = src.substr(i, tokenIndex - i);
                     arr.push_back(subStr);
-                    
+
                     i = tokenIndex - 1 + token.size();
                 }
             }
@@ -42,7 +43,7 @@ std::vector<std::string> Util::split(std::string src,std::string token)
         else
         {
             arr = std::vector<std::string>(src.size());
-            for (int i = 0;i < arr.size();++i)
+            for (int i = 0; i < arr.size(); ++i)
             {
                 arr[i] = std::string({src[i]});
             }
@@ -51,7 +52,7 @@ std::vector<std::string> Util::split(std::string src,std::string token)
     return arr;
 }
 
-std::vector<std::string> Util::split(std::string src,std::vector<std::string> tokens)
+std::vector<std::string> Util::split(std::string src, std::vector<std::string> tokens)
 {
     std::vector<std::string> arr;
     if (!src.empty() && !tokens.empty())
@@ -62,7 +63,7 @@ std::vector<std::string> Util::split(std::string src,std::vector<std::string> to
         }
         else
         {
-            auto capitalMap = std::map<char,std::vector<std::string>>();
+            auto capitalMap = std::map<char, std::vector<std::string>>();
             for (auto token : tokens)
             {
                 char ch = *begin(token);
@@ -79,14 +80,14 @@ std::vector<std::string> Util::split(std::string src,std::vector<std::string> to
                     }
                 }
             }
-            
+
             if (!capitalMap.empty())
             {
                 std::string::size_type lastIndex = -1;
-                for (std::string::size_type i = 0;i < src.size();++i)
+                for (std::string::size_type i = 0; i < src.size(); ++i)
                 {
                     char ch = src[i];
-                    
+
                     auto chain = capitalMap[ch];
                     if (!chain.empty())
                     {
@@ -95,30 +96,30 @@ std::vector<std::string> Util::split(std::string src,std::vector<std::string> to
                         {
                             if (i + item.size() - 1 < src.size())
                             {
-                                if (item == src.substr(i,item.size()))
+                                if (item == src.substr(i, item.size()))
                                 {
                                     tok = item;
                                     break;
                                 }
                             }
                         }
-                        
+
                         if (!tok.empty())
                         {
                             if (lastIndex == -1)
                             {
                                 lastIndex = 0;
                             }
-                            
-                            auto subStr = src.substr(lastIndex,i - lastIndex);
+
+                            auto subStr = src.substr(lastIndex, i - lastIndex);
                             arr.push_back(subStr);
-                            
+
                             i += tok.size() - 1;
                             lastIndex = i + 1;
                         }
                     }
                 }
-                
+
                 if (lastIndex != -1 && lastIndex < src.size())
                 {
                     auto subStr = src.substr(lastIndex);
@@ -136,18 +137,17 @@ std::string Util::toLowerStr(std::string src)
     if (!src.empty())
     {
         auto chars = std::vector<char>(src.size());
-        std::transform(begin(src), end(src), begin(chars), [](int ch)
-                       {
-                           if (isupper(ch))
-                           {
-                               return tolower(ch);
-                           }
-                           return ch;
-                       });
-        
+        std::transform(begin(src), end(src), begin(chars), [](int ch) {
+            if (isupper(ch))
+            {
+                return tolower(ch);
+            }
+            return ch;
+        });
+
         if (!chars.empty())
         {
-            res = std::string(begin(chars),end(chars));
+            res = std::string(begin(chars), end(chars));
         }
     }
     return res;
@@ -158,7 +158,7 @@ void Util::throwError(std::string msg)
     throw std::logic_error(msg);
 }
 
-std::string Util::join(std::vector<std::string> srcArr,std::string token)
+std::string Util::join(std::vector<std::string> srcArr, std::string token)
 {
     auto res = std::string();
     if (!srcArr.empty())
@@ -180,12 +180,12 @@ std::string Util::join(std::vector<std::string> srcArr,std::string token)
 std::vector<char> Util::readFileSync(std::string filePath)
 {
     std::vector<char> chars;
-    
-    auto file = std::ifstream(filePath,std::ios::binary);
+
+    auto file = std::ifstream(filePath, std::ios::binary);
     if (file.is_open())
     {
-        chars = std::vector<char>(file.seekg(0,std::ios::end).tellg(),0);
-        file.seekg(0,std::ios::beg).read(&chars[0], static_cast<std::streamsize>(chars.size()));
+        chars = std::vector<char>(file.seekg(0, std::ios::end).tellg(), 0);
+        file.seekg(0, std::ios::beg).read(&chars[0], static_cast<std::streamsize>(chars.size()));
         file.close();
     }
     return chars;
@@ -210,5 +210,22 @@ std::string Util::currentWorkDirectory()
 bool Util::isDirectory(std::string path)
 {
     struct stat buf;
-    return lstat(path.c_str(),&buf) < 0?false:S_ISDIR(buf.st_mode);
+    return lstat(path.c_str(), &buf) < 0 ? false : S_ISDIR(buf.st_mode);
+}
+
+std::vector<std::string> Util::filesInTheCurrentDirectory(std::string filePath)
+{
+    std::vector<std::string> files = {};
+
+    if (auto dp = opendir(filePath.c_str()))
+    {
+        while (auto dirp = readdir(dp))
+        {
+            files.push_back(dirp->d_name);
+        }
+
+        closedir(dp);
+    }
+
+    return files;
 }

@@ -32,6 +32,8 @@ public:
     static std::string currentWorkDirectory();
 
     static bool isDirectory(std::string path);
+
+    static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
 };
 
 #endif
