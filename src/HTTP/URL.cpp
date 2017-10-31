@@ -24,6 +24,26 @@ void URL::setInitialParameter()
     query = std::string();
 }
 
+std::map<std::string,std::string> URL::queryDic()
+{
+    auto dic = std::map<std::string,std::string>();
+
+    if (!query.empty())
+    {
+        auto pair = Util::split(query, "&");
+        for (auto str : pair)
+        {
+            auto kv = Util::split(str, "=");
+            if (kv.size() == 2)
+            {
+                dic[kv[0]] = kv[1];
+            }
+        }
+    }
+
+    return dic;
+}
+
 enum class URLParseState : int
 {
     Initialize = 0,

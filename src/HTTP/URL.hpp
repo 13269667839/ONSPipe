@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <map>
 
 class URL
 {
@@ -10,6 +11,9 @@ public:
     URL(std::string str);
     
     friend std::ostream & operator << (std::ostream &os,URL url);
+
+    std::map<std::string,std::string> queryDic();
+
 public:
     std::string originalURL;
     std::string scheme;
