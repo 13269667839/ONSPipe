@@ -34,6 +34,8 @@ public:
     static bool isDirectory(std::string path);
 
     static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
+
+    static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
 };
 
 #endif
