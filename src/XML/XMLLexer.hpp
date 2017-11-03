@@ -2,6 +2,8 @@
 #define XMLLexer_hpp
 
 #include <string>
+#include <ostream>
+#include <fstream>
 
 enum class TokType : int
 {
@@ -16,6 +18,12 @@ enum class TokType : int
     CData
 };
     
+enum class InputType : int
+{
+    File = 0,
+    Text
+};
+    
 struct XMLTok
 {
 public:
@@ -23,15 +31,11 @@ public:
     TokType type;
     bool isSelfClose;
         
-    XMLTok(std::string _content,TokType _type) : content(_content) , type(_type) , isSelfClose(false) {}
-};
+    XMLTok(std::string _content,TokType _type);
     
-#include <fstream>
-
-enum class InputType : int
-{
-    File = 0,
-    Text
+    friend std::ostream & operator << (std::ostream &os,const XMLTok &tok);
+private:
+    std::string type2Str() const;
 };
 
 class XMLLex

@@ -2,6 +2,61 @@
 #include <cctype>
 #include "../Utility/Util.hpp"
 
+#pragma mark -- XMLTok
+XMLTok::XMLTok(std::string _content,TokType _type)
+{
+    content = _content;
+    type = _type;
+    isSelfClose = false;
+}
+
+std::ostream & operator << (std::ostream &os,const XMLTok &tok)
+{
+    os<<tok.content<<"        "<<tok.type2Str();
+    return os;
+}
+
+std::string XMLTok::type2Str() const
+{
+    auto str = std::string();
+    
+    switch (type)
+    {
+        case TokType::Init:
+            str.assign("Init");
+            break;
+        case TokType::TagStart:
+            str.assign("TagStart");
+            break;
+        case TokType::Comment:
+            str.assign("Comment");
+            break;
+        case TokType::FileAttribute:
+            str.assign("FileAttribute");
+            break;
+        case TokType::TagDeclare:
+            str.assign("TagDeclare");
+            break;
+        case TokType::TagEnd:
+            str.assign("TagEnd");
+            break;
+        case TokType::Content:
+            str.assign("Content");
+            break;
+        case TokType::DocType:
+            str.assign("DocType");
+            break;
+        case TokType::CData:
+            str.assign("CData");
+            break;
+        default:
+            break;
+    }
+    
+    return str;
+}
+
+#pragma mark -- XMLLex
 XMLLex::XMLLex(std::string _input,InputType _type)
 {
     source = _input;
@@ -76,51 +131,41 @@ XMLTok * XMLLex::getNextTok()
 {
     XMLTok *tok = nullptr;
     auto localCache = std::string();
+    auto ch = EOF;
     
-    while (1)
+    while ((ch = getNextChar()) != EOF)
     {
-        auto ch = getNextChar();
-        
-        if (ch == EOF)
+        switch (state)
         {
-            break;
-        }
-        
-        if (state == TokType::Init)
-        {
-            initState(ch,localCache);
-        }
-        else if (state == TokType::TagStart)
-        {
-            tagStartState(ch,localCache);
-        }
-        else if (state == TokType::Comment)
-        {
-            tok = commentState(ch, localCache);
-        }
-        else if (state == TokType::FileAttribute)
-        {
-            tok = fileAttributeState(ch, localCache);
-        }
-        else if (state == TokType::TagDeclare)
-        {
-            tok = tagDeclareState(ch, localCache);
-        }
-        else if (state == TokType::TagEnd)
-        {
-            tok = tagEndState(ch, localCache);
-        }
-        else if (state == TokType::Content)
-        {
-            tok = contentState(ch, localCache);
-        }
-        else if (state == TokType::DocType)
-        {
-            tok = docTypeState(ch, localCache);
-        }
-        else if (state == TokType::CData)
-        {
-            tok = CDataState(ch, localCache);
+            case TokType::Init:
+                initState(ch,localCache);
+                break;
+            case TokType::TagStart:
+                tagStartState(ch,localCache);
+                break;
+            case TokType::Comment:
+                tok = commentState(ch, localCache);
+                break;
+            case TokType::FileAttribute:
+                tok = fileAttributeState(ch, localCache);
+                break;
+            case TokType::TagDeclare:
+                tok = tagDeclareState(ch, localCache);
+                break;
+            case TokType::TagEnd:
+                tok = tagEndState(ch, localCache);
+                break;
+            case TokType::Content:
+                tok = contentState(ch, localCache);
+                break;
+            case TokType::DocType:
+                tok = docTypeState(ch, localCache);
+                break;
+            case TokType::CData:
+                tok = CDataState(ch, localCache);
+                break;
+            default:
+                break;
         }
         
         if (tok)
@@ -296,17 +341,14 @@ XMLTok * XMLLex::fileAttributeState(int16_t ch,std::string &localCache)
     
     if (ch == '>' && localCache.size() >= 2)
     {
-        if (localCache[0] == 'x' && localCache[1] == 'm' && localCache[2] == 'l' && localCache[3] == ' ')
+        for (auto i = localCache.size() - 2;i > 0;--i)
         {
-            for (auto i = localCache.size() - 2;i > 0;--i)
+            if (localCache[i] == '?')
             {
-                if (localCache[i] == '?')
-                {
-                    auto content = localCache.substr(4,i - 4);
-                    tok = new XMLTok(content,TokType::FileAttribute);
-                    state = TokType::Init;
-                    break;
-                }
+                auto content = localCache.substr(4,i - 4);
+                tok = new XMLTok(content,TokType::FileAttribute);
+                state = TokType::Init;
+                break;
             }
         }
     }
