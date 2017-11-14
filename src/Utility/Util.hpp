@@ -36,6 +36,8 @@ public:
     static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
 
     static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
+    
+    static std::wstring s2ws(const std::string &s);
 };
 
 #endif

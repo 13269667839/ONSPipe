@@ -268,3 +268,19 @@ std::map<std::string,std::string> Util::Argv2Map(const char * argv[],int len,con
 
     return dic;
 }
+
+std::wstring Util::s2ws(const std::string &s)
+{
+    auto curLocale = setlocale(LC_ALL, "");
+    
+    auto _Source = s.c_str();
+    auto _Dsize = mbstowcs(nullptr, _Source, 0) + 1;
+    auto _Dest = new wchar_t[_Dsize];
+    wmemset(_Dest, 0, _Dsize);
+    mbstowcs(_Dest,_Source,_Dsize);
+    auto result = std::wstring(_Dest);
+    delete []_Dest;
+    
+    setlocale(LC_ALL, curLocale);
+    return result;
+}
