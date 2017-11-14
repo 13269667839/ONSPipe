@@ -44,17 +44,20 @@ static int sql_callback(void *arg,int count,char **columns,char **rows)
         return 0;
     }
     
-    auto eachRow = std::map<std::string,std::string>();
+    auto eachRow = std::map<std::wstring,std::wstring>();
     for (int i = 0;i < count;++i)
     {
-        char *row = rows[i];
+        auto row = rows[i];
         if (!row || strlen(row) == 0)
         {
             continue;
         }
         
-        char *column = columns[i];
-        eachRow.insert({row,column?column:""});
+        auto column = columns[i];
+        
+        auto key = Util::s2ws(row);
+        auto value = column?Util::s2ws(column):L"";
+        eachRow[key] = value;
     }
     
     if (!eachRow.empty())
@@ -76,9 +79,9 @@ void SQLite::execSQL(std::string sql,SQLiteCallback _callback)
     }
 }
 
-std::vector<std::string> SQLite::allTablesName()
+std::vector<std::wstring> SQLite::allTablesName()
 {
-    auto names = std::vector<std::string>();
+    auto names = std::vector<std::wstring>();
     if (db)
     {
         execSQL("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", [&names](const ResultSet set,char *err)
@@ -87,7 +90,7 @@ std::vector<std::string> SQLite::allTablesName()
             {
                 for (auto row : set)
                 {
-                    auto name = row["name"];
+                    auto name = row[L"name"];
                     if (!name.empty())
                     {
                         names.push_back(name);
