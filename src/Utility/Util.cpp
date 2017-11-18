@@ -284,3 +284,48 @@ std::wstring Util::s2ws(const std::string &s)
     setlocale(LC_ALL, curLocale);
     return result;
 }
+
+unsigned long Util::u_strlen(const char *utf8_str)
+{
+    unsigned long len = 0;
+    
+    if (!utf8_str)
+    {
+        return len;
+    }
+    
+    auto size = strlen(utf8_str);
+    if (size == 0)
+    {
+        return len;
+    }
+    
+    for (auto i = 0;i < size;++i)
+    {
+        unsigned long tmp = utf8_str[i];
+        unsigned int bits[8] = {};
+        
+        auto idx = 7;
+        while (tmp != 0 && idx >= 0)
+        {
+            bits[idx] = tmp % 2;
+            idx--;
+            tmp /= 2;
+        }
+        
+        if (bits[0] == 1)
+        {
+            auto count_one = 1;
+            while (bits[count_one] == 1)
+            {
+                count_one++;
+            }
+            
+            i += (count_one - 1);
+        }
+        
+        len++;
+    }
+    
+    return len;
+}

@@ -38,6 +38,8 @@ public:
     static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
     
     static std::wstring s2ws(const std::string &s);
+    
+    static unsigned long u_strlen(const char *utf8_str);
 };
 
 #endif
