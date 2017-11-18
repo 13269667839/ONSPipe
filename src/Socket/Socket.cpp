@@ -1,8 +1,6 @@
 #include "Socket.hpp"
 #include <unistd.h>
-#ifdef SOCKET_DEBUG
 #include <iostream>
-#endif
 #include <sys/errno.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -98,7 +96,6 @@ void Socket::setSocketFileDescription(socketFDIteration iter)
     }
 }
 
-#ifdef SOCKET_DEBUG
 //address of human readable format
 void * Socket::get_in_addr(sockaddr *sa)
 {
@@ -113,7 +110,6 @@ void * Socket::get_in_addr(sockaddr *sa)
     }
     return res;
 }
-#endif
 
 bool Socket::bind()
 {
@@ -126,11 +122,9 @@ bool Socket::bind()
             if (::bind(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
-#ifdef SOCKET_DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"bind to "<<s<<std::endl;
-#endif
             }
             return res;
         });
@@ -148,10 +142,10 @@ int Socket::accept()
     sockaddr_storage visitorAddr;
     socklen_t len = sizeof(visitorAddr);
     int new_fd = ::accept(socketfd, (sockaddr *)(&visitorAddr), &len);
-#ifdef SOCKET_DEBUG
+
     if (new_fd == -1)
     {
-        std::cout<<"accept error"<<std::endl;
+        Util::throwError("some error occur at accept function");
     }
     else
     {
@@ -159,7 +153,7 @@ int Socket::accept()
         inet_ntop(visitorAddr.ss_family,get_in_addr((sockaddr *)&visitorAddr),s,sizeof(s));
         std::cout<<"connect from "<<s<<std::endl;
     }
-#endif
+
     return new_fd;
 }
 
@@ -179,11 +173,9 @@ bool Socket::connect()
             if (::connect(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
-#ifdef SOCKET_DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"connect to "<<s<<std::endl;
-#endif
             }
             return res;
         });
@@ -192,7 +184,7 @@ bool Socket::connect()
     return socketfd != -1;
 }
 
-ssize_t Socket::send(std::string buf,int fd)
+ssize_t Socket::send(void *buf,size_t len,int fd)
 {
     if (type == SocketType::UDP)
     {
@@ -200,18 +192,18 @@ ssize_t Socket::send(std::string buf,int fd)
     }
     
     ssize_t bytes = -1;
-    if (!buf.empty())
+    if (!buf || len == 0)
     {
-        int _sockfd = fd == -1?socketfd:fd;
-        ssize_t len = buf.size();
-        bytes = ::send(_sockfd, buf.c_str(), len, 0);
-#ifdef SOCKET_DEBUG
-        if (bytes == -1)
-        {
-            std::cout<<"send error"<<std::endl;
-        }
-#endif
+        return bytes;
     }
+    
+    auto _sockfd = fd == -1?socketfd:fd;
+    bytes = ::send(_sockfd, buf, len, 0);
+    if (bytes == -1)
+    {
+        Util::throwError("some error occur at send function");
+    }
+
     return bytes;
 }
 
@@ -241,12 +233,10 @@ std::tuple<void *,long> Socket::receive(int fd)
                 auto err = "receive error : " + std::string(gai_strerror(errno));
                 Util::throwError(err);
             }
-#ifdef SOCKET_DEBUG
             else if (bytes == 0)
             {
                 std::cout<<"connect is closed"<<std::endl;
             }
-#endif
         }
     }
     
@@ -313,21 +303,23 @@ int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 
 void Socket::sendAll(std::string buf,int fd)
 {
-    if (!buf.empty())
+    while (!buf.empty())
     {
-        auto len = buf.size();
-        ssize_t bytes = 0;
-        while (len > 0)
+        ssize_t send_bytes = 0;
+        
+        if (type == SocketType::TCP)
         {
-            if (type == SocketType::TCP)
-            {
-                bytes = send(buf,fd);
-            }
-            else
-            {
-                bytes = sendto(buf);
-            }
-            len -= bytes;
+            auto u8_str = const_cast<char *>(buf.c_str());
+            send_bytes = send(u8_str,buf.size(),fd);
+        }
+        else if (type == SocketType::UDP)
+        {
+            Util::throwError("not implement yet!");
+        }
+        
+        if (send_bytes <= buf.size())
+        {
+            buf = buf.substr(send_bytes);
         }
     }
 }

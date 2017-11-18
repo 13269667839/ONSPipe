@@ -6,11 +6,9 @@
 #include <functional>
 #include <tuple>
 
-//#define SOCKET_DEBUG
-
-enum class SocketType : int
+enum class SocketType
 {
-    TCP = 0,
+    TCP,
     UDP
 };
     
@@ -38,7 +36,8 @@ public:
     
     bool connect();
     
-    ssize_t send(std::string buf,int fd = -1);
+    ssize_t send(void *buf,size_t len,int fd = -1);
+    
     std::tuple<void *,long> receive(int fd = -1);
     
     //=== UDP ===
@@ -51,9 +50,7 @@ public:
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
-#ifdef SOCKET_DEBUG
     void * get_in_addr(sockaddr *sa);
-#endif
 };
 
 #endif

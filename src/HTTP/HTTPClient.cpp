@@ -102,24 +102,8 @@ HTTPResponse * HTTPClient::syncRequest()
         Util::throwError("http request message is null");
         return nullptr;
     }
-    auto len = clientMsg.size();
-    while (len > 0)
-    {
-        auto bytes = socket.send(clientMsg);
-        if (bytes >= 0)
-        {
-            len -= bytes;
-            if (bytes < clientMsg.size())
-            {
-                clientMsg = clientMsg.substr(bytes);
-            }
-        }
-        else
-        {
-            Util::throwError("socket send error : " + std::string(gai_strerror(errno)));
-            return nullptr;
-        }
-    }
+    
+    socket.sendAll(clientMsg);
     
     HTTPResponse *res = nullptr;
     while (1)
