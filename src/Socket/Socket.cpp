@@ -219,24 +219,21 @@ std::tuple<void *,long> Socket::receive(int fd)
     long bytes = -2;
     if (sockfd != -1)
     {
-        int16_t tmpBuf[recvBuffSize];
+        u_char tmpBuf[recvBuffSize];
         bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
         if (bytes > 0)
         {
-            recvBuf = new int16_t[bytes]();
+            recvBuf = new u_char[bytes]();
             memcpy(recvBuf, tmpBuf, bytes);
         }
-        else
+        else if (bytes == -1)
         {
-            if (bytes == -1)
-            {
-                auto err = "receive error : " + std::string(gai_strerror(errno));
-                Util::throwError(err);
-            }
-            else if (bytes == 0)
-            {
-                std::cout<<"connect is closed"<<std::endl;
-            }
+            auto err = "receive error : " + std::string(gai_strerror(errno));
+            Util::throwError(err);
+        }
+        else if (bytes == 0)
+        {
+            std::cout<<"connect is closed"<<std::endl;
         }
     }
     
