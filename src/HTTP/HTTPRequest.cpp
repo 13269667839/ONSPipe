@@ -84,7 +84,7 @@ std::string HTTPRequest::requestHeader()
         }
     }
     
-    return Util::join(arr, "\r\n");
+    return Util::join(arr, std::string("\r\n"));
 
 }
 
@@ -129,7 +129,7 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
             {
                 auto line = recvHTTPReqMsgBuf.substr(0,idx);
                 
-                auto arr = Util::split(line, " ");
+                auto arr = Util::split(line, std::string(" "));
                 if (arr.size() == 3)
                 {
                     HTTPMethod = arr[0];
@@ -158,12 +158,12 @@ bool HTTPRequest::parseRequestMessage(std::string reqMsg)
             {
                 auto head = recvHTTPReqMsgBuf.substr(0,idx);
                 
-                auto arr = Util::split(head, "\r\n");
+                auto arr = Util::split(head, std::string("\r\n"));
                 if (!arr.empty())
                 {
                     for (auto item : arr)
                     {
-                        auto pair = Util::split(item, ": ");
+                        auto pair = Util::split(item, std::string(": "));
                         if (pair.size() == 2)
                         {
                             addRequestHeader({Util::toLowerStr(pair[0]),pair[1]});

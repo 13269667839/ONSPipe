@@ -68,7 +68,7 @@ std::string HTTPResponse::toResponseMessage()
         {
             arr.push_back(pair.first + ": " + pair.second);
         }
-        head = Util::join(arr, "\r\n");
+        head = Util::join(arr, std::string("\r\n"));
     }
 
     return line + "\r\n" + head + "\r\n\r\n" + responseBody + "\r\n";
@@ -157,12 +157,12 @@ bool HTTPResponse::headerState()
         recvBuf = recvBuf.substr(idx + 4);
         state = HTTPMessageParseState::Body;
         
-        auto arr = Util::split(headStr, "\r\n");
+        auto arr = Util::split(headStr, std::string("\r\n"));
         if (!arr.empty())
         {
             for (auto item : arr)
             {
-                auto pair = Util::split(item, ": ");
+                auto pair = Util::split(item, std::string(": "));
                 
                 if (pair.size() >= 2)
                 {
@@ -218,7 +218,7 @@ bool HTTPResponse::lineState()
     recvBuf = recvBuf.substr(idx + 2);
     state = HTTPMessageParseState::Body;
     
-    auto arr = Util::split(line, " ");
+    auto arr = Util::split(line, std::string(" "));
     if (arr.size() >= 3)
     {
         httpVersion = arr[0];

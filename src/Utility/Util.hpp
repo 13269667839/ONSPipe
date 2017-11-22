@@ -17,15 +17,87 @@ enum class HTTPMessageParseState : int
 class Util
 {
 public:
-    static std::vector<std::string> split(std::string src,std::string token);
+    template <typename strType>
+    static std::vector<strType> split(strType src, strType token)
+    {
+        std::vector<strType> arr;
+        if (!src.empty())
+        {
+            if (!token.empty())
+            {
+                auto tokenIndex = strType::npos;
+                for (unsigned long i = 0; i < src.size(); ++i)
+                {
+                    tokenIndex = src.find(token, i);
+                    if (tokenIndex == strType::npos)
+                    {
+                        if (i < src.size())
+                        {
+                            arr.push_back(src.substr(i));
+                        }
+                        break;
+                    }
+                    else if (tokenIndex > src.size())
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        auto subStr = src.substr(i, tokenIndex - i);
+                        arr.push_back(subStr);
+                        
+                        i = tokenIndex - 1 + token.size();
+                    }
+                }
+            }
+            else
+            {
+                arr = std::vector<strType>(src.size());
+                for (int i = 0; i < arr.size(); ++i)
+                {
+                    arr[i] = strType({src[i]});
+                }
+            }
+        }
+        return arr;
+    }
     
     static std::vector<std::string> split(std::string src,std::vector<std::string> tokens);
     
-    static std::string toLowerStr(std::string src);
+    template <typename strType>
+    static strType toLowerStr(strType src)
+    {
+        for (auto i = 0;i < src.length();++i) 
+        {
+            if (isupper(src[i]))
+            {
+                src[i] = tolower(src[i]);
+            }
+        }
+        return src;
+    }
     
     static void throwError(std::string msg);
     
-    static std::string join(std::vector<std::string> srcArr,std::string token);
+    template <typename strType>
+    static strType join(std::vector<strType> srcArr, strType token)
+    {
+        auto res = strType();
+        if (!srcArr.empty())
+        {
+            const bool empty = token.empty();
+            for (auto src : srcArr)
+            {
+                auto itemStr = src;
+                if (!empty && src != *(end(srcArr) - 1))
+                {   
+                    itemStr += token;
+                }
+                res += itemStr;
+            }
+        }
+        return res;
+    }
     
     static std::vector<char> readFileSync(std::string filePath);
 
