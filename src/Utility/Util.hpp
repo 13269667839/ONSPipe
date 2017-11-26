@@ -17,6 +17,8 @@ enum class HTTPMessageParseState : int
 class Util
 {
 public:
+    using byte = unsigned char;
+    
     template <typename strType>
     static std::vector<strType> split(strType src, strType token)
     {

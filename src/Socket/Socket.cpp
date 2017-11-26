@@ -219,11 +219,11 @@ std::tuple<void *,long> Socket::receive(int fd)
     long bytes = -2;
     if (sockfd != -1)
     {
-        u_char tmpBuf[recvBuffSize];
+        Util::byte tmpBuf[recvBuffSize];
         bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
         if (bytes > 0)
         {
-            recvBuf = new u_char[bytes]();
+            recvBuf = new Util::byte[bytes]();
             memcpy(recvBuf, tmpBuf, bytes);
         }
         else if (bytes == -1)
