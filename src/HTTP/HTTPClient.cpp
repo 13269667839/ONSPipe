@@ -1,5 +1,6 @@
 #include "HTTPClient.hpp"
 #include <thread>
+#include "../Utility/HTTPParser.hpp"
 
 HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
 {
@@ -106,6 +107,7 @@ HTTPResponse * HTTPClient::syncRequest()
     socket.sendAll(clientMsg);
     
     HTTPResponse *res = nullptr;
+    auto parser = HTTPRecvMsgParser();
     while (1)
     {
         void *recvbuf = nullptr;
@@ -113,26 +115,35 @@ HTTPResponse * HTTPClient::syncRequest()
         
         std::tie(recvbuf,bytes) = socket.receive();
         
-        if (!recvbuf)
+        if (!recvbuf || bytes == -2)
+        {
+            res = parser.msg2res();
+            break;
+        }
+        
+        auto u_buf = static_cast<Util::byte *>(recvbuf);
+        if (!u_buf)
         {
             break;
         }
-        else
+        
+        if (!parser.cache)
         {
-            auto strBuf = static_cast<char *>(recvbuf);
-            
-            if (!res)
-            {
-                res = new HTTPResponse();
-            }
-            
-            if (res->parseHttpResponseMsg(strBuf))
-            {
-                delete strBuf;
-                break;
-            }
-            
-            delete strBuf;
+            parser.cache = new std::deque<Util::byte>();
+        }
+        
+        for (auto i = 0;i < bytes;++i)
+        {
+            parser.cache->push_back(u_buf[i]);
+        }
+        
+        delete u_buf;
+        u_buf = nullptr;
+        
+        if (parser.is_parse_msg())
+        {
+            res = parser.msg2res();
+            break;
         }
     }
     
