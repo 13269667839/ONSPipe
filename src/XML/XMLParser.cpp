@@ -1,9 +1,10 @@
 #include "XMLParser.hpp"
 #include "../Utility/Util.hpp"
 
-XMLParser::XMLParser(std::string _input,InputType _type,bool _isHTML)
+XMLParser::XMLParser(std::string _input,InputType _type)
 {
-    isHTML = _isHTML;
+    tokenStack = std::stack<XMLTok *>();
+    elementStack = std::stack<XMLDocument *>();
     lex = new XMLLex(_input,_type);
 }
 
@@ -21,56 +22,157 @@ XMLTok * XMLParser::getNextToken()
     return lex?lex->getNextTok():nullptr;
 }
 
-std::string XMLParser::parseTagName(std::string &lexStr)
+XMLDocument * XMLParser::xmlTextToDocument()
 {
-    auto name = std::string();
-    
-    if (!lexStr.empty())
+    while (auto tok = getNextToken())
     {
-        auto i = lexStr.find(" ");
-        if (i != std::string::npos)
+        if (tok->content.empty())
         {
-            auto j = lexStr.find("=",i);
-            if (j != std::string::npos)
-            {
-                if (j > i)
-                {
-                    name = lexStr.substr(0,i);
-                    lexStr = lexStr.substr(i + 1);
-                }
-                else
-                {
-                    Util::throwError("invalid tag declare format");
-                }
-            }
-            else
-            {
-                name = lexStr.substr(0,i);
-                lexStr = lexStr.substr(i + 1);
-            }
+            continue;
         }
-        else
+        
+        switch (tok->type)
         {
-            name = lexStr;
+            case TokType::FileAttribute:
+                tokenStack.push(tok);
+                break;
+            case TokType::TagDeclare:
+                tokenStack.push(tok);
+                parse_tag_declare();
+                break;
+            case TokType::CData:
+                tokenStack.push(tok);
+                parse_cdata();
+                break;
+            case TokType::TagEnd:
+                tokenStack.push(tok);
+                parse_tag_end();
+                break;
+            case TokType::Content:
+                tokenStack.push(tok);
+                parse_content();
+                break;
+            default:
+                break;
         }
     }
     
-    return name;
+    return elementStack.empty()?nullptr:(elementStack.size() == 1?elementStack.top():nullptr);
 }
 
-void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
+void XMLParser::parse_content()
 {
-    if (attrStr.empty() || !root)
+    auto tok = tokenStack.top();
+    
+    auto element = elementStack.top();
+    element->setContent(tok->content);
+    
+    tokenStack.pop();
+    
+    delete tok;
+    tok = nullptr;
+}
+
+void XMLParser::parse_tag_end()
+{
+    auto tok = tokenStack.top();
+    tokenStack.pop();
+    
+    if (elementStack.empty())
+    {
+        Util::throwError("empty element stack");
+    }
+    
+    if (elementStack.top()->tagName != tok->content)
+    {
+        Util::throwError("can not match tag start pattern");
+    }
+    
+    delete tok;
+    tok = nullptr;
+    
+    if (elementStack.size() == 1)
     {
         return;
     }
     
-    int state = 1;
+    auto subElement = elementStack.top();
+    elementStack.pop();
+    
+    elementStack.top()->addChildNode(subElement);
+}
+
+void XMLParser::parse_cdata()
+{
+    auto tok = tokenStack.top();
+    
+    auto element = elementStack.top();
+    element->setContent(tok->content);
+    element->isCData = true;
+    
+    tokenStack.pop();
+    
+    delete tok;
+    tok = nullptr;
+}
+
+void XMLParser::parse_tag_declare()
+{
+    auto tok = tokenStack.top();
+    
+    if (tok->type != TokType::TagDeclare)
+    {
+        Util::throwError("token type error!");
+    }
+    
+    auto name = parse_tag_name(tok->content);
+    if (name.empty())
+    {
+        Util::throwError("empty tag name");
+    }
+    auto element = new XMLDocument(name);
+    elementStack.push(element);
+    
+    if (!tok->content.empty())
+    {
+        parse_tag_attr();
+    }
+    
+    if (tok->isSelfClose)
+    {
+        elementStack.top()->isSelfClose = true;
+        if (elementStack.size() > 1)
+        {
+            auto subElement = elementStack.top();
+            elementStack.pop();
+            elementStack.top()->addChildNode(subElement);
+        }
+    }
+    
+    tokenStack.pop();
+    
+    delete tok;
+    tok = nullptr;
+    
+    if (!tokenStack.empty() &&
+        tokenStack.top()->type == TokType::FileAttribute)
+    {
+        parse_file_attr();
+    }
+}
+
+void XMLParser::parse_tag_attr()
+{
+    auto tok = tokenStack.top();
+    auto attrStr = tok->content;
+    auto root = elementStack.top();
+    
+    auto state = 1;
     auto buf = std::pair<std::string, std::string>();
     for (auto i = 0;i < attrStr.size();++i)
     {
         auto ch = attrStr[i];
-        
+
         if (state == 1)
         {
             if (ch == '=')
@@ -79,7 +181,7 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
                 {
                     Util::throwError("empty attribute key at tag " + root->tagName);
                 }
-                
+
                 state = 2;
             }
             else
@@ -103,10 +205,10 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
             {
                 auto firstCh = *begin(buf.second);
                 auto lastCh = *(end(buf.second) - 1);
-                
+
                 auto isDoubleQuote = firstCh == '\"' && lastCh == '\"';
                 auto isSingleQuote = firstCh == '\'' && lastCh == '\'';
-                
+
                 if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 2);
@@ -127,10 +229,10 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
             else if (i == attrStr.size() - 1)
             {
                 auto firstCh = buf.second[0];
-                
+
                 auto isDoubleQuote = ch == '\"' && firstCh == '\"';
                 auto isSingleQuote = ch == '\'' && firstCh == '\'';
-                
+
                 if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 1);
@@ -162,84 +264,61 @@ void XMLParser::parseTagAttribute(std::string &attrStr,XMLDocument *root)
     }
 }
 
-XMLDocument * XMLParser::parseTagStart(std::string lexStr,bool isSelfClose)
+std::string XMLParser::parse_tag_name(std::string &content)
 {
-    auto name = parseTagName(lexStr);
+    auto name = std::string();
     
-    XMLDocument *root = nullptr;
-    if (!name.empty())
+    if (content.empty())
     {
-        root = new XMLDocument(name);
-        parseTagAttribute(lexStr, root);
-        
-        if (!isSelfClose)
+        return name;
+    }
+    
+    auto i = content.find(" ");
+    if (i != std::string::npos)
+    {
+        auto j = content.find("=",i);
+        if (j != std::string::npos)
         {
-            while (1)
+            if (j > i)
             {
-                auto tok = getNextToken();
-                
-                if (!tok || tok->content.empty())
-                {
-                    break;
-                }
-                
-                if (tok->type == TokType::TagDeclare)
-                {
-                    auto child = parseTagStart(tok->content,tok->isSelfClose);
-                    if (child)
-                    {
-                        root->addChildNode(child);
-                    }
-                }
-                else if (tok->type == TokType::TagEnd)
-                {
-                    if (tok->content != name)
-                    {
-                        if (isHTML)
-                        {
-                            root->isSelfClose = true;
-                        }
-                        else
-                        {
-                            Util::throwError("the end tag must have the same name to begin tag");
-                        }
-                    }
-                    break;
-                }
-                else if (tok->type == TokType::Content || tok->type == TokType::CData)
-                {
-                    root->setContent(tok->content);
-                    if (tok->type == TokType::CData)
-                    {
-                        root->isCData = true;
-                    }
-                }
+                name = content.substr(0,i);
+                content = content.substr(i + 1);
+            }
+            else
+            {
+                Util::throwError("invalid tag declare format");
             }
         }
         else
         {
-            root->isSelfClose = true;
+            name = content.substr(0,i);
+            content = content.substr(i + 1);
         }
     }
-    
-    return root;
-}
-
-std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(std::string &lexStr)
-{
-    auto attr = std::vector<std::pair<std::string, std::string>>();
-    
-    if (lexStr.empty())
+    else
     {
-        return attr;
+        name = content;
+        content.clear();
     }
     
-    int state = 1;
+    return name;
+}
+
+void XMLParser::parse_file_attr()
+{
+    auto tok = tokenStack.top();
+    tokenStack.pop();
+    
+    auto element = elementStack.top();
+    
+    auto lexStr = tok->content;
+    
+    auto state = 1;
     auto buf = std::pair<std::string, std::string>();
     for (auto i = 0;i < lexStr.size();++i)
     {
         auto ch = lexStr[i];
-        
+
         if (state == 1)
         {
             if (ch == '=')
@@ -248,7 +327,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
                 {
                     Util::throwError("empty attribute key at xml file attribute");
                 }
-                
+
                 state = 2;
             }
             else
@@ -273,7 +352,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
                 if (*begin(buf.second) == '\"' && *(end(buf.second) - 1) == '\"')
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 2);
-                    attr.push_back(buf);
+                    element->setFileAttribute({buf.first,buf.second});
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;
@@ -288,7 +367,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
                 if (ch == '\"' && *begin(buf.second) == '\"')
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 1);
-                    attr.push_back(buf);
+                    element->setFileAttribute({buf.first,buf.second});
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;
@@ -315,67 +394,7 @@ std::vector<std::pair<std::string, std::string>> XMLParser::parseFileAttribute(s
         }
     }
     
-    return attr;
+    delete tok;
+    tok = nullptr;
 }
 
-XMLDocument * XMLParser::xmlTextToDocument()
-{
-    XMLDocument *root = nullptr;
-    auto fileAttr = std::vector<std::pair<std::string, std::string>>();
-    
-    while (1)
-    {
-        auto tok = getNextToken();
-        
-        if (!tok || tok->content.empty())
-        {
-            break;
-        }
-
-        if (tok->type == TokType::TagDeclare)
-        {
-            auto node = parseTagStart(tok->content,tok->isSelfClose);
-            if (node)
-            {
-                root = node;
-                
-                if (!fileAttr.empty())
-                {
-                    for (auto pair : fileAttr)
-                    {
-                        root->setFileAttribute(pair);
-                    }
-                }
-            }
-        }
-        else if (tok->type == TokType::TagEnd)
-        {
-            if (root)
-            {
-                if (tok->isSelfClose)
-                {
-                    root->isSelfClose = true;
-                }
-                else
-                {
-                    if (tok->content != root->tagName)
-                    {
-                        Util::throwError("the end tag must have the same name to begin tag");
-                    }
-                }
-            }
-        }
-        else if (tok->type == TokType::FileAttribute)
-        {
-            if (root)
-            {
-                Util::throwError("node initilize before parse xml file attribute");
-            }
-            fileAttr = parseFileAttribute(tok->content);
-        }
-        
-        delete tok;
-    }
-    
-    return root;
-}

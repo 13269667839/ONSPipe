@@ -16,6 +16,15 @@ std::ostream & operator << (std::ostream &os,const XMLTok &tok)
     return os;
 }
 
+std::ostream & operator << (std::ostream &os,const XMLTok *tok)
+{
+    if (tok)
+    {
+        os<<*tok;
+    }
+    return os;
+}
+
 std::string XMLTok::type2Str() const
 {
     auto str = std::string();

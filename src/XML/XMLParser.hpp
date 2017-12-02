@@ -3,24 +3,33 @@
 
 #include "XMLLexer.hpp"
 #include "XMLDocument.hpp"
+#include <stack>
 
 class XMLParser
 {
 public:
-    XMLParser(std::string _input,InputType _type,bool _isHTML = false);
+    XMLParser(std::string _input,InputType _type);
     ~XMLParser();
     
-    XMLDocument *xmlTextToDocument();
+    XMLDocument * xmlTextToDocument();
 private:
-    bool isHTML;
+    std::stack<XMLTok *> tokenStack;
+    std::stack<XMLDocument *> elementStack;
     XMLLex *lex;
-    
+private:
     XMLTok * getNextToken();
     
-    XMLDocument * parseTagStart(std::string lexStr,bool isSelfClose);
-    std::string parseTagName(std::string &lexStr);
-    void parseTagAttribute(std::string &attrStr,XMLDocument *root);
-    std::vector<std::pair<std::string, std::string>> parseFileAttribute(std::string &lexStr);
+    void parse_file_attr();
+    
+    void parse_tag_declare();
+    std::string parse_tag_name(std::string &content);
+    void parse_tag_attr();
+    
+    void parse_cdata();
+    
+    void parse_content();
+    
+    void parse_tag_end();
 };
 
 #endif

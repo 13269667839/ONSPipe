@@ -34,6 +34,7 @@ public:
     XMLTok(std::string _content,TokType _type);
     
     friend std::ostream & operator << (std::ostream &os,const XMLTok &tok);
+    friend std::ostream & operator << (std::ostream &os,const XMLTok *tok);
 private:
     std::string type2Str() const;
 };
