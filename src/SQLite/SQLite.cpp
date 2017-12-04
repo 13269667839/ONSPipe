@@ -44,7 +44,7 @@ static int sql_callback(void *arg,int count,char **columns,char **rows)
         return 0;
     }
     
-    auto eachRow = std::map<std::wstring,std::wstring>();
+    auto eachRow = std::map<std::string,std::string>();
     for (int i = 0;i < count;++i)
     {
         auto row = rows[i];
@@ -55,8 +55,8 @@ static int sql_callback(void *arg,int count,char **columns,char **rows)
         
         auto column = columns[i];
         
-        auto key = Util::s2ws(row);
-        auto value = column?Util::s2ws(column):L"";
+        auto key = row;
+        auto value = column?column:"";
         eachRow[key] = value;
     }
     
@@ -79,9 +79,9 @@ void SQLite::execSQL(std::string sql,SQLiteCallback _callback)
     }
 }
 
-std::vector<std::wstring> SQLite::allTablesName()
+std::vector<std::string> SQLite::allTablesName()
 {
-    auto names = std::vector<std::wstring>();
+    auto names = std::vector<std::string>();
     if (db)
     {
         execSQL("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", [&names](const ResultSet set,char *err)
@@ -90,7 +90,7 @@ std::vector<std::wstring> SQLite::allTablesName()
             {
                 for (auto row : set)
                 {
-                    auto name = row[L"name"];
+                    auto name = row["name"];
                     if (!name.empty())
                     {
                         names.push_back(name);

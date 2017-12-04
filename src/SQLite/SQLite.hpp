@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 
-using ResultSet = std::vector<std::map<std::wstring,std::wstring>>;
+using ResultSet = std::vector<std::map<std::string,std::string>>;
 using SQLiteCallback = std::function<void(const ResultSet set,char *errMsg)>;
 
 class SQLite
@@ -15,8 +15,9 @@ class SQLite
 public:
     SQLite(std::string _path);
     ~SQLite();
+public:
     void execSQL(std::string sql,SQLiteCallback _callback);
-    std::vector<std::wstring> allTablesName();
+    std::vector<std::string> allTablesName();
 private:
     sqlite3 *db;
     
