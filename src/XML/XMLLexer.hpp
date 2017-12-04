@@ -1,9 +1,9 @@
 #ifndef XMLLexer_hpp
 #define XMLLexer_hpp
 
-#include <string>
 #include <ostream>
 #include <fstream>
+#include "../Utility/Util.hpp"
 
 enum class TokType : int
 {
@@ -16,12 +16,6 @@ enum class TokType : int
     Content,
     DocType,
     CData
-};
-    
-enum class InputType : int
-{
-    File = 0,
-    Text
 };
     
 struct XMLTok
@@ -56,18 +50,19 @@ private:
     TokType state;
     
     TokType lastTokType;
+    std::string localCache;
 private:
     int16_t getNextChar();
     
-    void initState(int16_t ch,std::string &localCache);
-    void tagStartState(int16_t ch,std::string &localCache);
-    XMLTok * commentState(int16_t ch,std::string &localCache);
-    XMLTok * fileAttributeState(int16_t ch,std::string &localCache);
-    XMLTok * tagEndState(int16_t ch,std::string &localCache);
-    XMLTok * tagDeclareState(int16_t ch,std::string &localCache);
-    XMLTok * contentState(int16_t ch,std::string &localCache);
-    XMLTok * docTypeState(int16_t ch,std::string &localCache);
-    XMLTok * CDataState(int16_t ch,std::string &localCache);
+    void initState(int16_t ch);
+    void tagStartState(int16_t ch);
+    XMLTok * commentState(int16_t ch);
+    XMLTok * fileAttributeState(int16_t ch);
+    XMLTok * tagEndState(int16_t ch);
+    XMLTok * tagDeclareState(int16_t ch);
+    XMLTok * contentState(int16_t ch);
+    XMLTok * docTypeState(int16_t ch);
+    XMLTok * CDataState(int16_t ch);
 };
 
 #endif

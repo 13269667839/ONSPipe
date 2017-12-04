@@ -2,77 +2,10 @@
 
 std::ostream & operator << (std::ostream &os,XMLDocument *document)
 {
-    if (!document)
+    if (document)
     {
-        return os;
+        os<<document->prettyPrint();
     }
-    
-    if (document->fileAttribute && !document->fileAttribute->empty())
-    {
-        os<<"<?xml";
-        
-        for (auto pair : *document->fileAttribute)
-        {
-            os<<" "<<pair.first<<"="<<"\""<<pair.second<<"\"";
-        }
-        
-        os<<"?>"<<std::endl;
-    }
-    
-    if (document->tagName.empty())
-    {
-        return os;
-    }
-    
-    os<<"<" + document->tagName;
-    
-    if (document->attribute && !document->attribute->empty())
-    {
-        for (auto pair : *document->attribute)
-        {
-            os<<" "<<pair.first<<"="<<"\""<<pair.second<<"\"";
-        }
-    }
-    
-    if (document->isSelfClose)
-    {
-        os<<"/>"<<std::endl;
-        return os;
-    }
-    else
-    {
-        os<<">";
-    }
-    
-    os<<std::endl;
-    
-    if (document->children && !document->children->empty())
-    {
-        for (auto child : *document->children)
-        {
-            os<<child;
-        }
-    }
-    else
-    {
-        if (document->content && !document->content->empty())
-        {
-            if (document->isCData)
-            {
-                os<<"<![CDATA["<<*document->content<<"]]>"<<std::endl;
-            }
-            else
-            {
-                os<<*document->content<<std::endl;
-            }
-        }
-    }
-    
-    if (!document->isSelfClose)
-    {
-        os<<"</" + document->tagName + ">"<<std::endl;
-    }
-    
     return os;
 }
 
@@ -181,4 +114,95 @@ XMLDocument::~XMLDocument()
         delete children;
         children = nullptr;
     }
+}
+
+#pragma mark -- pretty print
+std::string XMLDocument::prettyPrint()
+{
+    auto out = std::string();
+    
+    out += fileAttrPrint();
+    
+    int count = 0;
+    out += nodePrint(count);
+    
+    return out;
+}
+
+std::string XMLDocument::tabPrint(int len)
+{
+    auto res = std::string();
+    
+    if (len > 0) 
+    {
+        const auto space = std::string("\t");
+        for (auto i = 0;i < len;++i)
+        {
+            res += space;
+        }
+    }
+    
+    return res;
+}
+
+std::string XMLDocument::nodePrint(int &tabCount)
+{
+    auto out = std::string();
+    
+    out += tabPrint(tabCount);
+    
+    out += "<" + tagName;
+    
+    if (attribute && !attribute->empty())
+    {
+        for (auto ite = attribute->rbegin();ite != attribute->rend();++ite)
+        {
+            out += " " + ite->first + "=" + "\"" + ite->second + "\"";
+        }
+    }
+    
+    if (isSelfClose)
+    {
+        out += "/>\n";
+        return out;
+    }
+    
+    out += ">\n";
+    
+    if (content)
+    {
+        out += tabPrint(tabCount + 1) + *content + "\n";
+    }
+    else if (children && !children->empty())
+    {
+        tabCount++;
+        for (auto element : *children)
+        {
+            out += element->nodePrint(tabCount);
+        }
+        tabCount--;
+    }
+    
+    out += tabPrint(tabCount) + "</" + tagName + ">\n";
+    
+    return out;
+}
+
+std::string XMLDocument::fileAttrPrint()
+{
+    auto out = std::string();
+    
+    if (fileAttribute && !fileAttribute->empty())
+    {
+        out += "<?xml";
+        
+        for (auto ite = fileAttribute->rbegin();ite != fileAttribute->rend();++ite)
+        {
+            out += " " + ite->first + "=" + "\"" + ite->second + "\"";
+        }
+        
+        out += "?>\n";
+    }
+    
+    return out;
 }

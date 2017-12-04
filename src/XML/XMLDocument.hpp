@@ -23,6 +23,12 @@ public:
     void setFileAttribute(std::pair<std::string,std::string> pair);
     void setContent(std::string _content);
     void addChildNode(XMLDocument *obj);
+    
+    std::string prettyPrint();
+private:
+    std::string fileAttrPrint();
+    std::string nodePrint(int &tabCount);
+    std::string tabPrint(int len);
 };
 
 std::ostream & operator << (std::ostream &os,XMLDocument *document);

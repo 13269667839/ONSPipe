@@ -1,6 +1,5 @@
 #include "XMLLexer.hpp"
 #include <cctype>
-#include "../Utility/Util.hpp"
 
 #pragma mark -- XMLTok
 XMLTok::XMLTok(std::string _content,TokType _type)
@@ -12,7 +11,8 @@ XMLTok::XMLTok(std::string _content,TokType _type)
 
 std::ostream & operator << (std::ostream &os,const XMLTok &tok)
 {
-    os<<tok.content<<"        "<<tok.type2Str();
+    os<<"type    : "<<tok.type2Str()<<std::endl;
+    os<<"content : "<<tok.content;
     return os;
 }
 
@@ -75,6 +75,7 @@ XMLLex::XMLLex(std::string _input,InputType _type)
     idx = nullptr;
     state = TokType::Init;
     lastTokType = TokType::Init;
+    localCache = std::string();
     
     if (type == InputType::File)
     {
@@ -139,7 +140,7 @@ int16_t XMLLex::getNextChar()
 XMLTok * XMLLex::getNextTok()
 {
     XMLTok *tok = nullptr;
-    auto localCache = std::string();
+    localCache.clear();
     auto ch = EOF;
     
     while ((ch = getNextChar()) != EOF)
@@ -147,31 +148,31 @@ XMLTok * XMLLex::getNextTok()
         switch (state)
         {
             case TokType::Init:
-                initState(ch,localCache);
+                initState(ch);
                 break;
             case TokType::TagStart:
-                tagStartState(ch,localCache);
+                tagStartState(ch);
                 break;
             case TokType::Comment:
-                tok = commentState(ch, localCache);
+                tok = commentState(ch);
                 break;
             case TokType::FileAttribute:
-                tok = fileAttributeState(ch, localCache);
+                tok = fileAttributeState(ch);
                 break;
             case TokType::TagDeclare:
-                tok = tagDeclareState(ch, localCache);
+                tok = tagDeclareState(ch);
                 break;
             case TokType::TagEnd:
-                tok = tagEndState(ch, localCache);
+                tok = tagEndState(ch);
                 break;
             case TokType::Content:
-                tok = contentState(ch, localCache);
+                tok = contentState(ch);
                 break;
             case TokType::DocType:
-                tok = docTypeState(ch, localCache);
+                tok = docTypeState(ch);
                 break;
             case TokType::CData:
-                tok = CDataState(ch, localCache);
+                tok = CDataState(ch);
                 break;
             default:
                 break;
@@ -187,7 +188,7 @@ XMLTok * XMLLex::getNextTok()
     return tok;
 }
 
-XMLTok * XMLLex::docTypeState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::docTypeState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -204,7 +205,7 @@ XMLTok * XMLLex::docTypeState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-void XMLLex::initState(int16_t ch,std::string &localCache)
+void XMLLex::initState(int16_t ch)
 {
     if (ch == '<')
     {
@@ -221,7 +222,7 @@ void XMLLex::initState(int16_t ch,std::string &localCache)
     }
 }
 
-void XMLLex::tagStartState(int16_t ch,std::string &localCache)
+void XMLLex::tagStartState(int16_t ch)
 {
     if (ch == '!' && localCache.empty())
     {
@@ -285,7 +286,7 @@ void XMLLex::tagStartState(int16_t ch,std::string &localCache)
     }
 }
 
-XMLTok * XMLLex::CDataState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::CDataState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -306,7 +307,7 @@ XMLTok * XMLLex::CDataState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-XMLTok * XMLLex::commentState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::commentState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -342,7 +343,7 @@ XMLTok * XMLLex::commentState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-XMLTok * XMLLex::fileAttributeState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::fileAttributeState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -365,7 +366,7 @@ XMLTok * XMLLex::fileAttributeState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-XMLTok * XMLLex::tagDeclareState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::tagDeclareState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -404,7 +405,7 @@ XMLTok * XMLLex::tagDeclareState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-XMLTok * XMLLex::tagEndState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::tagEndState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
@@ -421,12 +422,13 @@ XMLTok * XMLLex::tagEndState(int16_t ch,std::string &localCache)
     return tok;
 }
 
-XMLTok * XMLLex::contentState(int16_t ch,std::string &localCache)
+XMLTok * XMLLex::contentState(int16_t ch)
 {
     XMLTok *tok = nullptr;
     
     if (ch == '<')
     {
+        Util::trimRight(localCache, ' ');
         tok = new XMLTok(localCache,TokType::Content);
         state = TokType::TagStart;
     }

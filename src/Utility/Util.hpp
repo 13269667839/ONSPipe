@@ -13,11 +13,31 @@ enum class HTTPMessageParseState : int
     Header,
     Body
 };
+    
+enum class InputType : int
+{
+    File = 0,
+    Text
+};
 
 class Util
 {
 public:
     using byte = unsigned char;
+    
+    template <typename charType>
+    static void trimRight(std::basic_string<charType> &src,const charType ch)
+    {
+        auto rite = src.rbegin();
+        while (rite != src.rend())
+        {
+            if (*rite != ch)
+            {
+                break;
+            }
+            rite = decltype(rite)(src.erase((++rite).base()));
+        }
+    }
     
     template <typename strType>
     static std::vector<strType> split(strType src, strType token)
