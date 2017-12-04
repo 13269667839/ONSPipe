@@ -1,14 +1,5 @@
 #include "XMLDocument.hpp"
 
-std::ostream & operator << (std::ostream &os,XMLDocument *document)
-{
-    if (document)
-    {
-        os<<document->prettyPrint();
-    }
-    return os;
-}
-
 void XMLDocument::addChildNode(XMLDocument *obj)
 {
     if (content)
@@ -117,6 +108,21 @@ XMLDocument::~XMLDocument()
 }
 
 #pragma mark -- pretty print
+std::ostream & operator << (std::ostream &os,XMLDocument &document)
+{
+    os<<document.prettyPrint();
+    return os;
+}
+
+std::ostream & operator << (std::ostream &os,XMLDocument *document)
+{
+    if (document)
+    {
+        os<<document;
+    }
+    return os;
+}
+
 std::string XMLDocument::prettyPrint()
 {
     auto out = std::string();
@@ -171,7 +177,21 @@ std::string XMLDocument::nodePrint(int &tabCount)
     
     if (content)
     {
-        out += tabPrint(tabCount + 1) + *content + "\n";
+        out += tabPrint(tabCount + 1);
+        
+        if (isCData)
+        {
+            out += "<![CDATA[";
+        }
+        
+        out += *content;
+        
+        if (isCData)
+        {
+            out += "]]>";
+        }
+        
+        out += "\n";
     }
     else if (children && !children->empty())
     {

@@ -33,5 +33,6 @@ private:
 
 std::ostream & operator << (std::ostream &os,XMLDocument *document);
 
+std::ostream & operator << (std::ostream &os,XMLDocument &document);
 
 #endif
