@@ -134,6 +134,9 @@ public:
     static std::wstring s2ws(const std::string &s);
     
     static unsigned long u_strlen(const char *utf8_str);
+    
+    static char * base64_encoding(const char *buffer, int length, bool newLine);
+    static byte * sha1_encode(byte *src,size_t len);
 };
 
 #endif

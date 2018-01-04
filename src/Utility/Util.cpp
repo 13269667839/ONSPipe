@@ -6,6 +6,12 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <openssl/buffer.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <openssl/des.h>
+
 std::vector<std::string> Util::split(std::string src, std::vector<std::string> tokens)
 {
     std::vector<std::string> arr;
@@ -239,4 +245,46 @@ unsigned long Util::u_strlen(const char *utf8_str)
     }
     
     return len;
+}
+
+char * Util::base64_encoding(const char *buffer, int length, bool newLine)
+{
+    BIO *bmem = nullptr;
+    BIO *b64 = nullptr;
+    BUF_MEM *bptr = nullptr;
+    
+    b64 = BIO_new(BIO_f_base64());
+    if (!newLine) 
+    {
+        BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    }
+    bmem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, bmem);
+    BIO_write(b64, buffer, length);
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bptr);
+    BIO_set_close(b64, BIO_NOCLOSE);
+    
+    char *buff = (char *)malloc(bptr->length + 1);
+    memcpy(buff, bptr->data, bptr->length);
+    buff[bptr->length] = 0;
+    BIO_free_all(b64);
+    
+    return buff;
+}
+
+Util::byte * Util::sha1_encode(Util::byte *src,size_t len)
+{
+    SHA_CTX c;
+    Util::byte *dest = (Util::byte *)malloc((SHA_DIGEST_LENGTH + 1) * sizeof(Util::byte));
+    memset(dest, 0, SHA_DIGEST_LENGTH + 1);
+    if(!SHA1_Init(&c))
+    {
+        free(dest);
+        return nullptr;
+    }
+    SHA1_Update(&c, src, len);
+    SHA1_Final(dest,&c);
+    OPENSSL_cleanse(&c,sizeof(c));
+    return dest;
 }
