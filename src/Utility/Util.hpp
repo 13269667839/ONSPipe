@@ -8,8 +8,7 @@
 #pragma mark -- HTTP request and response state
 enum class HTTPMessageParseState : int
 {
-    Init = 0,
-    Line,
+    Line = 0,
     Header,
     Body
 };

@@ -19,13 +19,9 @@ HTTPRequest::~HTTPRequest()
 
 void HTTPRequest::initParameter()
 {
-    parseState = HTTPMessageParseState::Init;
-    recvHTTPReqMsgBuf = std::string();
-    content_length = -1;
-    
-    HTTPMethod = "GET";
+    method = "GET";
     path = "/";
-    httpVersion = "HTTP/1.1";
+    version = "HTTP/1.1";
     
     if (header)
     {
@@ -36,7 +32,7 @@ void HTTPRequest::initParameter()
         header = nullptr;
     }
     
-    query = std::string();
+    requestBody = std::string();
 }
 
 void HTTPRequest::addRequestHeader(std::pair<std::string,std::string> pair)
@@ -54,27 +50,18 @@ void HTTPRequest::addRequestHeader(std::pair<std::string,std::string> pair)
 
 std::string HTTPRequest::toRequestMessage()
 {
-    return requestLine() + "\r\n" + requestHeader() + "\r\n\r\n" + query;
-}
-
-std::string HTTPRequest::requestLine()
-{
-    if (HTTPMethod.empty() || httpVersion.empty() || path.empty())
+    if (method.empty() || version.empty() || path.empty())
     {
         Util::throwError("invalid http request line format");
     }
+    auto requestLine = method + " " + path + " " + version;
     
-    return HTTPMethod + " " + path + " " + httpVersion;
-}
-
-std::string HTTPRequest::requestHeader()
-{
+    
     if (!header || header->empty())
     {
         Util::throwError("invalid http request header format");
         return "";
     }
-    
     auto arr = std::vector<std::string>();
     for (auto pair : *header)
     {
@@ -84,8 +71,7 @@ std::string HTTPRequest::requestHeader()
         }
     }
     
-    return Util::join(arr, std::string("\r\n"));
-
+    return requestLine + "\r\n" + Util::join(arr, std::string("\r\n")) + "\r\n\r\n" + requestBody;
 }
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res)
@@ -98,113 +84,4 @@ std::ostream & operator << (std::ostream &os,HTTPRequest& res)
 {
     os<<res.toRequestMessage();
     return os;
-}
-
-bool HTTPRequest::parseRequestMessage(std::string reqMsg)
-{
-    bool res = false;
-    
-    if (reqMsg.empty())
-    {
-        res = true;
-    }
-    else
-    {
-        recvHTTPReqMsgBuf += reqMsg;
-        
-        if (parseState == HTTPMessageParseState::Init)
-        {
-            auto idx = recvHTTPReqMsgBuf.find("\r\n");
-            if (idx != std::string::npos)
-            {
-                parseState = HTTPMessageParseState::Line;
-                goto ParseLine;
-            }
-        }
-        else if (parseState == HTTPMessageParseState::Line)
-        {
-        ParseLine:
-            auto idx = recvHTTPReqMsgBuf.find("\r\n");
-            if (idx != std::string::npos)
-            {
-                auto line = recvHTTPReqMsgBuf.substr(0,idx);
-                
-                auto arr = Util::split(line, std::string(" "));
-                if (arr.size() == 3)
-                {
-                    HTTPMethod = arr[0];
-                    path = arr[1];
-                    httpVersion = arr[2];
-                }
-                else
-                {
-                    Util::throwError("invalid http request line format");
-                }
-                
-                recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 2);
-                parseState = HTTPMessageParseState::Header;
-                
-                if (recvHTTPReqMsgBuf.find("\r\n\r\n") != std::string::npos)
-                {
-                    goto ParseHeader;
-                }
-            }
-        }
-        else if (parseState == HTTPMessageParseState::Header)
-        {
-        ParseHeader:
-            auto idx = recvHTTPReqMsgBuf.find("\r\n\r\n");
-            if (idx != std::string::npos)
-            {
-                auto head = recvHTTPReqMsgBuf.substr(0,idx);
-                
-                auto arr = Util::split(head, std::string("\r\n"));
-                if (!arr.empty())
-                {
-                    for (auto item : arr)
-                    {
-                        auto pair = Util::split(item, std::string(": "));
-                        if (pair.size() == 2)
-                        {
-                            addRequestHeader({Util::toLowerStr(pair[0]),pair[1]});
-                        }
-                    }
-                    
-                    auto ite = header->find("content-length");
-                    if (ite != end(*header))
-                    {
-                        content_length = std::atol(ite->second.c_str());
-                    }
-                }
-                else
-                {
-                    Util::throwError("invalid http request header format");
-                }
-                
-                recvHTTPReqMsgBuf = recvHTTPReqMsgBuf.substr(idx + 4);
-                parseState = HTTPMessageParseState::Body;
-                
-                if (!recvHTTPReqMsgBuf.empty() && content_length > 0)
-                {
-                    goto ParseBody;
-                }
-                else
-                {
-                    res = true;
-                }
-            }
-        }
-        else if (parseState == HTTPMessageParseState::Body)
-        {
-        ParseBody:
-            query += recvHTTPReqMsgBuf;
-            recvHTTPReqMsgBuf.clear();
-            if (content_length != -1 && query.size() >= content_length)
-            {
-                res = true;
-            }
-        }
-    }
-    
-    return res;
 }

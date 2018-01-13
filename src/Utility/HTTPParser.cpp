@@ -306,3 +306,232 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
     
     return res;
 }
+
+#pragma mark -- HTTPReqMsgParser
+HTTPReqMsgParser::HTTPReqMsgParser()
+{
+    cache = nullptr;
+    
+    state = HTTPMessageParseState::Line;
+    content_length = -1;
+    
+    version = std::string();
+    path = std::string();
+    method = std::string();
+    
+    header = std::map<std::string,std::string>();
+}
+
+void HTTPReqMsgParser::initParams()
+{
+    version.clear();
+    path.clear();
+    method.clear();
+    
+    header.clear();
+    
+    if (cache)
+    {
+        cache->clear();
+    }
+}
+
+HTTPReqMsgParser::~HTTPReqMsgParser()
+{
+    if (cache)
+    {
+        cache->clear();
+        delete cache;
+        cache = nullptr;
+    }
+}
+
+void HTTPReqMsgParser::msg2req(HTTPRequest &req)
+{
+    req.method = method;
+    req.path = path;
+    req.version = version;
+    
+    for (auto kv : header)
+    {
+        req.addRequestHeader(kv);
+    }
+    
+    req.requestBody = std::string(cache->begin(),cache->end());
+}
+
+bool HTTPReqMsgParser::parse_line()
+{
+    auto idx = -1;
+    auto i = 0;
+    for (;i < cache->size() - 1;++i)
+    {
+        if (cache->at(i)     == Util::byte('\r') &&
+            cache->at(i + 1) == Util::byte('\n'))
+        {
+            idx = i;
+            break;
+        }
+    }
+    
+    if (idx == -1)
+    {
+        return false;
+    }
+    
+    auto space_count = 0;
+    i = 0;
+    for (;i < idx;++i)
+    {
+        auto ch = cache->at(0);
+        cache->pop_front();
+
+        if (isspace(ch) && space_count < 2)
+        {
+            space_count++;
+            continue;
+        }
+
+        if (space_count == 0)
+        {
+            method += ch;
+        }
+        else if (space_count == 1)
+        {
+            path += ch;
+        }
+        else if (space_count == 2)
+        {
+            version += ch;
+        }
+    }
+
+    //pop \r\n
+    cache->pop_front();
+    cache->pop_front();
+    
+    return true;
+}
+
+bool HTTPReqMsgParser::parse_header()
+{
+    auto idx = -1;
+    auto i = 0;
+    for (;i <= cache->size() - 4;++i)
+    {
+        if (cache->at(i)     == Util::byte('\r') &&
+            cache->at(i + 1) == Util::byte('\n') &&
+            cache->at(i + 2) == Util::byte('\r') &&
+            cache->at(i + 3) == Util::byte('\n'))
+        {
+            idx = i;
+            break;
+        }
+    }
+    
+    if (idx == -1)
+    {
+        return false;
+    }
+    
+    i = 0;
+    auto key = std::string();
+    auto value = std::string();
+    auto flag = 0;
+
+    for (;i < idx;++i)
+    {
+        auto ch = cache->at(0);
+        cache->pop_front();
+
+        if (ch           == Util::byte('\r') &&
+            cache->at(0) == Util::byte('\n'))
+        {
+            header[key] = value;
+
+            key.clear();
+            value.clear();
+
+            flag = 0;
+
+            i++;
+            cache->pop_front();
+            continue;
+        }
+
+        if (flag == 0)
+        {
+            if (ch           == Util::byte(':') &&
+                cache->at(0) == Util::byte(' '))
+            {
+                flag = 1;
+                i++;
+                cache->pop_front();
+            }
+            else
+            {
+                key += ch;
+            }
+        }
+        else if (flag == 1)
+        {
+            value += ch;
+        }
+    }
+
+    //pop \r\n\r\n
+    cache->pop_front();
+    cache->pop_front();
+    cache->pop_front();
+    cache->pop_front();
+    
+    content_length = atol(header["Content-Length"].c_str());
+    
+    return true;
+}
+
+bool HTTPReqMsgParser::is_parse_msg()
+{
+    auto res = false;
+    
+    if (!cache || cache->empty())
+    {
+        return true;
+    }
+    
+    switch (state)
+    {
+        case HTTPMessageParseState::Line:
+        {
+            if (parse_line())
+            {
+                state = HTTPMessageParseState::Header;
+                if (!cache->empty())
+                {
+                    goto Header;
+                }
+            }
+        }
+        break;
+        case HTTPMessageParseState::Header:
+        {
+        Header:
+            if (parse_header())
+            {
+                state = HTTPMessageParseState::Body;
+                goto Body;
+            }
+        }
+        break;
+        case HTTPMessageParseState::Body:
+        {
+        Body:
+            res = cache->size() >= content_length;
+        }
+        break;
+        default:
+            break;
+    }
+    
+    return res;
+}

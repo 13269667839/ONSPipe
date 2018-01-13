@@ -1,4 +1,5 @@
 #include "HTTPServer.hpp"
+#include "../Utility/HTTPParser.hpp"
 
 HTTPServer::HTTPServer(int port)
 {
@@ -80,6 +81,7 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
     
     auto request = HTTPRequest();
     auto response = HTTPResponse();
+    auto parser = HTTPReqMsgParser();
     
     while (true)
     {
@@ -121,6 +123,7 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
                 if (event.filter == EVFILT_READ)//read event
                 {
                     request.initParameter();
+                    parser.initParams();
                     
                     while (true)
                     {
@@ -141,17 +144,29 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
                             break;
                         }
                         
-                        auto strBuf = static_cast<char *>(recvBuf);
+                        auto strBuf = static_cast<Util::byte *>(recvBuf);
                         
                         if (!strBuf)
                         {
                             break;
                         }
                         
-                        auto finish = request.parseRequestMessage(strBuf);
-                        delete strBuf;
-                        if (finish)
+                        if (!parser.cache)
                         {
+                            parser.cache = new std::deque<Util::byte>();
+                        }
+                        
+                        for (int i = 0;i < bytes;++i)
+                        {
+                            parser.cache->push_back(strBuf[i]);
+                        }
+                        
+                        delete strBuf;
+                        strBuf = nullptr;
+                        
+                        if (parser.is_parse_msg())
+                        {
+                            parser.msg2req(request);
                             break;
                         }
                     }
@@ -185,6 +200,7 @@ void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
     
     auto request = HTTPRequest();
     auto response = HTTPResponse();
+    auto parser = HTTPReqMsgParser();
     
     while (true)
     {
@@ -216,6 +232,7 @@ void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
             else
             {
                 request.initParameter();
+                parser.initParams();
                 while (true)
                 {
                     void *recvBuf = nullptr;
@@ -232,17 +249,29 @@ void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
                         break;
                     }
 
-                    auto strBuf = static_cast<char *>(recvBuf);
+                    auto strBuf = static_cast<Util::byte *>(recvBuf);
 
                     if (!strBuf)
                     {
                         break;
                     }
 
-                    auto finish = request.parseRequestMessage(strBuf);
-                    delete strBuf;
-                    if (finish)
+                    if (!parser.cache)
                     {
+                        parser.cache = new std::deque<Util::byte>();
+                    }
+                    
+                    for (int i = 0;i < bytes;++i)
+                    {
+                        parser.cache->push_back(strBuf[i]);
+                    }
+                    
+                    delete strBuf;
+                    strBuf = nullptr;
+                    
+                    if (parser.is_parse_msg())
+                    {
+                        parser.msg2req(request);
                         break;
                     }
                 }

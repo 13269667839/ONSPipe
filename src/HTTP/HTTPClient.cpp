@@ -171,7 +171,7 @@ void HTTPClient::setHttpRequest()
     }
     
     //=== line ===
-    httpRequest->HTTPMethod = method == HTTPMethod::GET?"GET":"POST";
+    httpRequest->method = method == HTTPMethod::GET?"GET":"POST";
     
     httpRequest->path = url->path;
     if (!url->query.empty())
@@ -179,7 +179,7 @@ void HTTPClient::setHttpRequest()
         httpRequest->path += "?" + url->query;
     }
     
-    httpRequest->httpVersion = "HTTP/1.1";
+    httpRequest->version = "HTTP/1.1";
     
     //=== header ===
     if (url->host.empty())

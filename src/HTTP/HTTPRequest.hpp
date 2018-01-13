@@ -16,29 +16,18 @@ public:
     
     std::string toRequestMessage();
     void addRequestHeader(std::pair<std::string,std::string> pair);
-    
-    bool parseRequestMessage(std::string reqMsg);
-    
-    friend std::ostream & operator << (std::ostream &os,HTTPRequest *res);
-    friend std::ostream & operator << (std::ostream &os,HTTPRequest& res);
 public:
-    // === line ===
-    std::string HTTPMethod;
+    std::string method;
     std::string path;
-    std::string httpVersion;
+    std::string version;
     
-    // === head ===
     std::map<std::string,std::string> *header;
     
-    // === body ===
-    std::string query;
-private:
-    std::string requestLine();
-    std::string requestHeader();
-    
-    HTTPMessageParseState parseState;
-    std::string recvHTTPReqMsgBuf;
-    long content_length;
+    std::string requestBody;
 };
+
+std::ostream & operator << (std::ostream &os,HTTPRequest *res);
+
+std::ostream & operator << (std::ostream &os,HTTPRequest& res);
 
 #endif
