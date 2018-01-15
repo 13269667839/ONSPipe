@@ -1,6 +1,17 @@
 #include "HTTPServer.hpp"
 #include "../Utility/HTTPParser.hpp"
 
+#ifdef Kqueue
+    #define MAX_EVENT_COUNT 64
+
+    #include <sys/event.h>
+    #include <iostream>
+#elif defined(Select)
+    #include <sys/select.h>
+#elif defined(Epoll)
+    #include <sys/epoll.h>
+#endif
+
 HTTPServer::HTTPServer(int port)
 {
     this->port = port;
@@ -53,9 +64,12 @@ void HTTPServer::mainLoop(const RunAndLoopCallback &callback)
     kqueueLoop(callback);
 #elif defined(Select)
     selectLoop(callback);
+#elif defined(Epoll)
+    epollLoop(callback);
 #endif
 }
 
+#pragma mark -- Kqueue
 #ifdef Kqueue
 void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
 {
@@ -184,6 +198,7 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
 }
 #endif
 
+#pragma mark -- Select
 #ifdef Select
 void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
 {
@@ -282,5 +297,13 @@ void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
             }
         }
     }
+}
+#endif
+
+#pragma mark -- Epoll
+#ifdef Epoll
+void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
+{
+    
 }
 #endif

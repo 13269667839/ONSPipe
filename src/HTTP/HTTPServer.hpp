@@ -7,16 +7,10 @@
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #define Kqueue
-    #define MAX_EVENT_COUNT 64
-
-    #include <sys/event.h>
-    #include <iostream>
 #elif defined(__linux__)
     #define Epoll
 #else
     #define Select
-
-    #include <sys/select.h>
 #endif
 
 using RunAndLoopCallback = std::function<void (const HTTPRequest &request,HTTPResponse &response)>;
@@ -39,6 +33,8 @@ private:
     void kqueueLoop(const RunAndLoopCallback &callback);
 #elif defined(Select)
     void selectLoop(const RunAndLoopCallback &callback);
+#elif defined(Epoll)
+    void epollLoop(const RunAndLoopCallback &callback);
 #endif
 };
 
