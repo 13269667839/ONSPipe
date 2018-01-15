@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <cstring>
 
 #include <openssl/buffer.h>
 #include <openssl/bio.h>

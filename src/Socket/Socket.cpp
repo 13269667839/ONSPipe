@@ -4,6 +4,7 @@
 #include <sys/errno.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <cstring>
 #include "../Utility/Util.hpp"
 
 Socket::Socket(std::string addr,int port,SocketType _type)
