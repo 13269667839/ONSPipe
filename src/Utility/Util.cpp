@@ -99,7 +99,7 @@ std::vector<char> Util::readFileSync(std::string filePath)
 {
     std::vector<char> chars;
 
-    auto file = std::ifstream(filePath, std::ios::binary);
+    std::ifstream file(filePath, std::ios::binary);
     if (file.is_open())
     {
         chars = std::vector<char>(file.seekg(0, std::ios::end).tellg(), 0);
