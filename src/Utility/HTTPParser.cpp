@@ -1,4 +1,5 @@
 #include "HTTPParser.hpp"
+#include <cctype>
 
 #pragma mark -- HTTPRecvMsgParser
 HTTPRecvMsgParser::~HTTPRecvMsgParser()
@@ -113,7 +114,7 @@ bool HTTPRecvMsgParser::parse_body()
                     auto hexStr = std::string(cache->begin(),cache->begin() + i);
                     for (auto ch : hexStr)
                     {
-                        if (!ishexnumber(ch))
+                        if (!isxdigit(ch))
                         {
                             isHex = false;
                         }
