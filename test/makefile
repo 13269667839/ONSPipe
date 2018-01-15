@@ -1,5 +1,11 @@
+cc = g++
+socket = ../src/Socket/*.cpp
+http = ../src/HTTP/*.cpp
+utility = ../src/Utility/*.cpp
+openssl_a = ../src/ThirdParty/openssl
+
 build-server:
-	g++ test.cpp ../src/Socket/*.cpp ../src/HTTP/*.cpp ../src/Utility/*.cpp ../src/ThirdParty/openssl/*.a -I../src/ThirdParty/openssl/include -std=c++11
+	$(cc) test.cpp $(socket) $(http) $(utility) $(openssl_a)/*.a -L $(openssl_a) -I../src/ThirdParty/openssl/include -lpthread -O3 -std=c++11
 
 clean:
 	rm *.out
