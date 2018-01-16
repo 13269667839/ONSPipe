@@ -304,6 +304,115 @@ void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
 #ifdef Epoll
 void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
 {
-    
+    //用于回传要处理的事件
+    epoll_event events[20];
+    //生成用于处理accept的epoll专用的文件描述符
+    auto epfd = epoll_create(256);
+
+    const auto listenfd = sock->sockfd;
+
+    //用于注册事件
+    epoll_event ev;
+    //设置与要处理的事件相关的文件描述符
+    ev.data.fd = listenfd;
+    //设置要处理的事件类型
+    ev.events = EPOLLIN | EPOLLET;
+
+    //注册epoll事件
+    epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &ev);
+
+    auto request = HTTPRequest();
+    auto response = HTTPResponse();
+    auto parser = HTTPReqMsgParser();
+
+    while (1)
+    {
+        //等待epoll事件的发生
+        auto nfds = epoll_wait(epfd, events, 20, 500);
+
+        //处理所发生的所有事件
+        for (auto i = 0;i < nfds;++i)
+        {
+            if (events[i].data.fd == listenfd) 
+            {
+                int connfd = sock->accept();
+                if (connfd > 0)
+                {
+                    //设置用于读操作的文件描述符
+                    ev.data.fd = connfd;
+                    //设置用于注测的读操作事件
+                    ev.events = EPOLLIN | EPOLLET;
+                    //注册ev
+                    epoll_ctl(epfd, EPOLL_CTL_ADD, connfd, &ev);
+                }
+            }
+            else if (events[i].events & EPOLLIN)
+            {
+                auto sockfd = events[i].data.fd;
+                if (sockfd < 0)
+                {
+                    continue;
+                }
+
+                request.initParameter();
+                parser.initParams();
+                while (true)
+                {
+                    void *recvBuf = nullptr;
+                    long bytes = -2;
+                        
+                    std::tie(recvBuf,bytes) = sock->receive(sockfd);
+
+                    if (!recvBuf)
+                    {
+                        if (bytes == 0 || bytes == -1)
+                        {
+                            sock->close(sockfd);
+                            sockfd = -1;
+                            events[i].data.fd = -1;
+                        }
+                        break;
+                    }
+                        
+                    auto strBuf = static_cast<Util::byte *>(recvBuf);
+                        
+                    if (!strBuf)
+                    {
+                        break;
+                    }
+                        
+                    if (!parser.cache)
+                    {
+                        parser.cache = new std::deque<Util::byte>();
+                    }
+                        
+                    for (int i = 0;i < bytes;++i)
+                    {
+                        parser.cache->push_back(strBuf[i]);
+                    }
+                        
+                    delete strBuf;
+                    strBuf = nullptr;
+                        
+                    if (parser.is_parse_msg())
+                    {
+                        parser.msg2req(request);
+                        break;
+                    }
+                }
+                    
+                if (sockfd != -1)
+                {
+                    response.initParameter();
+                    callback(request,response);
+                    sock->sendAll(response.toResponseMessage(),sockfd);
+
+                    ev.data.fd = sockfd;
+                    ev.events = EPOLLOUT | EPOLLET;
+                    epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&ev);
+                }
+            }
+        }
+    }
 }
 #endif
