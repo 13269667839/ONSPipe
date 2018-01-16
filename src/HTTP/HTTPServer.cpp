@@ -309,7 +309,7 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
     //生成用于处理accept的epoll专用的文件描述符
     auto epfd = epoll_create(256);
 
-    const auto listenfd = sock->sockfd;
+    const auto listenfd = sock->socketfd;
 
     //用于注册事件
     epoll_event ev;
