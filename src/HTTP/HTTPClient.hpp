@@ -9,7 +9,8 @@
 enum class HTTPMethod : int
 {
     GET = 0,
-    POST
+    POST,
+    HEAD
 };
 
 using RequestCallback = std::function<void (HTTPResponse *res,std::string err)>;
@@ -27,6 +28,7 @@ public:
 private:
     void setHttpRequest();
     void setSocketConfig(Socket &socket);
+    std::string methodStr();
 private:
     HTTPMethod method;
     URL *url;

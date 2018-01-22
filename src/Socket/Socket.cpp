@@ -303,7 +303,7 @@ void Socket::sendAll(std::string buf,int fd)
 {
     while (!buf.empty())
     {
-        ssize_t send_bytes = 0;
+        std::string::size_type send_bytes = 0;
         
         if (type == SocketType::TCP)
         {

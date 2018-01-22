@@ -1,6 +1,13 @@
 #ifndef HTTPParser_hpp
 #define HTTPParser_hpp
 
+enum class HTTPMessageParseState : int
+{
+    Line = 0,
+    Header,
+    Body
+};
+
 #include "Util.hpp"
 #include <deque>
 #include "../HTTP/HTTPResponse.hpp"
@@ -27,6 +34,8 @@ public:
     std::string reason;
     
     std::map<std::string,std::string> header;
+
+    std::string method;
 private:
     HTTPMessageParseState state;
     long content_length;

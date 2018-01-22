@@ -108,6 +108,7 @@ HTTPResponse * HTTPClient::syncRequest()
     
     HTTPResponse *res = nullptr;
     auto parser = HTTPRecvMsgParser();
+    parser.method = methodStr();
     while (1)
     {
         void *recvbuf = nullptr;
@@ -171,7 +172,7 @@ void HTTPClient::setHttpRequest()
     }
     
     //=== line ===
-    httpRequest->method = method == HTTPMethod::GET?"GET":"POST";
+    httpRequest->method = methodStr();
     
     httpRequest->path = url->path;
     if (!url->query.empty())
@@ -187,4 +188,24 @@ void HTTPClient::setHttpRequest()
         Util::throwError("url's host is null");
     }
     setRequestHeader("Host", url->host);
+}
+
+std::string HTTPClient::methodStr()
+{
+    auto res = std::string();
+    switch (method)
+    {
+        case HTTPMethod::GET:
+            res += "GET";
+            break;
+        case HTTPMethod::POST:
+            res += "POST";
+            break;
+        case HTTPMethod::HEAD:
+            res += "HEAD";
+            break;
+        default:
+            break;
+    }
+    return res;
 }

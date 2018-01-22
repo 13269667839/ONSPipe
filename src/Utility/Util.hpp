@@ -4,14 +4,6 @@
 #include <vector>
 #include <string>
 #include <map>
-
-#pragma mark -- HTTP request and response state
-enum class HTTPMessageParseState : int
-{
-    Line = 0,
-    Header,
-    Body
-};
     
 enum class InputType : int
 {
@@ -74,7 +66,7 @@ public:
             else
             {
                 arr = std::vector<strType>(src.size());
-                for (int i = 0; i < arr.size(); ++i)
+                for (unsigned long i = 0; i < arr.size(); ++i)
                 {
                     arr[i] = strType({src[i]});
                 }

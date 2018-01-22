@@ -22,17 +22,17 @@ HTTPRecvMsgParser::HTTPRecvMsgParser()
     header = std::map<std::string,std::string>();
     content_length = -1;
     isChunk = false;
+    method = std::string();
 }
 
 bool HTTPRecvMsgParser::is_parse_msg()
-{
-    auto res = false;
-    
+{   
     if (!cache || cache->empty())
     {
-        return res;
+        return state == HTTPMessageParseState::Line?false:true;
     }
     
+    auto res = false;
     if (state == HTTPMessageParseState::Line)
     {
         if (parse_line())
@@ -49,10 +49,17 @@ bool HTTPRecvMsgParser::is_parse_msg()
     Header:
         if (parse_header())
         {
-            state = HTTPMessageParseState::Body;
-            if (!cache->empty())
+            if (method == "HEAD")
             {
-                goto Body;
+                res = true;
+            }
+            else 
+            {
+                state = HTTPMessageParseState::Body;
+                if (!cache->empty())
+                {
+                    goto Body;
+                }
             }
         }
     }
@@ -147,15 +154,30 @@ bool HTTPRecvMsgParser::parse_header()
     
     auto idx = -1;
     auto i = 0;
-    for (;i < cache->size() - 4;++i)
+    if (method == "HEAD")
     {
-        if (cache->at(i)     == Util::byte('\r') &&
-            cache->at(i + 1) == Util::byte('\n') &&
-            cache->at(i + 2) == Util::byte('\r') &&
-            cache->at(i + 3) == Util::byte('\n'))
+        for (;i < cache->size() - 2;++i)
         {
-            idx = i;
-            break;
+            if (cache->at(i)     == Util::byte('\r') &&
+                cache->at(i + 1) == Util::byte('\n'))
+            {
+                idx = i;
+                break;
+            }
+        }
+    }
+    else 
+    {
+        for (;i < cache->size() - 4;++i)
+        {
+            if (cache->at(i)     == Util::byte('\r') &&
+                cache->at(i + 1) == Util::byte('\n') &&
+                cache->at(i + 2) == Util::byte('\r') &&
+                cache->at(i + 3) == Util::byte('\n'))
+            {
+                idx = i;
+                break;
+            }
         }
     }
     
