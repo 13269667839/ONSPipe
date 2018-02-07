@@ -106,9 +106,13 @@ void URL::parseURLStr(std::string urlStr)
                     }
                     else
                     {
-                        if (scheme == "http" || scheme == "https")
+                        if (scheme == "http")
                         {
                             portNumber = 80;
+                        }
+                        else if (scheme == "https")
+                        {
+                            portNumber = 443;
                         }
                     }
                     
