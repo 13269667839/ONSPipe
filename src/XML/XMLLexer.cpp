@@ -81,20 +81,20 @@ XMLLex::XMLLex(std::string _input,InputType _type)
     {
         if (source.empty())
         {
-            Util::throwError("file name is nil");
+            throwError("file name is nil");
         }
         
         stream = new std::ifstream(source);
         if (!stream->is_open())
         {
-            Util::throwError("file open error");
+            throwError("file open error");
         }
     }
     else if (type == InputType::Text)
     {
         if (source.empty())
         {
-            Util::throwError("xml text is null");
+            throwError("xml text is null");
         }
         
         idx = new std::string::size_type(0);
@@ -242,7 +242,7 @@ void XMLLex::tagStartState(int16_t ch)
                 }
                 else
                 {
-                    Util::throwError("error on comment");
+                    throwError("error on comment");
                 }
             }
         }
@@ -263,7 +263,7 @@ void XMLLex::tagStartState(int16_t ch)
                 }
                 else
                 {
-                    Util::throwError("xml doctype error");
+                    throwError("xml doctype error");
                 }
             }
         }

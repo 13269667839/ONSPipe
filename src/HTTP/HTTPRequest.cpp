@@ -52,14 +52,14 @@ std::string HTTPRequest::toRequestMessage()
 {
     if (method.empty() || version.empty() || path.empty())
     {
-        Util::throwError("invalid http request line format");
+        throwError("invalid http request line format");
     }
     auto requestLine = method + " " + path + " " + version;
     
     
     if (!header || header->empty())
     {
-        Util::throwError("invalid http request header format");
+        throwError("invalid http request header format");
         return "";
     }
     auto arr = std::vector<std::string>();

@@ -80,12 +80,12 @@ void XMLParser::parse_tag_end()
     
     if (elementStack.empty())
     {
-        Util::throwError("empty element stack");
+        throwError("empty element stack");
     }
     
     if (elementStack.top()->tagName != tok->content)
     {
-        Util::throwError("can not match tag start pattern");
+        throwError("can not match tag start pattern");
     }
     
     delete tok;
@@ -122,13 +122,13 @@ void XMLParser::parse_tag_declare()
     
     if (tok->type != TokType::TagDeclare)
     {
-        Util::throwError("token type error!");
+        throwError("token type error!");
     }
     
     auto name = parse_tag_name(tok->content);
     if (name.empty())
     {
-        Util::throwError("empty tag name");
+        throwError("empty tag name");
     }
     auto element = new XMLDocument(name);
     elementStack.push(element);
@@ -179,7 +179,7 @@ void XMLParser::parse_tag_attr()
             {
                 if (buf.first.empty())
                 {
-                    Util::throwError("empty attribute key at tag " + root->tagName);
+                    throwError("empty attribute key at tag " + root->tagName);
                 }
 
                 state = 2;
@@ -219,7 +219,7 @@ void XMLParser::parse_tag_attr()
                 }
                 else if (i == attrStr.size() - 1)
                 {
-                    Util::throwError("attribute value must inside of the quote");
+                    throwError("attribute value must inside of the quote");
                 }
                 else
                 {
@@ -243,7 +243,7 @@ void XMLParser::parse_tag_attr()
                 }
                 else
                 {
-                    Util::throwError("attribute value must inside of the quote");
+                    throwError("attribute value must inside of the quote");
                 }
             }
             else
@@ -286,7 +286,7 @@ std::string XMLParser::parse_tag_name(std::string &content)
             }
             else
             {
-                Util::throwError("invalid tag declare format");
+                throwError("invalid tag declare format");
             }
         }
         else
@@ -325,7 +325,7 @@ void XMLParser::parse_file_attr()
             {
                 if (buf.first.empty())
                 {
-                    Util::throwError("empty attribute key at xml file attribute");
+                    throwError("empty attribute key at xml file attribute");
                 }
 
                 state = 2;
@@ -359,7 +359,7 @@ void XMLParser::parse_file_attr()
                 }
                 else
                 {
-                    Util::throwError("attribute value must inside of the quote");
+                    throwError("attribute value must inside of the quote");
                 }
             }
             else if (i == lexStr.size() - 1)
@@ -374,7 +374,7 @@ void XMLParser::parse_file_attr()
                 }
                 else
                 {
-                    Util::throwError("attribute value must inside of the quote");
+                    throwError("attribute value must inside of the quote");
                 }
             }
             else

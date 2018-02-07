@@ -42,7 +42,7 @@ void HTTPServer::setSocket()
     
     if (!(sock->bind() && sock->listen()))
     {
-        Util::throwError("some error occur on bind or listen function");
+        throwError("some error occur on bind or listen function");
     }
 }
 
@@ -82,14 +82,14 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
     int kq = kqueue();
     if (kq == -1)
     {
-        Util::throwError("kqueue() error : " + std::string(gai_strerror(errno)));
+        throwError("kqueue() error : " + std::string(gai_strerror(errno)));
         return;
     }
     
     struct kevent listen_event = {static_cast<unsigned long>(listenfd),EVFILT_READ,EV_ADD,0,0,nullptr};
     if (kevent(kq, &listen_event, 1, nullptr, 0, nullptr) == -1)
     {
-        Util::throwError("kevent() error : " + std::string(gai_strerror(errno)));
+        throwError("kevent() error : " + std::string(gai_strerror(errno)));
         return;
     }
     

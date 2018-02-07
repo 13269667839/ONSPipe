@@ -1,6 +1,5 @@
 #include "Util.hpp"
 #include <cctype>
-#include <exception>
 #include <fstream>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -88,11 +87,6 @@ std::vector<std::string> Util::split(std::string src, std::vector<std::string> t
         }
     }
     return arr;
-}
-
-void Util::throwError(std::string msg)
-{
-    throw std::logic_error(msg);
 }
 
 std::vector<char> Util::readFileSync(std::string filePath)

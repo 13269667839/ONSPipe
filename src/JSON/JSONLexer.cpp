@@ -25,7 +25,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
 {
     if (_content.empty())
     {
-        Util::throwError("input is empty");
+        throwError("input is empty");
     }
     
     type = _type;
@@ -41,7 +41,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
         if (!stream->is_open())
         {
             delete stream;
-            Util::throwError("file open error");
+            throwError("file open error");
         }
     }
     else
@@ -201,7 +201,7 @@ JSONToken * JSONLexer::initState(int ch)
         }
         else
         {
-            Util::throwError("unexcept input behind -");
+            throwError("unexcept input behind -");
         }
     }
     else if (ch == ',')
@@ -293,7 +293,7 @@ JSONToken * JSONLexer::stringState(char ch)
             {
                 if (ch == EOF)
                 {
-                    Util::throwError("excepr \" at the end of string");
+                    throwError("excepr \" at the end of string");
                 }
                 break;
             }
@@ -326,7 +326,7 @@ JSONToken * JSONLexer::booleanState(char ch)
         char _ch = nextChar();
         if (_ch == EOF)
         {
-            Util::throwError("unexcept input");
+            throwError("unexcept input");
             break;
         }
         else
@@ -348,7 +348,7 @@ JSONToken * JSONLexer::nullState()
         char ch = nextChar();
         if (ch == EOF)
         {
-            Util::throwError("unexcept input at null state");
+            throwError("unexcept input at null state");
         }
         else
         {

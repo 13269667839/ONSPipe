@@ -26,7 +26,7 @@ JSString::JSString(std::string _str,TokenType _type)
 {
     if (_type == TokenType::Array || _type == TokenType::Map)
     {
-        Util::throwError("can not convert to string");
+        throwError("can not convert to string");
     }
     
     strRef = _str.empty()?nullptr:new std::string(_str);

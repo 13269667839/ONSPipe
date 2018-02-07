@@ -4,6 +4,9 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <exception>
+
+#define throwError(msg) throw std::logic_error(msg)
     
 enum class InputType : int
 {
@@ -89,8 +92,6 @@ public:
         }
         return src;
     }
-    
-    static void throwError(std::string msg);
     
     template <typename strType>
     static strType join(std::vector<strType> srcArr, strType token)

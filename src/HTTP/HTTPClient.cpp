@@ -80,19 +80,19 @@ HTTPResponse * HTTPClient::syncRequest()
 {
     if (!httpRequest)
     {
-        Util::throwError("http request is not set");
+        throwError("http request is not set");
         return nullptr;
     }
     else if (!url || url->path.empty())
     {
-        Util::throwError("url is null");
+        throwError("url is null");
         return nullptr;
     }
     
     auto socket = Socket(url->host, url->portNumber);
     if (!socket.connect())
     {
-        Util::throwError("can not connect to server");
+        throwError("can not connect to server");
     }
     
     setSocketConfig(socket);
@@ -100,7 +100,7 @@ HTTPResponse * HTTPClient::syncRequest()
     auto clientMsg = httpRequest->toRequestMessage();
     if (clientMsg.empty())
     {
-        Util::throwError("http request message is null");
+        throwError("http request message is null");
         return nullptr;
     }
     
@@ -162,7 +162,7 @@ void HTTPClient::setHttpRequest()
 {
     if (!url || url->path.empty())
     {
-        Util::throwError("url is null");
+        throwError("url is null");
         return;
     }
     
@@ -185,7 +185,7 @@ void HTTPClient::setHttpRequest()
     //=== header ===
     if (url->host.empty())
     {
-        Util::throwError("url's host is null");
+        throwError("url's host is null");
     }
     setRequestHeader("Host", url->host);
 }

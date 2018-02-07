@@ -11,7 +11,7 @@ SQLite::SQLite(std::string _path)
         {
             auto errMsg = sqlite3_errmsg(db);
             closeDB();
-            Util::throwError(errMsg);
+            throwError(errMsg);
         }
     }
 }

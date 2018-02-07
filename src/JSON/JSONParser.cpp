@@ -34,7 +34,7 @@ JSArray * JSONParser::arrayObject()
         auto tok = nextToken();
         if (!tok)
         {
-            Util::throwError("except ] before array end");
+            throwError("except ] before array end");
         }
         else if (tok->type == TokenType::RightBracket)
         {
@@ -85,7 +85,7 @@ JSMap * JSONParser::mapObject()
         auto tok = nextToken();
         if (!tok)
         {
-            Util::throwError("except } before map end");
+            throwError("except } before map end");
         }
         else if (tok->type == TokenType::RightBrace)
         {
@@ -109,7 +109,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Util::throwError("key must be string type");
+                    throwError("key must be string type");
                 }
             }
             else if (flag == 1)
@@ -121,7 +121,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Util::throwError("miss : between key and value");
+                    throwError("miss : between key and value");
                 }
             }
             else if (flag == 2)
@@ -130,7 +130,7 @@ JSMap * JSONParser::mapObject()
                 {
                     if (key.empty())
                     {
-                        Util::throwError("key is empty");
+                        throwError("key is empty");
                     }
                     else
                     {
@@ -164,7 +164,7 @@ JSMap * JSONParser::mapObject()
                 }
                 else
                 {
-                    Util::throwError("unexcept token at map parser function");
+                    throwError("unexcept token at map parser function");
                 }
             }
         }
@@ -177,7 +177,7 @@ JSObject * JSONParser::token2Object()
 {
     if (!lex)
     {
-        Util::throwError("lexer is null");
+        throwError("lexer is null");
     }
     
     JSObject *obj = nullptr;
@@ -191,7 +191,7 @@ JSObject * JSONParser::token2Object()
         }
         else if (obj && tok)
         {
-            Util::throwError("unexcept token");
+            throwError("unexcept token");
             break;
         }
         

@@ -70,7 +70,7 @@ void URL::parseURLStr(std::string urlStr)
                 }
                 else
                 {
-                    Util::throwError("invalid url");
+                    throwError("invalid url");
                 }
             }
             break;
@@ -101,7 +101,7 @@ void URL::parseURLStr(std::string urlStr)
                         }
                         else
                         {
-                            Util::throwError("invalid url");
+                            throwError("invalid url");
                         }
                     }
                     else
@@ -122,7 +122,7 @@ void URL::parseURLStr(std::string urlStr)
                 }
                 else
                 {
-                    Util::throwError("invalid url");
+                    throwError("invalid url");
                 }
             }
             break;

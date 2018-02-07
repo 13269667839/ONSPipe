@@ -29,7 +29,7 @@ void WSServer::setSocket()
         
         if (!(sock->bind() && sock->listen()))
         {
-            Util::throwError("some error occur on bind or listen function");
+            throwError("some error occur on bind or listen function");
         }
     }
 }
@@ -38,7 +38,7 @@ int WSServer::handShaking()
 {
     if (!sock)
     {
-        Util::throwError("socket is null");
+        throwError("socket is null");
     }
     
     auto fd = sock->accept();
@@ -209,13 +209,13 @@ void WSServer::sendMsg(std::string msg,int fd) const
 {
     if (!sock)
     {
-        Util::throwError("socket is null");
+        throwError("socket is null");
         return;
     }
     
     if (fd == -1)
     {
-        Util::throwError("invalid file descriptor");
+        throwError("invalid file descriptor");
         return;
     }
     
@@ -272,7 +272,7 @@ void WSServer::eventLoop(Event event)
 {
     if (!event) 
     {
-        Util::throwError("event callback is null");
+        throwError("event callback is null");
     }
         
     if (!sock) 
@@ -297,7 +297,7 @@ void WSServer::eventLoop(Event event)
         
         if (select(fd_max + 1, &read_fds, nullptr, nullptr, nullptr) == -1)
         {
-            Util::throwError(std::string(gai_strerror(errno)));
+            throwError(std::string(gai_strerror(errno)));
             return;
         }
 
