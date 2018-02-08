@@ -6,6 +6,11 @@
 #include <functional>
 #include <tuple>
 
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+
 enum class SocketType
 {
     TCP,
@@ -20,6 +25,9 @@ public:
     int socketfd;
     //default is 512
     int recvBuffSize;
+
+    SSL_CTX *ctx;
+    SSL *ssl;
 private:
     SocketType type;
     addrinfo *addressInfo;
@@ -47,6 +55,12 @@ public:
     void sendAll(std::string buf,int fd = -1);
     
     int setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
+
+    //=== ssl ===
+    void ssl_config();
+    void ssl_close();
+    ssize_t ssl_send(void *buf,size_t len);
+    std::tuple<void *,long> ssl_read();
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);

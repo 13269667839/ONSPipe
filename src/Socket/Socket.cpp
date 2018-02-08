@@ -9,6 +9,8 @@
 
 Socket::Socket(std::string addr,int port,SocketType _type)
 {
+    ctx = nullptr;
+    ssl = nullptr;
     socketfd = -1;
     addressInfo = nullptr;
     currentAddrInfo = nullptr;
@@ -38,6 +40,7 @@ void Socket::close(int fd)
 
 Socket::~Socket()
 {
+    ssl_close();
     close();
     
     if (addressInfo)
@@ -320,4 +323,129 @@ void Socket::sendAll(std::string buf,int fd)
             buf = buf.substr(send_bytes);
         }
     }
+}
+
+#pragma mark -- SSL
+void Socket::ssl_config()
+{
+    if (socketfd < 0)
+    {
+        throwError("socket fd is invalid");
+        return;
+    }
+
+    SSL_load_error_strings();
+    SSL_library_init();
+
+    ctx = SSL_CTX_new(SSLv23_client_method());
+    if (!ctx)
+    {
+        auto err = ERR_reason_error_string(ERR_get_error());
+        if (err)
+        {
+            std::string msg = "init SSL CTX failed:" + std::string(err);
+            throwError(msg);
+        }
+        return;
+    }
+
+    ssl = SSL_new(ctx);
+    if (!ssl)
+    {
+        auto err = ERR_reason_error_string(ERR_get_error());
+        if (err)
+        {
+            std::string msg = "new SSL with created CTX failed:" + std::string(err);
+            throwError(msg);
+        }
+        return;
+    }
+
+    if (SSL_set_fd(ssl, socketfd) == 0)
+    {
+        auto err = ERR_reason_error_string(ERR_get_error());
+        if (err)
+        {
+            std::string msg = "add SSL to tcp socket failed:" + std::string(err);
+            throwError(msg);
+        }
+        return;
+    }
+
+    RAND_poll();
+    while (RAND_status() == 0)
+    {
+        unsigned short rand_ret = rand() % 65536;
+        RAND_seed(&rand_ret, sizeof(rand_ret));
+    }
+
+    if (SSL_connect(ssl) != 1)
+    {
+        auto err = ERR_reason_error_string(ERR_get_error());
+        if (err)
+        {
+            std::string msg = "SSL connection failed:" + std::string(err);
+            throwError(msg);
+        }
+    }
+}
+
+void Socket::ssl_close()
+{
+    if (ssl)
+    {   
+        //shut down ssl (1:success,0:Unidirectional closed,-1:error)
+        if (SSL_shutdown(ssl) == -1)
+        {
+            auto err = ERR_reason_error_string(ERR_get_error());
+            if (err) 
+            {
+                std::string msg = "SSL shutdown failed:" + std::string(err);
+                throwError(msg);
+            }
+            return;
+        }
+
+        SSL_free(ssl);
+        ssl = nullptr;
+    }
+
+    if (ctx) 
+    {
+        SSL_CTX_free(ctx);
+        ctx = nullptr;
+    }
+
+    ERR_free_strings();
+}
+
+ssize_t Socket::ssl_send(void *buf,size_t len)
+{
+    ssize_t bytes = -1;
+
+    if (ssl && buf && len)
+    {
+        SSL_write(ssl, buf, len);
+    }
+
+    return bytes;
+}
+
+std::tuple<void *,long> Socket::ssl_read()
+{    
+    void *recvBuf = nullptr;
+    long bytes = -2;
+
+    if (ssl)
+    {
+        Util::byte tmpBuf[recvBuffSize];
+        bytes = SSL_read(ssl,tmpBuf,recvBuffSize);
+        if (bytes > 0)
+        {
+            recvBuf = new Util::byte[bytes]();
+            memcpy(recvBuf, tmpBuf, bytes);
+        }
+    }
+    
+    return std::make_tuple(recvBuf,bytes);
 }

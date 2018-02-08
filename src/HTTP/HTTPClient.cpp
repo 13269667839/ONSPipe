@@ -97,6 +97,13 @@ HTTPResponse * HTTPClient::syncRequest()
     
     setSocketConfig(socket);
 
+    auto https = url->scheme == "https";
+    
+    if (https)
+    {
+        socket.ssl_config();
+    }
+
     auto clientMsg = httpRequest->toRequestMessage();
     if (clientMsg.empty())
     {
@@ -104,7 +111,14 @@ HTTPResponse * HTTPClient::syncRequest()
         return nullptr;
     }
     
-    socket.sendAll(clientMsg);
+    if (https)
+    {
+        socket.ssl_send(const_cast<char *>(clientMsg.c_str()),clientMsg.size());
+    }
+    else 
+    {
+        socket.sendAll(clientMsg);
+    }
     
     HTTPResponse *res = nullptr;
     auto parser = HTTPRecvMsgParser();
@@ -114,7 +128,14 @@ HTTPResponse * HTTPClient::syncRequest()
         void *recvbuf = nullptr;
         long bytes = -2;
         
-        std::tie(recvbuf,bytes) = socket.receive();
+        if (https)
+        {
+            std::tie(recvbuf,bytes) = socket.ssl_read();
+        }
+        else 
+        {
+            std::tie(recvbuf,bytes) = socket.receive();
+        }
         
         if (!recvbuf || bytes == -2)
         {
