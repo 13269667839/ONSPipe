@@ -2,7 +2,6 @@
 #define JSObject_hpp
 
 #include <string>
-#include <vector>
 #include <map>
 #include <ostream>
 
@@ -38,10 +37,7 @@ public:
     
     void addObject(JSObject *obj);
     std::string toString() override;
-    std::vector<JSObject *> *arrayRef;
-    
-    decltype(arrayRef->begin()) begin();
-    decltype(arrayRef->end()) end();
+    std::deque<JSObject *> *arrayRef;
 };
 
 class JSMap : public JSObject

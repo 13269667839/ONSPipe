@@ -69,11 +69,7 @@ JSArray::~JSArray()
 {
     if (arrayRef)
     {
-        for (auto obj : *arrayRef)
-        {
-            delete obj;
-        }
-        std::vector<JSObject *>().swap(*arrayRef);
+        arrayRef->clear();
         delete arrayRef;
         arrayRef = nullptr;
     }
@@ -83,7 +79,7 @@ void JSArray::addObject(JSObject *obj)
 {
     if (!arrayRef)
     {
-        arrayRef = new std::vector<JSObject *>();
+        arrayRef = new std::deque<JSObject *>();
     }
     arrayRef->push_back(obj);
 }
@@ -106,16 +102,6 @@ std::string JSArray::toString()
         }
     }
     return res.empty()?res:"[" + res + "]";
-}
-
-decltype(JSArray::arrayRef->begin()) JSArray::begin()
-{
-    return arrayRef->begin();
-}
-
-decltype(JSArray::arrayRef->end()) JSArray::end()
-{
-    return arrayRef->end();
 }
 
 #pragma mark -- JSMap
