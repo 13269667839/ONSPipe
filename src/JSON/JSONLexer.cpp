@@ -33,7 +33,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
     stream = nullptr;
     index = nullptr;
     state = LexerState::Init;
-    cache = new std::deque<int>();
+    cache = new std::deque<int16_t>();
     
     if (type == SourceType::File)
     {
@@ -72,9 +72,9 @@ JSONLexer::~JSONLexer()
     }
 }
 
-int JSONLexer::nextChar()
+int16_t JSONLexer::nextChar()
 {
-    int ch = EOF;
+    int16_t ch = EOF;
     
     if (cache && !cache->empty())
     {
@@ -152,7 +152,7 @@ JSONToken * JSONLexer::initState(int ch)
 {
     JSONToken *tok = nullptr;
     
-    if (ch == '\"')
+    if (ch == '"')
     {
         state = LexerState::String;
     }
@@ -280,30 +280,39 @@ JSONToken * JSONLexer::numberState(char ch)
     return tok;
 }
 
-JSONToken * JSONLexer::stringState(char ch)
+JSONToken * JSONLexer::stringState(int16_t ch)
 {
-    std::string str = std::string();
-    if (ch != EOF || ch != '\"')
+    if (ch == EOF)
     {
-        str += ch;
-        while (1)
-        {
-            char ch = nextChar();
-            if (ch == EOF || ch == '\"')
-            {
-                if (ch == EOF)
-                {
-                    throwError("excepr \" at the end of string");
-                }
-                break;
-            }
-            else
-            {
-                str += ch;
-            }
-        }
+        throwError("excepr \" at the end of string");
+        return nullptr;
     }
-    return str.empty()?nullptr:new JSONToken(TokenType::String,str);
+    else if (ch == '"')
+    {
+        return new JSONToken(TokenType::String,"");
+    }
+
+    auto str = std::string();
+    str += ch;
+
+    while (1)
+    {
+        auto _ch = nextChar();
+        if (_ch == EOF)
+        {
+            throwError("excepr \" at the end of string");
+            return nullptr;
+        }
+        
+        if (_ch == '"' && str[str.size() - 1] != '\\')
+        {
+            break;
+        }
+        
+        str += _ch;
+    }
+
+    return new JSONToken(TokenType::String,str);
 }
 
 JSONToken * JSONLexer::booleanState(char ch)
@@ -341,20 +350,22 @@ JSONToken * JSONLexer::booleanState(char ch)
 
 JSONToken * JSONLexer::nullState()
 {
-    auto str = std::string();
-    int count = 3;
-    while (count > 0)
+    auto len = 3;
+    char str[3];
+    auto ch = nextChar();
+
+    while (len > 0 && ch != EOF)
     {
-        char ch = nextChar();
-        if (ch == EOF)
-        {
-            throwError("unexcept input at null state");
-        }
-        else
-        {
-            str += ch;
-        }
+        str[3 - len] = ch;
+        --len;
+        ch = nextChar();
     }
     
-    return str == "ull"?new JSONToken(TokenType::Null,"null"):nullptr;
+    if (strncmp(str,"ull",3) != 0)
+    {
+        throwError("invalid literal null");
+        return nullptr;
+    }
+    
+    return new JSONToken(TokenType::Null,"null");
 }

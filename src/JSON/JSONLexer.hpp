@@ -63,11 +63,11 @@ public:
 public:
     JSONToken * getNextToken();
 private:
-    int nextChar();
+    int16_t nextChar();
     
     JSONToken * initState(int ch);
     JSONToken * numberState(char ch);
-    JSONToken * stringState(char ch);
+    JSONToken * stringState(int16_t ch);
     JSONToken * booleanState(char ch);
     JSONToken * nullState();
 private:
@@ -79,7 +79,7 @@ private:
     
     LexerState state;
     
-    std::deque<int> *cache;
+    std::deque<int16_t> *cache;
 };
 
 #endif 
