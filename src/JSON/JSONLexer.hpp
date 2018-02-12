@@ -69,13 +69,13 @@ private:
     JSONToken * numberState(char ch);
     JSONToken * stringState(int16_t ch);
     JSONToken * booleanState(char ch);
-    JSONToken * nullState();
+    JSONToken * nullState(int16_t ch);
 private:
     SourceType type;
     std::string content;
     
     std::ifstream *stream;
-    std::string::size_type *index;
+    std::string::size_type index;
     
     LexerState state;
     

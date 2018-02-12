@@ -31,7 +31,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
     type = _type;
     content = _content;
     stream = nullptr;
-    index = nullptr;
+    index = 0;
     state = LexerState::Init;
     cache = new std::deque<int16_t>();
     
@@ -44,10 +44,6 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
             throwError("file open error");
         }
     }
-    else
-    {
-        index = new std::string::size_type(0);
-    }
 }
 
 JSONLexer::~JSONLexer()
@@ -59,11 +55,6 @@ JSONLexer::~JSONLexer()
             stream->close();
         }
         delete stream;
-    }
-    
-    if (index)
-    {
-        delete index;
     }
     
     if (cache)
@@ -92,18 +83,19 @@ int16_t JSONLexer::nextChar()
         }
         else if (type == SourceType::Text)
         {
-            if (index && *index < content.length())
+            if (index < content.length())
             {
-                ch = content[(*index)++];
+                ch = content[index++];
             }
         }
+        printf("%c",ch);
     }
     return ch;
 }
 
 JSONToken * JSONLexer::getNextToken()
 {
-    int ch = EOF;
+    int16_t ch = EOF;
     JSONToken *tok = nullptr;
     
     while (1)
@@ -135,7 +127,7 @@ JSONToken * JSONLexer::getNextToken()
         }
         else if (state == LexerState::Null)
         {
-            tok = nullState();
+            tok = nullState(ch);
             state = LexerState::Init;
         }
         
@@ -348,17 +340,21 @@ JSONToken * JSONLexer::booleanState(char ch)
     return (str == "true" || str == "false")?new JSONToken(TokenType::Boolean,str):nullptr;
 }
 
-JSONToken * JSONLexer::nullState()
+JSONToken * JSONLexer::nullState(int16_t ch)
 {
-    auto len = 3;
+    auto len = 2;
     char str[3];
-    auto ch = nextChar();
+    str[0] = ch;
 
-    while (len > 0 && ch != EOF)
+    while (len > 0)
     {
-        str[3 - len] = ch;
-        --len;
-        ch = nextChar();
+        auto _ch = nextChar();
+        if (_ch == EOF)
+        {
+            break;
+        }
+        str[3 - len] = _ch;
+        len--;
     }
     
     if (strncmp(str,"ull",3) != 0)
