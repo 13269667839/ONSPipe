@@ -88,7 +88,6 @@ int16_t JSONLexer::nextChar()
                 ch = content[index++];
             }
         }
-        printf("%c",ch);
     }
     return ch;
 }
@@ -140,7 +139,7 @@ JSONToken * JSONLexer::getNextToken()
     return tok;
 }
 
-JSONToken * JSONLexer::initState(int ch)
+JSONToken * JSONLexer::initState(int16_t ch)
 {
     JSONToken *tok = nullptr;
     
@@ -295,10 +294,25 @@ JSONToken * JSONLexer::stringState(int16_t ch)
             throwError("excepr \" at the end of string");
             return nullptr;
         }
-        
-        if (_ch == '"' && str[str.size() - 1] != '\\')
+
+        if (_ch == '"')
         {
-            break;
+            auto count = 0;
+            for (auto rite = str.rbegin();rite != str.rend();++rite)
+            {
+                if (*rite == '\\')
+                {
+                    count++;
+                }
+                else 
+                {
+                    break;
+                }
+            }
+            if (count % 2 == 0)
+            {
+                break;
+            }
         }
         
         str += _ch;
@@ -307,37 +321,31 @@ JSONToken * JSONLexer::stringState(int16_t ch)
     return new JSONToken(TokenType::String,str);
 }
 
-JSONToken * JSONLexer::booleanState(char ch)
+JSONToken * JSONLexer::booleanState(int16_t ch)
 {
-    auto str = std::string();
-    str += ch;
+    char str[4] = {'\0','\0','\0','\0'};
+    const int len = ch == 't'?3:4;
     
-    int count = 0;
-    if (ch == 't')
+    for (auto i = 0;i < len;++i)
     {
-        count = 3;
-    }
-    else if (ch == 'f')
-    {
-        count = 4;
-    }
-    
-    while (count > 0)
-    {
-        char _ch = nextChar();
+        auto _ch = nextChar();
         if (_ch == EOF)
         {
-            throwError("unexcept input");
             break;
         }
-        else
-        {
-            str += _ch;
-            count--;
-        }
+        str[i] = _ch;
     }
-    
-    return (str == "true" || str == "false")?new JSONToken(TokenType::Boolean,str):nullptr;
+
+    auto isTrue = ch == 't' && strncmp(str,"rue",3) == 0;
+    auto isFalse = ch == 'f' && strncmp(str,"alse",4) == 0;
+
+    if (!isTrue && !isFalse)
+    {
+        throwError("invalid boolean literal");
+        return nullptr;
+    }
+
+    return new JSONToken(TokenType::Boolean,isTrue?"true":"false");
 }
 
 JSONToken * JSONLexer::nullState(int16_t ch)

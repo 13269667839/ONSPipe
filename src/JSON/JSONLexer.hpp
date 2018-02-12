@@ -65,10 +65,10 @@ public:
 private:
     int16_t nextChar();
     
-    JSONToken * initState(int ch);
+    JSONToken * initState(int16_t ch);
     JSONToken * numberState(char ch);
     JSONToken * stringState(int16_t ch);
-    JSONToken * booleanState(char ch);
+    JSONToken * booleanState(int16_t ch);
     JSONToken * nullState(int16_t ch);
 private:
     SourceType type;
