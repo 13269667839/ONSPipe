@@ -14,11 +14,11 @@ openssl_flag = $(openssl_lib)/*.a -L $(openssl_lib) -I$(openssl_include)
 
 cpp_flag = -std=c++14 -g -lpthread
 
-build:
+build-mac:
 	$(cc) test.cpp $(cpp_flag) $(file_flag) $(openssl_flag)
 
 clean:
 	rm *.out && rm -r a.out.dSYM
 
-server-linux:
+build-linux:
 	$(cc) test.cpp $(file_flag) -lssl -lcrypto $(cpp_flag)
