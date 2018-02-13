@@ -23,7 +23,7 @@ public:
     int statusCode;
     std::string reason;
     std::map<std::string,std::string> *header;
-    std::string responseBody;
+    std::basic_string<unsigned char> responseBody;
 };
 
 #endif

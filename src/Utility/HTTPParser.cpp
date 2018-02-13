@@ -324,7 +324,11 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
     
     if (!cache->empty())
     {
-        res->responseBody = std::string(cache->begin(),cache->end());
+        auto buffer = new Util::byte[cache->size()];
+        std::copy(cache->begin(),cache->end(),buffer);
+        res->responseBody.assign(std::basic_string<Util::byte>(buffer,cache->size()));
+        delete []buffer;
+        buffer = nullptr;
     }
     
     return res;

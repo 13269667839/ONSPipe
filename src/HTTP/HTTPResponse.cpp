@@ -21,7 +21,7 @@ void HTTPResponse::initParameter()
     {
         header = nullptr;
     }
-    responseBody = std::string();
+    responseBody = std::basic_string<Util::byte>();
 }
 
 HTTPResponse::~HTTPResponse()
@@ -64,7 +64,7 @@ std::string HTTPResponse::toResponseMessage()
         head = Util::join(arr, std::string("\r\n"));
     }
 
-    return line + "\r\n" + head + "\r\n\r\n" + responseBody + "\r\n";
+    return line + "\r\n" + head + "\r\n\r\n" + std::string(responseBody.begin(),responseBody.end()) + "\r\n";
 }
 
 void HTTPResponse::addResponseHead(std::pair<std::string,std::string> pair)
