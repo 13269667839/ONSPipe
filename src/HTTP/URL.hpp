@@ -24,6 +24,7 @@ public:
 private:
     void setInitialParameter();
     void parseURLStr(std::string urlStr);
+    std::string urlEncode(std::string &str);
 };
 
 #endif

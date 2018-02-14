@@ -8,10 +8,67 @@ URL::URL(std::string str)
     
     if (!str.empty())
     {
-        originalURL = str;
-        
-        parseURLStr(str);
+        auto url = urlEncode(str);
+        originalURL += url;
+        parseURLStr(url);
     }
+}
+
+std::string URL::urlEncode(std::string &str)
+{
+    auto encodeURL = std::string();
+
+    for (std::string::size_type i = 0;i < str.size();++i)
+    {
+        auto ch = str[i];
+        if (isalnum(ch))
+        {
+            encodeURL += ch;
+        }
+        else if (isspace(ch))
+        {
+            encodeURL += "+";
+        }
+        else if (isascii(ch))
+        {
+            encodeURL += ch;
+        }
+        else 
+        {
+            Util::byte tmp = ch;
+            int bits[8];
+     
+            auto idx = 7;
+            while (tmp != 0 && idx >= 0)
+            {
+                bits[idx] = tmp % 2;
+                idx--;
+                tmp /= 2;
+            }
+
+            int len = 1;
+            if (bits[0] == 1)
+            {
+                while (bits[len] == 1)
+                {
+                    len++;
+                }
+            }
+
+            auto k = 0;
+            while (k < len)
+            {
+                char cache[12];
+                sprintf(cache,"%%%02X",(Util::byte)str[i + k]);
+                encodeURL += cache;
+                ++k;
+            }
+
+            i += (len - 1);
+        }
+    }
+
+    return encodeURL;
 }
 
 void URL::setInitialParameter()
@@ -168,4 +225,4 @@ std::ostream & operator << (std::ostream &os,URL url)
     os<<"path : "<<url.path<<std::endl;
     os<<"query : "<<url.query<<std::endl;
     return os;
-}
+} 
