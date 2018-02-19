@@ -52,7 +52,31 @@ public:
     ssize_t sendto(std::string buf);
     void * receiveFrom();
     
-    void sendAll(std::string buf,int fd = -1);
+    template <typename BufferType,typename BufferLength>
+    void sendAll(BufferType buffer,BufferLength length,bool ssl,int fd = -1)
+    {
+        BufferLength sendBytes = 0;
+        while (sendBytes < length) 
+        {
+            if (type == SocketType::TCP)
+            {
+                if (ssl)
+                {
+                    auto _sendBytes = ssl_send(&buffer[sendBytes],length - sendBytes);
+                    sendBytes = _sendBytes;
+                }
+                else 
+                {
+                    auto _sendBytes = send(&buffer[sendBytes],length - sendBytes,fd);
+                    sendBytes = _sendBytes;
+                }
+            }
+            else if (type == SocketType::UDP)
+            {
+
+            }
+        }
+    }
     
     int setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
 

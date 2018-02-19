@@ -189,7 +189,8 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
                     {
                         response.initParameter();
                         callback(request,response);
-                        sock->sendAll(response.toResponseMessage(),sockfd);
+                        auto msg = response.toResponseMessage();
+                        sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
                     }
                 }
             }

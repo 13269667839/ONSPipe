@@ -302,29 +302,6 @@ int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
     return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
 }
 
-void Socket::sendAll(std::string buf,int fd)
-{
-    while (!buf.empty())
-    {
-        std::string::size_type send_bytes = 0;
-        
-        if (type == SocketType::TCP)
-        {
-            auto u8_str = const_cast<char *>(buf.c_str());
-            send_bytes = send(u8_str,buf.size(),fd);
-        }
-        else if (type == SocketType::UDP)
-        {
-            throwError("not implement yet!");
-        }
-        
-        if (send_bytes <= buf.size())
-        {
-            buf = buf.substr(send_bytes);
-        }
-    }
-}
-
 #pragma mark -- SSL
 void Socket::ssl_config()
 {

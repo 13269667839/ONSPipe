@@ -111,14 +111,7 @@ HTTPResponse * HTTPClient::syncRequest()
         return nullptr;
     }
     
-    if (https)
-    {
-        socket.ssl_send(const_cast<char *>(clientMsg.c_str()),clientMsg.size());
-    }
-    else 
-    {
-        socket.sendAll(clientMsg);
-    }
+    socket.sendAll(const_cast<char *>(clientMsg.c_str()),clientMsg.size(),https);
     
     HTTPResponse *res = nullptr;
     auto parser = HTTPRecvMsgParser();
