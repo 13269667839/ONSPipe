@@ -12,6 +12,8 @@
 #include <openssl/sha.h>
 #include <openssl/des.h>
 
+#include <zlib.h>
+
 std::vector<std::string> Util::split(std::string src, std::vector<std::string> tokens)
 {
     std::vector<std::string> arr;
@@ -282,4 +284,51 @@ Util::byte * Util::sha1_encode(Util::byte *src,size_t len)
     SHA1_Final(dest,&c);
     OPENSSL_cleanse(&c,sizeof(c));
     return dest;
+}
+
+std::vector<Util::byte> Util::zlib_compress(Util::byte *bytes,size_t len)
+{
+    if (!bytes || len == 0) 
+    {
+        return {};
+    }
+
+    Byte dest[102400];
+    uLong compressedBufferLen = 102400;
+
+    auto err = compress(dest,&compressedBufferLen,bytes,len);
+    if (err != Z_OK)
+    {
+        return {};
+    }
+
+    auto compressedBuffer = std::vector<Util::byte>(compressedBufferLen);
+    for (decltype(compressedBufferLen) i = 0;i < compressedBufferLen;++i)
+    {
+        compressedBuffer[i] = dest[i];
+    }
+    return compressedBuffer;
+}
+
+std::vector<Util::byte> Util::zlib_uncompress(Util::byte *bytes,size_t len)
+{
+    if (!bytes || len == 0) 
+    {
+        return {};
+    }
+
+    Byte dest[102400];
+    uLong deslLen = 1024000;
+    auto err = uncompress(dest,&deslLen,bytes,len);
+    if (err != Z_OK)
+    {
+        return {};
+    }
+
+    auto uncompressedBuffer = std::vector<Util::byte>(deslLen);
+    for (decltype(deslLen) i = 0;i < deslLen;++i)
+    {
+        uncompressedBuffer[i] = dest[i];
+    }
+    return uncompressedBuffer;
 }

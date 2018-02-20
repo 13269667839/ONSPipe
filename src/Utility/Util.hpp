@@ -129,6 +129,9 @@ public:
     
     static char * base64_encoding(const char *buffer, int length, bool newLine);
     static byte * sha1_encode(byte *src,size_t len);
+
+    static std::vector<Util::byte> zlib_compress(Util::byte *bytes,size_t len);
+    static std::vector<Util::byte> zlib_uncompress(Util::byte *bytes,size_t len);
 };
 
 #endif
