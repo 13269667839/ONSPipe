@@ -1,5 +1,6 @@
 #include "HTTPParser.hpp"
 #include <cctype>
+#include "Util.hpp"
 
 #pragma mark -- HTTPRecvMsgParser
 HTTPRecvMsgParser::~HTTPRecvMsgParser()
@@ -326,7 +327,21 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
     {
         auto buffer = new Util::byte[cache->size()];
         std::copy(cache->begin(),cache->end(),buffer);
-        res->responseBody.assign(std::basic_string<Util::byte>(buffer,cache->size()));
+
+        if (header["Content-Encoding"] == "gzip")
+        {
+            Byte uncompressedBuffer[1024000];
+            uLong uncompressedBufferLen = 1024000;
+            if (Util::gzlib_uncompress(buffer,cache->size(),uncompressedBuffer,&uncompressedBufferLen) == 0)
+            {
+                res->responseBody.assign(std::basic_string<Util::byte>(uncompressedBuffer,uncompressedBufferLen));
+            }
+        }
+        else 
+        {
+            res->responseBody.assign(std::basic_string<Util::byte>(buffer,cache->size()));
+        }
+        
         delete []buffer;
         buffer = nullptr;
     }
