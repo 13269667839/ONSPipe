@@ -67,15 +67,15 @@ std::string HTTPResponse::toResponseMessage()
     return line + "\r\n" + head + "\r\n\r\n" + std::string(responseBody.begin(),responseBody.end()) + "\r\n";
 }
 
-void HTTPResponse::addResponseHead(std::pair<std::string,std::string> pair)
+void HTTPResponse::addResponseHead(std::string key,std::string value)
 {
-    if (!pair.first.empty() && !pair.second.empty())
+    if (!key.empty() && !value.empty())
     {
         if (!header)
         {
             header = new std::map<std::string,std::string>();
         }
         
-        header->insert(pair);
+        header->insert({key,value});
     }
 }

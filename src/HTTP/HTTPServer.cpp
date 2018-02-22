@@ -6,8 +6,6 @@
 
     #include <sys/event.h>
     #include <iostream>
-#elif defined(Select)
-    #include <sys/select.h>
 #elif defined(Epoll)
     #include <sys/epoll.h>
 #endif
@@ -55,15 +53,8 @@ void HTTPServer::runAndLoop(RunAndLoopCallback callback)
     
     setSocket();
     
-    mainLoop(callback);
-}
-
-void HTTPServer::mainLoop(const RunAndLoopCallback &callback)
-{
 #ifdef Kqueue
     kqueueLoop(callback);
-#elif defined(Select)
-    selectLoop(callback);
 #elif defined(Epoll)
     epollLoop(callback);
 #endif
@@ -132,170 +123,63 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
                 std::cout<<"socket broken,error : "<<event.data<<std::endl;
                 continue;
             }
-            else
-            {
-                if (event.filter == EVFILT_READ)//read event
-                {
-                    request.initParameter();
-                    parser.initParams();
-                    
-                    while (true)
-                    {
-                        void *recvBuf = nullptr;
-                        long bytes = -2;
-                        
-                        std::tie(recvBuf,bytes) = sock->receive(sockfd);
-                        
-                        if (!recvBuf)
-                        {
-                            if (bytes == 0 || bytes == -1)
-                            {
-                                sock->close(sockfd);
-                                sockfd = -1;
-                                struct kevent event = {static_cast<uintptr_t>(sockfd),EVFILT_READ,EV_DELETE,0,0,NULL};
-                                kevent(kq, &event, 1, NULL, 0, NULL);
-                            }
-                            break;
-                        }
-                        
-                        auto strBuf = static_cast<Util::byte *>(recvBuf);
-                        
-                        if (!strBuf)
-                        {
-                            break;
-                        }
-                        
-                        if (!parser.cache)
-                        {
-                            parser.cache = new std::deque<Util::byte>();
-                        }
-                        
-                        for (int i = 0;i < bytes;++i)
-                        {
-                            parser.cache->push_back(strBuf[i]);
-                        }
-                        
-                        delete strBuf;
-                        strBuf = nullptr;
-                        
-                        if (parser.is_parse_msg())
-                        {
-                            parser.msg2req(request);
-                            break;
-                        }
-                    }
-                    
-                    if (sockfd != -1)
-                    {
-                        response.initParameter();
-                        callback(request,response);
-                        auto msg = response.toResponseMessage();
-                        sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
-#pragma mark -- Select
-#ifdef Select
-void HTTPServer::selectLoop(const RunAndLoopCallback &callback)
-{
-    auto read_fds = fd_set();
-    FD_ZERO(&read_fds);
-    
-    auto master = fd_set();
-    FD_ZERO(&master);
-    
-    const auto listener = sock->socketfd;
-    FD_SET(listener,&master);
-    
-    auto fd_max = listener;
-    
-    auto request = HTTPRequest();
-    auto response = HTTPResponse();
-    auto parser = HTTPReqMsgParser();
-    
-    while (true)
-    {
-        read_fds = master;
-        
-        if (select(fd_max + 1, &read_fds, nullptr, nullptr, nullptr) == -1)
-        {
-            Util::throwError(std::string(gai_strerror(errno)));
-            return;
-        }
-
-        for (int i = 0;i <= fd_max;++i)
-        {
-            if (!FD_ISSET(i,&read_fds))
-            {
-                continue;
-            }
-
-            if (i == listener)
-            {
-                int fd = sock->accept();
-
-                if (fd != -1)
-                {
-                    FD_SET(fd, &master);
-                    fd_max = std::max(fd, fd_max);
-                }
-            }
-            else
+            
+            if (event.filter == EVFILT_READ)//read event
             {
                 request.initParameter();
                 parser.initParams();
-                while (true)
+                    
+                void *recvBuf = nullptr;
+                long bytes = -2;
+                        
+                sock->recvBuffSize = event.data;
+                std::tie(recvBuf,bytes) = sock->receive(sockfd);
+                        
+                if (!recvBuf)
                 {
-                    void *recvBuf = nullptr;
-                    long bytes = -2;
-
-                    std::tie(recvBuf,bytes) = sock->receive(i);
-
-                    if (!recvBuf)
+                    if (bytes == 0 || bytes == -1)
                     {
-                        if (bytes == 0 || bytes == -1)
-                        {
-                            FD_CLR(i,&master);
-                        }
-                        break;
-                    }
+                        struct kevent event = {static_cast<uintptr_t>(sockfd),EVFILT_READ,EV_DELETE,0,0,NULL};
+                        kevent(kq, &event, 1, NULL, 0, NULL);
 
-                    auto strBuf = static_cast<Util::byte *>(recvBuf);
-
-                    if (!strBuf)
-                    {
-                        break;
+                        sock->close(sockfd);
                     }
-
-                    if (!parser.cache)
-                    {
-                        parser.cache = new std::deque<Util::byte>();
-                    }
-                    
-                    for (int i = 0;i < bytes;++i)
-                    {
-                        parser.cache->push_back(strBuf[i]);
-                    }
-                    
-                    delete strBuf;
-                    strBuf = nullptr;
-                    
-                    if (parser.is_parse_msg())
-                    {
-                        parser.msg2req(request);
-                        break;
-                    }
+                    continue;
                 }
-
+                        
+                auto strBuf = static_cast<Util::byte *>(recvBuf);      
+                if (!strBuf)
+                {
+                    break;
+                }
+                        
+                if (!parser.cache)
+                {
+                    parser.cache = new std::deque<Util::byte>();
+                }
+                        
+                for (int i = 0;i < bytes;++i)
+                {
+                    parser.cache->push_back(strBuf[i]);
+                }
+                        
+                delete strBuf;
+                strBuf = nullptr;
+                        
+                if (parser.is_parse_msg())
+                {
+                    parser.msg2req(request); 
+                }
+            }
+            
+            if (sockfd != -1)
+            {
                 response.initParameter();
                 callback(request,response);
-                sock->sendAll(response.toResponseMessage(),i);
+                auto msg = response.toResponseMessage();
+                sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
             }
+
         }
     }
 }

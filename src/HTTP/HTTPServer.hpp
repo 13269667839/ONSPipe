@@ -9,8 +9,6 @@
     #define Kqueue
 #elif defined(__linux__)
     #define Epoll
-#else
-    #define Select
 #endif
 
 using RunAndLoopCallback = std::function<void (const HTTPRequest &request,HTTPResponse &response)>;
@@ -27,12 +25,9 @@ private:
     Socket *sock;
 private:
     void setSocket();
-    void mainLoop(const RunAndLoopCallback &callback);
     
 #ifdef Kqueue
     void kqueueLoop(const RunAndLoopCallback &callback);
-#elif defined(Select)
-    void selectLoop(const RunAndLoopCallback &callback);
 #elif defined(Epoll)
     void epollLoop(const RunAndLoopCallback &callback);
 #endif

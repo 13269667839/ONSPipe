@@ -320,7 +320,7 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
     
     for (auto kv : header)
     {
-        res->addResponseHead(kv);
+        res->addResponseHead(kv.first,kv.second);
     }
     
     if (!cache->empty())

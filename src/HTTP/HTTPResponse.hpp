@@ -17,7 +17,7 @@ public:
     
     std::string toResponseMessage();
     
-    void addResponseHead(std::pair<std::string,std::string> pair);
+    void addResponseHead(std::string key,std::string value);
 public:
     std::string version;
     int statusCode;
