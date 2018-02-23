@@ -366,6 +366,8 @@ HTTPReqMsgParser::HTTPReqMsgParser()
 
 void HTTPReqMsgParser::initParams()
 {
+    state = HTTPMessageParseState::Line;
+
     version.clear();
     path.clear();
     method.clear();
@@ -399,7 +401,9 @@ void HTTPReqMsgParser::msg2req(HTTPRequest &req)
         req.addRequestHeader(kv);
     }
     
-    req.requestBody = std::string(cache->begin(),cache->end());
+    Util::byte u_str[cache->size()];
+    std::copy(cache->begin(),cache->end(),u_str);
+    req.requestBody.assign(std::basic_string<Util::byte>(u_str,cache->size()));
 }
 
 bool HTTPReqMsgParser::parse_line()

@@ -28,6 +28,9 @@ private:
     
 #ifdef Kqueue
     void kqueueLoop(const RunAndLoopCallback &callback);
+    std::tuple<int,int> setupKqueue();
+    void kqueueAccept(long count,int kq);
+    void kqueueError(int sockfd,int kq);
 #elif defined(Epoll)
     void epollLoop(const RunAndLoopCallback &callback);
 #endif

@@ -4,7 +4,6 @@
 #include <string>
 #include <map>
 #include <ostream>
-#include "../Utility/Util.hpp"
 
 class HTTPRequest
 {
@@ -23,7 +22,7 @@ public:
     
     std::map<std::string,std::string> *header;
     
-    std::string requestBody;
+    std::basic_string<unsigned char> requestBody;
 };
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res);

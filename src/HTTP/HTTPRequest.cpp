@@ -1,4 +1,5 @@
 #include "HTTPRequest.hpp"
+#include "../Utility/Util.hpp"
 
 HTTPRequest::HTTPRequest()
 {
@@ -32,7 +33,7 @@ void HTTPRequest::initParameter()
         header = nullptr;
     }
     
-    requestBody = std::string();
+    requestBody = std::basic_string<Util::byte>();
 }
 
 void HTTPRequest::addRequestHeader(std::pair<std::string,std::string> pair)
@@ -71,7 +72,7 @@ std::string HTTPRequest::toRequestMessage()
         }
     }
     
-    return requestLine + "\r\n" + Util::join(arr, std::string("\r\n")) + "\r\n\r\n" + requestBody;
+    return requestLine + "\r\n" + Util::join(arr, std::string("\r\n")) + "\r\n\r\n" + std::string(requestBody.begin(),requestBody.end());
 }
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res)
