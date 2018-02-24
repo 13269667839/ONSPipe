@@ -14,7 +14,7 @@ public:
     void initParameter();
     
     std::string toRequestMessage();
-    void addRequestHeader(std::pair<std::string,std::string> pair);
+    void addRequestHeader(std::string key,std::string value);
 public:
     std::string method;
     std::string path;

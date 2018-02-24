@@ -314,9 +314,7 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
 {
     auto res = new HTTPResponse();
     
-    res->version = version;
-    res->statusCode = atoi(status_code.c_str());
-    res->reason = reason;
+    res->setResponseLine(version,atoi(status_code.c_str()),reason);
     
     for (auto kv : header)
     {
@@ -325,25 +323,23 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
     
     if (!cache->empty())
     {
-        auto buffer = new Util::byte[cache->size()];
+        auto bufferLen = cache->size();
+        Util::byte buffer[bufferLen];
         std::copy(cache->begin(),cache->end(),buffer);
 
         if (header["Content-Encoding"] == "gzip")
         {
-            Byte uncompressedBuffer[1024000];
-            uLong uncompressedBufferLen = 1024000;
-            if (Util::gzlib_uncompress(buffer,cache->size(),uncompressedBuffer,&uncompressedBufferLen) == 0)
+            uLong uncompressedBufferLen = bufferLen * 9;
+            Byte uncompressedBuffer[uncompressedBufferLen];
+            if (Util::gzlib_uncompress(buffer,bufferLen,uncompressedBuffer,&uncompressedBufferLen) == 0)
             {
                 res->responseBody.assign(std::basic_string<Util::byte>(uncompressedBuffer,uncompressedBufferLen));
             }
         }
         else 
         {
-            res->responseBody.assign(std::basic_string<Util::byte>(buffer,cache->size()));
+            res->responseBody.assign(std::basic_string<Util::byte>(buffer,bufferLen));
         }
-        
-        delete []buffer;
-        buffer = nullptr;
     }
     
     return res;
@@ -398,7 +394,7 @@ void HTTPReqMsgParser::msg2req(HTTPRequest &req)
     
     for (auto kv : header)
     {
-        req.addRequestHeader(kv);
+        req.addRequestHeader(kv.first,kv.second);
     }
     
     Util::byte u_str[cache->size()];

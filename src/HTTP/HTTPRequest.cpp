@@ -28,24 +28,19 @@ void HTTPRequest::initParameter()
     {
         header->clear();
     }
-    else
-    {
-        header = nullptr;
-    }
     
     requestBody = std::basic_string<Util::byte>();
 }
 
-void HTTPRequest::addRequestHeader(std::pair<std::string,std::string> pair)
+void HTTPRequest::addRequestHeader(std::string key,std::string value)
 {
-    if (!header)
+    if (!key.empty() && !value.empty())
     {
-        header = new std::map<std::string,std::string>();
-    }
-    
-    if (!pair.first.empty() && !pair.second.empty())
-    {
-        header->insert(pair);
+        if (!header)
+        {
+            header = new std::map<std::string,std::string>();
+        }
+        header->insert({key,value});
     }
 }
 

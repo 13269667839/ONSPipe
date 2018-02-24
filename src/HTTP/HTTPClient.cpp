@@ -32,12 +32,10 @@ HTTPClient::~HTTPClient()
 
 void HTTPClient::setRequestHeader(std::string key,std::string value)
 {
-    if (key.empty() || value.empty() || !httpRequest)
+    if (httpRequest)
     {
-        return;
+        httpRequest->addRequestHeader(key,value);
     }
-    
-    httpRequest->addRequestHeader({key,value});
 }
 
 void HTTPClient::asyncRequest(RequestCallback callback)
