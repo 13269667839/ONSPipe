@@ -126,9 +126,11 @@ bool Socket::bind()
             if (::bind(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
+#ifdef DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"bind to "<<s<<std::endl;
+#endif
             }
             return res;
         });
@@ -151,12 +153,14 @@ int Socket::accept()
     {
         throwError("some error occur at accept function");
     }
+#ifdef DEBUG
     else
     {
         char s[INET6_ADDRSTRLEN];
         inet_ntop(visitorAddr.ss_family,get_in_addr((sockaddr *)&visitorAddr),s,sizeof(s));
         std::cout<<"connect from "<<s<<std::endl;
     }
+#endif
 
     return new_fd;
 }
@@ -177,9 +181,11 @@ bool Socket::connect()
             if (::connect(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
             {
                 res = true;
+#ifdef DEBUG
                 char s[INET6_ADDRSTRLEN];
                 inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
                 std::cout<<"connect to "<<s<<std::endl;
+#endif
             }
             return res;
         });
@@ -235,10 +241,12 @@ std::tuple<void *,long> Socket::receive(int fd)
             auto err = "receive error : " + std::string(gai_strerror(errno));
             throwError(err);
         }
+#ifdef DEBUG
         else if (bytes == 0)
         {
             std::cout<<"connect is closed"<<std::endl;
         }
+#endif
     }
     
     return std::make_tuple(recvBuf,bytes);

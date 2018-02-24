@@ -30,6 +30,5 @@ void request()
 
 int main(int argc, const char *argv[])
 {
-    server();
     return 0;
 }

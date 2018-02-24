@@ -9,6 +9,8 @@
 #include <zlib.h>
 
 #define throwError(msg) throw std::logic_error(msg)
+
+#define DEBUG
     
 enum class InputType : int
 {
