@@ -18,6 +18,7 @@ public:
     std::string toResponseMessage();
     
     void addResponseHead(std::string key,std::string value);
+    void setResponseLine(std::string version,int statusCode,std::string reason);
 public:
     std::string version;
     int statusCode;

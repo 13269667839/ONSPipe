@@ -79,3 +79,10 @@ void HTTPResponse::addResponseHead(std::string key,std::string value)
         header->insert({key,value});
     }
 }
+
+void HTTPResponse::setResponseLine(std::string version,int statusCode,std::string reason)
+{
+    this->version = version;
+    this->statusCode = statusCode;
+    this->reason = reason;
+}
