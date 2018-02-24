@@ -107,7 +107,15 @@ void HTTPServer::kqueueError(int sockfd,int kq)
     sock->close(sockfd);
 }
 
-void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
+void HTTPServer::kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback)
+{
+    response.initParameter();
+    callback(request,response);
+    auto msg = response.toResponseMessage();
+    sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
+}
+
+void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 {
     int listenfd = -1;
     int kq = -1;
@@ -201,16 +209,8 @@ void HTTPServer::kqueueLoop(const RunAndLoopCallback &callback)
 
                 if (sockfd != -1)
                 {
-                    response.initParameter();
-                    callback(request,response);
-                    auto msg = response.toResponseMessage();
-                    sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
-
-                    auto ite = request.header->find("Connection");
-                    if (ite == request.header->end() || ite->second != "keep-alive")
-                    {
-                        kqueueError(sockfd,kq);
-                    }
+                    kqueueSend(sockfd,request,response,callback);
+                    kqueueError(sockfd,kq);
                 }
             }
         }

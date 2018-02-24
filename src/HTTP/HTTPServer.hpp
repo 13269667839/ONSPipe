@@ -11,7 +11,7 @@
     #define Epoll
 #endif
 
-using RunAndLoopCallback = std::function<void (const HTTPRequest &request,HTTPResponse &response)>;
+using RunAndLoopCallback = std::function<void (HTTPRequest &request,HTTPResponse &response)>;
 
 class HTTPServer
 {
@@ -27,10 +27,11 @@ private:
     void setSocket();
     
 #ifdef Kqueue
-    void kqueueLoop(const RunAndLoopCallback &callback);
+    void kqueueLoop(RunAndLoopCallback &callback);
     std::tuple<int,int> setupKqueue();
     void kqueueAccept(long count,int kq);
     void kqueueError(int sockfd,int kq);
+    void kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback);
 #elif defined(Epoll)
     void epollLoop(const RunAndLoopCallback &callback);
 #endif
