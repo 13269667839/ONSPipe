@@ -410,7 +410,7 @@ ssize_t Socket::ssl_send(void *buf,size_t len)
 
     if (ssl && buf && len)
     {
-        SSL_write(ssl, buf, len);
+        bytes = SSL_write(ssl, buf, len);
     }
 
     return bytes;

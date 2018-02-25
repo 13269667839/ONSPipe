@@ -172,7 +172,7 @@ JSONToken * JSONLexer::initState(int16_t ch)
     {
         tok = new JSONToken(TokenType::Colon,":");
     }
-    else if (isnumber(ch))
+    else if (isdigit(ch))
     {
         state = LexerState::Number;
         cache->push_back(ch);
@@ -184,7 +184,7 @@ JSONToken * JSONLexer::initState(int16_t ch)
     else if (ch == '-')
     {
         char _ch = nextChar();
-        if (isnumber(_ch))
+        if (isdigit(_ch))
         {
             cache->push_back(ch);
             cache->push_back(_ch);
@@ -215,7 +215,7 @@ JSONToken * JSONLexer::numberState(char ch)
     while (1)
     {
         char tmp = nextChar();
-        if (isnumber(tmp) || tmp == '.')
+        if (isdigit(tmp) || tmp == '.')
         {
             numberStr += tmp;
             if (tmp == '.')
