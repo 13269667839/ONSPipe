@@ -43,7 +43,7 @@ std::vector<std::string> Util::split(std::string src, std::vector<std::string> t
 
             if (!capitalMap.empty())
             {
-                std::string::size_type lastIndex = -1;
+                long lastIndex = -1;
                 for (std::string::size_type i = 0; i < src.size(); ++i)
                 {
                     char ch = src[i];
@@ -79,7 +79,8 @@ std::vector<std::string> Util::split(std::string src, std::vector<std::string> t
                     }
                 }
 
-                if (lastIndex != -1 && lastIndex < src.size())
+                long size = src.size();
+                if (lastIndex != -1 && lastIndex < size)
                 {
                     arr.push_back(src.substr(lastIndex));
                 }
@@ -212,7 +213,7 @@ unsigned long Util::u_strlen(const char *utf8_str)
         return len;
     }
     
-    for (auto i = 0;i < size;++i)
+    for (decltype(size) i = 0;i < size;++i)
     {
         unsigned long tmp = utf8_str[i];
         unsigned int bits[8] = {};
@@ -406,7 +407,8 @@ int Util::gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata)
     }
 
     int err = 0;
-    z_stream d_stream = {0}; /* decompression stream */
+    //decompression stream
+    z_stream d_stream;
     static char dummy_head[2] = 
     {
         0x8 + 0x7 * 0x10,

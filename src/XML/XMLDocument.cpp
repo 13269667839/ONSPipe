@@ -118,7 +118,7 @@ std::ostream & operator << (std::ostream &os,XMLDocument *document)
 {
     if (document)
     {
-        os<<document;
+        os<<*document;
     }
     return os;
 }

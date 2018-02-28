@@ -77,13 +77,16 @@ bool HTTPRecvMsgParser::parse_body()
     
     if (content_length != -1)
     {
-        res = cache->size() >= content_length;
+        long size = cache->size();
+        if (size >= content_length)
+        {
+            res = true;
+        }
     }
     else if (isChunk)
     {
         long idx = -1;
-        long i = cache->size() - 1;
-        for (;i >= 0;--i)
+        for (long i = cache->size() - 1;i >= 0;--i)
         {
             if (cache->size() - i >= 7)
             {
@@ -110,8 +113,7 @@ bool HTTPRecvMsgParser::parse_body()
                 count--;
             }
             
-            i = 0;
-            for (;i < cache->size() - 1;++i)
+            for (decltype(cache->size()) i = 0;i < cache->size() - 1;++i)
             {
                 if (cache->at(i)     == Util::byte('\r') &&
                     cache->at(i + 1) == Util::byte('\n'))
@@ -152,10 +154,9 @@ bool HTTPRecvMsgParser::parse_header()
     auto res = false;
     
     auto idx = -1;
-    auto i = 0;
     if (method == "HEAD")
     {
-        for (;i < cache->size() - 2;++i)
+        for (decltype(cache->size()) i = 0;i < cache->size() - 2;++i)
         {
             if (cache->at(i)     == Util::byte('\r') &&
                 cache->at(i + 1) == Util::byte('\n'))
@@ -167,7 +168,7 @@ bool HTTPRecvMsgParser::parse_header()
     }
     else 
     {
-        for (;i < cache->size() - 4;++i)
+        for (decltype(cache->size()) i = 0;i < cache->size() - 4;++i)
         {
             if (cache->at(i)     == Util::byte('\r') &&
                 cache->at(i + 1) == Util::byte('\n') &&
@@ -182,12 +183,11 @@ bool HTTPRecvMsgParser::parse_header()
     
     if (idx != -1)
     {
-        i = 0;
         auto key = std::string();
         auto value = std::string();
         auto flag = 0;
         
-        for (;i < idx;++i)
+        for (auto i = 0;i < idx;++i)
         {
             auto ch = cache->at(0);
             cache->pop_front();
@@ -258,8 +258,7 @@ bool HTTPRecvMsgParser::parse_line()
     auto res = false;
     
     auto idx = -1;
-    auto i = 0;
-    for (;i < cache->size() - 1;++i)
+    for (decltype(cache->size()) i = 0;i < cache->size() - 1;++i)
     {
         if (cache->at(i)     == Util::byte('\r') &&
             cache->at(i + 1) == Util::byte('\n'))
@@ -272,8 +271,7 @@ bool HTTPRecvMsgParser::parse_line()
     if (idx != -1)
     {
         auto space_count = 0;
-        i = 0;
-        for (;i < idx;++i)
+        for (auto i = 0;i < idx;++i)
         {
             auto ch = cache->at(0);
             cache->pop_front();

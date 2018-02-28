@@ -169,7 +169,7 @@ void XMLParser::parse_tag_attr()
     
     auto state = 1;
     auto buf = std::pair<std::string, std::string>();
-    for (auto i = 0;i < attrStr.size();++i)
+    for (decltype(attrStr.size()) i = 0;i < attrStr.size();++i)
     {
         auto ch = attrStr[i];
 
@@ -315,7 +315,7 @@ void XMLParser::parse_file_attr()
     
     auto state = 1;
     auto buf = std::pair<std::string, std::string>();
-    for (auto i = 0;i < lexStr.size();++i)
+    for (decltype(lexStr.size()) i = 0;i < lexStr.size();++i)
     {
         auto ch = lexStr[i];
 

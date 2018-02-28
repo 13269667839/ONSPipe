@@ -265,7 +265,17 @@ ssize_t Socket::sendto(std::string buf)
     ssize_t bytes = -1;
     if (!buf.empty())
     {
-        setSocketFileDescription([](int fd,const addrinfo *info) { return info != nullptr; });
+        setSocketFileDescription([](int fd,const addrinfo *info) 
+        { 
+            auto res = info != nullptr;
+#ifdef DEBUG
+            if (res) 
+            {
+                std::cout<<"socket file description = "<<fd<<std::endl;
+            }
+#endif
+            return res; 
+        });
         if (socketfd != -1 && currentAddrInfo)
         {
             bytes = ::sendto(socketfd,buf.c_str(),buf.size(),0,currentAddrInfo->ai_addr,currentAddrInfo->ai_addrlen);

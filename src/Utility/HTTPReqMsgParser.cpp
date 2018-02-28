@@ -60,8 +60,7 @@ void HTTPReqMsgParser::msg2req(HTTPRequest &req)
 bool HTTPReqMsgParser::parse_line()
 {
     auto idx = -1;
-    auto i = 0;
-    for (;i < cache->size() - 1;++i)
+    for (decltype(cache->size()) i = 0;i < cache->size() - 1;++i)
     {
         if (cache->at(i)     == Util::byte('\r') &&
             cache->at(i + 1) == Util::byte('\n'))
@@ -77,8 +76,7 @@ bool HTTPReqMsgParser::parse_line()
     }
     
     auto space_count = 0;
-    i = 0;
-    for (;i < idx;++i)
+    for (auto i = 0;i < idx;++i)
     {
         auto ch = cache->at(0);
         cache->pop_front();
@@ -113,8 +111,7 @@ bool HTTPReqMsgParser::parse_line()
 bool HTTPReqMsgParser::parse_header()
 {
     auto idx = -1;
-    auto i = 0;
-    for (;i <= cache->size() - 4;++i)
+    for (decltype(cache->size()) i = 0;i <= cache->size() - 4;++i)
     {
         if (cache->at(i)     == Util::byte('\r') &&
             cache->at(i + 1) == Util::byte('\n') &&
@@ -131,12 +128,11 @@ bool HTTPReqMsgParser::parse_header()
         return false;
     }
     
-    i = 0;
     auto key = std::string();
     auto value = std::string();
     auto flag = 0;
 
-    for (;i < idx;++i)
+    for (auto i = 0;i < idx;++i)
     {
         auto ch = cache->at(0);
         cache->pop_front();
@@ -223,7 +219,18 @@ bool HTTPReqMsgParser::is_parse_msg()
         case HTTPMessageParseState::Body:
         {
         Body:
-            res = cache->size() >= content_length;
+            if (content_length > 0) 
+            {
+                long size = cache->size();
+                if (size >= content_length) 
+                {
+                    res = true;
+                }
+            }
+            else 
+            {
+                res = true;
+            }
         }
         break;
         default:
