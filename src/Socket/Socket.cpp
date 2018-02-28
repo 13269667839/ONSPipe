@@ -1,11 +1,14 @@
 #include "Socket.hpp"
 #include <unistd.h>
-#include <iostream>
 #include <sys/errno.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <cstring>
 #include "../Utility/Util.hpp"
+
+#ifdef DEBUG
+    #include <iostream>
+#endif
 
 Socket::Socket(std::string addr,int port,SocketType _type)
 {

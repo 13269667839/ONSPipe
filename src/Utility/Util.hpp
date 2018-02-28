@@ -18,6 +18,13 @@ enum class InputType : int
     Text
 };
 
+enum class HTTPMessageParseState : int
+{
+    Line = 0,
+    Header,
+    Body
+};
+
 class Util
 {
 public:

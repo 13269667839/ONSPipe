@@ -1,6 +1,6 @@
 #include "HTTPClient.hpp"
 #include <thread>
-#include "../Utility/HTTPParser.hpp"
+#include "../Utility/HTTPRecvMsgParser.hpp"
 
 HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
 {

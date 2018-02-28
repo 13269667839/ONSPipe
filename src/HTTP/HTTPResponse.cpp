@@ -56,15 +56,13 @@ std::string HTTPResponse::toResponseMessage()
     auto head = std::string();
     if (header && !header->empty())
     {
-        auto arr = std::vector<std::string>();
-        for (auto pair : *header)
+        for (auto ite : *header) 
         {
-            arr.push_back(pair.first + ": " + pair.second);
+            head += ite.first + ": " + ite.second + "\r\n";
         }
-        head = Util::join(arr, std::string("\r\n"));
     }
 
-    return line + "\r\n" + head + "\r\n\r\n" + std::string(responseBody.begin(),responseBody.end()) + "\r\n";
+    return line + "\r\n" + head + "\r\n" + std::string(responseBody.begin(),responseBody.end()) + "\r\n";
 }
 
 void HTTPResponse::addResponseHead(std::string key,std::string value)

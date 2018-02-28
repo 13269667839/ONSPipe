@@ -35,6 +35,7 @@
         "string_view": "cpp",
         "vector": "cpp",
         "__bit_reference": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "algorithm": "cpp"
     }
 }
