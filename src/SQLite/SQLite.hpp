@@ -8,7 +8,7 @@
 #include <string>
 
 using ResultSet = std::vector<std::map<std::string,std::string>>;
-using SQLiteCallback = std::function<void(const ResultSet set,char *errMsg)>;
+using SQLiteCallback = std::function<void(ResultSet set,char *errMsg)>;
 
 class SQLite
 {
