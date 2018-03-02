@@ -130,7 +130,7 @@ int WSServer::handShaking()
     auto line = std::string("HTTP/1.1 101 Switching Protocols\r\n");
     auto header = std::string("Upgrade: websocket\r\n") + "Connection: Upgrade\r\n" + "Sec-WebSocket-Accept: " + key + "\r\n\r\n";
     auto send_msg = line + header;
-    sock->sendAll(send_msg,fd);   
+    sock->sendAll(const_cast<char *>(send_msg.c_str()),send_msg.size(),false,fd);
     
     return fd;
 }
