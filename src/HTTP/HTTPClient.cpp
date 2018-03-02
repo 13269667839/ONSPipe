@@ -200,7 +200,6 @@ void HTTPClient::setHttpRequest()
         throwError("url's host is null");
     }
     setRequestHeader("Host", url->host);
-    setRequestHeader("accept-encoding","gzip, deflate, br");
 }
 
 std::string HTTPClient::methodStr()

@@ -10,7 +10,7 @@
     #include <iostream>
 #endif
 
-Socket::Socket(std::string addr,int port,SocketType _type)
+void Socket::initParam()
 {
     ctx = nullptr;
     ssl = nullptr;
@@ -18,6 +18,18 @@ Socket::Socket(std::string addr,int port,SocketType _type)
     addressInfo = nullptr;
     currentAddrInfo = nullptr;
     recvBuffSize = 512;
+    type = SocketType::TCP;
+}
+
+Socket::Socket()
+{
+    initParam();
+}
+
+Socket::Socket(std::string addr,int port,SocketType _type)
+{
+    initParam();
+
     if (port > 0)
     {
         type = _type;
@@ -54,7 +66,7 @@ Socket::~Socket()
     
     if (currentAddrInfo)
     {
-        //free by above (line 43)
+        //free by above
         currentAddrInfo = nullptr;
     }
 }

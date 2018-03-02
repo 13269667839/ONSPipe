@@ -33,6 +33,7 @@ private:
     addrinfo *addressInfo;
     addrinfo *currentAddrInfo;
 public:
+    Socket();
     Socket(std::string addr,int port,SocketType _type = SocketType::TCP);
     ~Socket();
     void close(int fd = -1);
@@ -89,6 +90,7 @@ private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
     void * get_in_addr(sockaddr *sa);
+    void initParam();
 };
 
 #endif
