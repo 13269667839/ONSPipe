@@ -21,22 +21,6 @@ void Socket::initParam()
     type = SocketType::TCP;
 }
 
-Socket::Socket()
-{
-    initParam();
-}
-
-Socket::Socket(std::string addr,int port,SocketType _type)
-{
-    initParam();
-
-    if (port > 0)
-    {
-        type = _type;
-        setAddressInfo(addr, std::to_string(port).c_str());
-    }
-}
-
 void Socket::close(int fd)
 {
     if (fd == -1)
@@ -267,72 +251,80 @@ std::tuple<void *,long> Socket::receive(int fd)
     return std::make_tuple(recvBuf,bytes);
 }
 
-ssize_t Socket::sendto(std::string buf)
-{
-    if (type == SocketType::TCP)
-    {
-        throwError("this function work at udp mode");
-    }
-    
-    ssize_t bytes = -1;
-    if (!buf.empty())
-    {
-        setSocketFileDescription([](int fd,const addrinfo *info) 
-        { 
-            auto res = info != nullptr;
-#ifdef DEBUG
-            if (res) 
-            {
-                std::cout<<"socket file description = "<<fd<<std::endl;
-            }
-#endif
-            return res; 
-        });
-        if (socketfd != -1 && currentAddrInfo)
-        {
-            bytes = ::sendto(socketfd,buf.c_str(),buf.size(),0,currentAddrInfo->ai_addr,currentAddrInfo->ai_addrlen);
-            if (bytes == -1)
-            {
-                std::string err = "receive error : " + std::string(gai_strerror(errno));
-                throwError(err);
-            }
-        }
-    }
-    return bytes;
-}
-
-void * Socket::receiveFrom()
-{
-    if (type == SocketType::TCP)
-    {
-        throwError("this function work at udp mode");
-    }
-    
-    void *recvBuf = nullptr;
-    if (socketfd != -1)
-    {
-        sockaddr_storage their_addr;
-        socklen_t addr_len = sizeof(their_addr);
-        int16_t buf[recvBuffSize];
-        auto bytes = recvfrom(socketfd, buf, recvBuffSize, 0, (sockaddr *)&their_addr, &addr_len);
-        if (bytes > 0)
-        {
-            recvBuf = new int16_t[bytes]();
-            memcpy(recvBuf, buf, bytes);
-        }
-        else if (bytes == -1)
-        {
-            std::string err = "receive error : " + std::string(gai_strerror(errno));
-            throwError(err);
-        }
-    }
-    
-    return recvBuf;
-}
-
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 {
     return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
+}
+
+#pragma mark -- UDP
+ssize_t Socket::sendto(void *buf,size_t len,sockaddr_in *addr)
+{
+    if (type == SocketType::TCP)
+    {
+        throwError("this function work at udp mode");
+    }
+
+    if (!buf || len == 0)
+    {
+        return -1;
+    }
+
+    if (socketfd == -1 && !currentAddrInfo)
+    {
+        setSocketFileDescription([](int fd, const addrinfo *info) {
+            auto res = info != nullptr;
+#ifdef DEBUG
+            if (res)
+            {
+                std::cout << "socket file description = " << fd << std::endl;
+            }
+#endif
+            return res;
+        });
+
+        if (socketfd == -1 || !currentAddrInfo)
+        {
+            throwError("socket fd set error");
+        }
+    }
+
+    ssize_t bytes = -1;
+
+    if (addr)
+    {
+        bytes = ::sendto(socketfd, buf, len, 0, (sockaddr *)addr, sizeof(*addr));
+    }
+    else 
+    {
+        bytes = ::sendto(socketfd, buf, len, 0, currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen);
+    }
+
+    return bytes;
+}
+
+std::tuple<std::basic_string<unsigned char>,sockaddr_in> Socket::receiveFrom()
+{
+    if (type == SocketType::TCP)
+    {
+        throwError("this function work at udp mode");
+    }
+
+    if (socketfd == -1)
+    {
+        throwError("socket fd error");
+    }
+
+    sockaddr_in clientAddr;
+    socklen_t addr_len = sizeof(clientAddr);
+    Util::byte buffer[recvBuffSize];
+    auto recvBytes = recvfrom(socketfd, buffer, recvBuffSize, 0, (sockaddr *)&clientAddr, &addr_len);
+
+    if (recvBytes < 0)
+    {
+        throwError("receive error : " + std::string(gai_strerror(errno)));
+    }
+
+    return {std::basic_string<Util::byte>(buffer, recvBytes),clientAddr};
 }
 
 #pragma mark -- SSL

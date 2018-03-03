@@ -101,7 +101,35 @@ void sqlite()
     }
 }
 
+void udpServer()
+{
+    auto socket = Socket("", 8888, SocketType::UDP);
+    if (socket.bind())
+    {
+        try
+        {
+            while (true)
+            {
+                std::basic_string<Util::byte> bytes;
+                sockaddr_in addr;
+                tie(bytes,addr) = socket.receiveFrom();
+                cout<<string(bytes.begin(),bytes.end())<<endl;
+
+                string input = "Hello World!\n";
+                socket.sendto(const_cast<char *>(input.c_str()), input.size(),&addr);
+            }
+        }
+        catch (logic_error error)
+        {
+            cout << "error occur : " << error.what() << endl;
+            socket.close();
+        }
+    }
+    socket.close();
+}
+
 int main(int argc, const char *argv[])
 {
+    udpServer();
     return 0;
 }

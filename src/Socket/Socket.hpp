@@ -33,13 +33,25 @@ private:
     addrinfo *addressInfo;
     addrinfo *currentAddrInfo;
 public:
-    Socket();
-    Socket(std::string addr,int port,SocketType _type = SocketType::TCP);
+    Socket()
+    {
+        initParam();
+    }
+
+    Socket(std::string addr,int port,SocketType _type = SocketType::TCP) : Socket()
+    {
+        if (port > 0)
+        {
+            type = _type;
+            setAddressInfo(addr, std::to_string(port).c_str());
+        }
+    }
+
     ~Socket();
     void close(int fd = -1);
     
     bool bind();
-    //=== TCP === 
+#pragma mark -- TCP
     bool listen();
     int accept();
     
@@ -48,11 +60,10 @@ public:
     ssize_t send(void *buf,size_t len,int fd = -1);
     
     std::tuple<void *,long> receive(int fd = -1);
-    
-    //=== UDP ===
-    ssize_t sendto(std::string buf);
-    void * receiveFrom();
-    
+#pragma mark -- UDP
+    ssize_t sendto(void *buf,size_t len,sockaddr_in *addr);
+    std::tuple<std::basic_string<unsigned char>,sockaddr_in> receiveFrom();
+#pragma mark -- General method
     template <typename BufferType,typename BufferLength>
     void sendAll(BufferType buffer,BufferLength length,bool ssl,int fd = -1)
     {
@@ -81,7 +92,7 @@ public:
     
     int setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
 
-    //=== ssl ===
+#pragma mark -- ssl
     void ssl_config();
     void ssl_close();
     ssize_t ssl_send(void *buf,size_t len);
