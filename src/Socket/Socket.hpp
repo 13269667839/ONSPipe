@@ -59,7 +59,7 @@ public:
     
     ssize_t send(void *buf,size_t len,int fd = -1);
     
-    std::tuple<void *,long> receive(int fd = -1);
+    std::vector<unsigned char> receive(int fd = -1);
 #pragma mark -- UDP
     ssize_t sendto(void *buf,size_t len,sockaddr_in *addr);
     std::tuple<std::basic_string<unsigned char>,sockaddr_in> receiveFrom();
@@ -96,7 +96,7 @@ public:
     void ssl_config();
     void ssl_close();
     ssize_t ssl_send(void *buf,size_t len);
-    std::tuple<void *,long> ssl_read();
+    std::vector<unsigned char> ssl_read();
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);

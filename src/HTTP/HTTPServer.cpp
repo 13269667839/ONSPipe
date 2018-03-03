@@ -161,44 +161,26 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
                 request.initParameter();
                 parser.initParams();
                     
-                void *recvBuf = nullptr;
-                long bytes = -2;
                 long recvBytes = 0;
-
                 while (recvBytes < event.data) 
                 {
                     sock->recvBuffSize = event.data - recvBytes;
-                    std::tie(recvBuf,bytes) = sock->receive(sockfd);
+                    auto recvBuf = sock->receive(sockfd);
                         
-                    if (!recvBuf)
+                    if (recvBuf.empty())
                     {
-                        if (bytes <= 0)
-                        {
-                            kqueueError(sockfd,kq);
-                        }
-                        continue;
-                    }
-
-                    recvBytes += bytes;
-                        
-                    auto strBuf = static_cast<Util::byte *>(recvBuf);      
-                    if (!strBuf)
-                    {
+                        parser.msg2req(request); 
                         break;
                     }
+
+                    recvBytes += recvBuf.size();
                         
                     if (!parser.cache)
                     {
                         parser.cache = new std::deque<Util::byte>();
                     }
                         
-                    for (int i = 0;i < bytes;++i)
-                    {
-                        parser.cache->push_back(strBuf[i]);
-                    }
-                        
-                    delete strBuf;
-                    strBuf = nullptr;
+                    parser.cache->insert(parser.cache->end(),std::begin(recvBuf),std::end(recvBuf));
                         
                     if (parser.is_parse_msg())
                     {
@@ -276,26 +258,17 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
                 parser.initParams();
                 while (true)
                 {
-                    void *recvBuf = nullptr;
-                    long bytes = -2;
-                        
-                    std::tie(recvBuf,bytes) = sock->receive(sockfd);
+                    auto recvBuf = sock->receive(sockfd);
 
-                    if (!recvBuf)
+                    if (recvBuf.empty())
                     {
-                        if (bytes == 0 || bytes == -1)
-                        {
-                            sock->close(sockfd);
-                            sockfd = -1;
-                            events[i].data.fd = -1;
-                        }
-                        break;
-                    }
-                        
-                    auto strBuf = static_cast<Util::byte *>(recvBuf);
-                        
-                    if (!strBuf)
-                    {
+                        // if (bytes == -1)
+                        // {
+                        //     sock->close(sockfd);
+                        //     sockfd = -1;
+                        //     events[i].data.fd = -1;
+                        // }
+                        parser.msg2req(request);
                         break;
                     }
                         
@@ -304,13 +277,7 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
                         parser.cache = new std::deque<Util::byte>();
                     }
                         
-                    for (int i = 0;i < bytes;++i)
-                    {
-                        parser.cache->push_back(strBuf[i]);
-                    }
-                        
-                    delete strBuf;
-                    strBuf = nullptr;
+                    parser.cache->insert(parser.cache->end(),std::begin(recvBuf),std::end(recvBuf));
                         
                     if (parser.is_parse_msg())
                     {

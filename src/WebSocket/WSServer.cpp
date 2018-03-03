@@ -49,27 +49,15 @@ int WSServer::handShaking()
    
     auto recvMsg = std::string();
     while (1) 
-    {        
-        void *recvbuf = nullptr;
-        long bytes = -2;
+    {       
+        auto recvbuf = sock->receive(fd);
         
-        std::tie(recvbuf,bytes) = sock->receive(fd);
-        
-        if (bytes == -2 || !recvbuf) 
+        if (recvbuf.empty()) 
         {
             break;
         }
         
-        auto u_buf = static_cast<char *>(recvbuf);
-        if (!u_buf)
-        {
-            break;
-        }
-        
-        recvMsg += u_buf;
-        
-        delete u_buf;
-        u_buf = nullptr;
+        recvMsg += (char *)recvbuf.data();
         
         if (recvMsg.rfind("\r\n\r\n") != std::string::npos)
         {
@@ -151,7 +139,7 @@ std::string WSServer::parseRecvData(Util::byte *recvdata,size_t len)
     if (code_len == 126)
     {
         //等于126，用后面相邻的2个字节来保存一个64bit位的无符号整数作为数据的长度,mask从第5个字节(4)开始
-        for (auto i = 4;i < len;++i)
+        for (decltype(len) i = 4;i < len;++i)
         {
             if (i >= 8)
             {
@@ -166,7 +154,7 @@ std::string WSServer::parseRecvData(Util::byte *recvdata,size_t len)
     else if (code_len > 126)
     {
         //大于126，用后面相邻的8个字节来保存一个64bit位的无符号整数作为数据的长度,mask从第11个字节(10)开始
-        for (auto i = 10;i < len;++i)
+        for (decltype(len) i = 10;i < len;++i)
         {
             if (i >= 14)
             {
@@ -181,7 +169,7 @@ std::string WSServer::parseRecvData(Util::byte *recvdata,size_t len)
     else 
     {
         //小于126时playload只有1位，所以mask从第三位(2)开始
-        for (auto i = 2;i < len;++i)
+        for (decltype(len) i = 2;i < len;++i)
         {
             if (i >= 6)
             {
@@ -322,63 +310,17 @@ void WSServer::eventLoop(Event event)
             {
                 while (true)
                 {
-                    void *recvBuf = nullptr;
-                    long bytes = -2;
-                    
-                    try 
+                    auto recvBuf = sock->receive(i);
+
+                    if (recvBuf.empty())
                     {
-                        std::tie(recvBuf,bytes) = sock->receive(i);
-                    } 
-                    catch (std::logic_error error) 
-                    {
-                        if (!recvBuf || bytes <= 0)
-                        {
-                            FD_CLR(i,&master);
-                            
-                            if (recvBuf)
-                            {
-                                free(recvBuf);
-                                recvBuf = nullptr;
-                            }
-                            
-                            continue;
-                        }
-                    }
-                    
-                    if (!recvBuf || bytes <= 0)
-                    {
-                        FD_CLR(i,&master);
-                        
-                        if (recvBuf)
-                        {
-                            free(recvBuf);
-                            recvBuf = nullptr;
-                        }
-                        
+                        FD_CLR(i, &master);
                         continue;
                     }
-                    
-                    auto recv_bytes = static_cast<Util::byte *>(recvBuf);
-                    if (!recv_bytes) 
-                    {
-                        FD_CLR(i,&master);
-                        
-                        if (recvBuf)
-                        {
-                            free(recvBuf);
-                            recvBuf = nullptr;
-                        }
-                        
-                        continue;
-                    }
-                    
-                    auto u8_str = parseRecvData(recv_bytes, bytes);
-                    
-                    delete recv_bytes;
-                    recv_bytes = nullptr;
-                    recvBuf = nullptr;
-                    
-                    event(this,i,u8_str);
+
+                    auto u8_str = parseRecvData(recvBuf.data(), recvBuf.size());
+
+                    event(this, i, u8_str);
                 }
             }
         }

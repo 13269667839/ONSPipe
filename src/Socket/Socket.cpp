@@ -216,39 +216,28 @@ ssize_t Socket::send(void *buf,size_t len,int fd)
     return bytes;
 }
 
-std::tuple<void *,long> Socket::receive(int fd)
+std::vector<unsigned char> Socket::receive(int fd)
 {
     if (type == SocketType::UDP)
     {
         throwError("this function work at tcp mode");
     }
-    
-    void *recvBuf = nullptr;
-    int sockfd = fd == -1?socketfd:fd;
-    long bytes = -2;
-    if (sockfd != -1)
+
+    auto sockfd = fd == -1 ? socketfd : fd;
+    if (sockfd == -1)
     {
-        Util::byte tmpBuf[recvBuffSize];
-        bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
-        if (bytes > 0)
-        {
-            recvBuf = new Util::byte[bytes]();
-            memcpy(recvBuf, tmpBuf, bytes);
-        }
-        else if (bytes == -1)
-        {
-            auto err = "receive error : " + std::string(gai_strerror(errno));
-            throwError(err);
-        }
-#ifdef DEBUG
-        else if (bytes == 0)
-        {
-            std::cout<<"connect is closed"<<std::endl;
-        }
-#endif
+        throwError("invalid socket fd");
     }
-    
-    return std::make_tuple(recvBuf,bytes);
+
+    Util::byte tmpBuf[recvBuffSize];
+    auto bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
+
+    if (bytes < 0)
+    {
+        throwError("receive error : " + std::string(gai_strerror(errno)));
+    }
+
+    return std::vector<Util::byte>(tmpBuf,tmpBuf + bytes);
 }
 
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
@@ -433,21 +422,19 @@ ssize_t Socket::ssl_send(void *buf,size_t len)
     return bytes;
 }
 
-std::tuple<void *,long> Socket::ssl_read()
-{    
-    void *recvBuf = nullptr;
-    long bytes = -2;
+std::vector<unsigned char> Socket::ssl_read()
+{
+    Util::byte tmpBuf[recvBuffSize];
+    long bytes = -1;
 
     if (ssl)
     {
-        Util::byte tmpBuf[recvBuffSize];
-        bytes = SSL_read(ssl,tmpBuf,recvBuffSize);
-        if (bytes > 0)
+        bytes = SSL_read(ssl, tmpBuf, recvBuffSize);
+        if (bytes < 0)
         {
-            recvBuf = new Util::byte[bytes]();
-            memcpy(recvBuf, tmpBuf, bytes);
+            throwError("ssl read error");
         }
     }
-    
-    return std::make_tuple(recvBuf,bytes);
+
+    return std::vector<Util::byte>(tmpBuf, tmpBuf + bytes);
 }

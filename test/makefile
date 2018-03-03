@@ -6,8 +6,9 @@ utility = ../src/Utility/*.cpp
 json = ../src/JSON/*.cpp
 xml = ../src/XML/*.cpp
 sqlite = ../src/SQLite/*.cpp
+websocket = ../src/WebSocket/*.cpp
 
-file_flag = $(socket) $(http) $(utility) $(json) $(xml) $(sqlite)
+file_flag = $(socket) $(http) $(utility) $(json) $(xml) $(sqlite) $(websocket)
 
 openssl_lib = /usr/local/Cellar/openssl/1.0.2n/lib
 openssl_include = /usr/local/Cellar/openssl/1.0.2n/include

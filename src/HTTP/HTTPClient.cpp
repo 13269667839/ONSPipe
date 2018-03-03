@@ -116,50 +116,28 @@ HTTPResponse * HTTPClient::syncRequest()
     parser.method = methodStr();
     while (1)
     {
-        void *recvbuf = nullptr;
-        long bytes = -2;
-        
-        if (https)
-        {
-            std::tie(recvbuf,bytes) = socket.ssl_read();
-        }
-        else 
-        {
-            std::tie(recvbuf,bytes) = socket.receive();
-        }
-        
-        if (!recvbuf || bytes == -2)
+        auto recvbuf = https ? (socket.ssl_read()) : (socket.receive());
+
+        if (recvbuf.empty())
         {
             res = parser.msg2res();
             break;
         }
-        
-        auto u_buf = static_cast<Util::byte *>(recvbuf);
-        if (!u_buf)
-        {
-            break;
-        }
-        
+
         if (!parser.cache)
         {
             parser.cache = new std::deque<Util::byte>();
         }
-        
-        for (auto i = 0;i < bytes;++i)
-        {
-            parser.cache->push_back(u_buf[i]);
-        }
-        
-        delete u_buf;
-        u_buf = nullptr;
-        
+
+        parser.cache->insert(parser.cache->end(), std::begin(recvbuf), std::end(recvbuf));
+
         if (parser.is_parse_msg())
         {
             res = parser.msg2res();
             break;
         }
     }
-    
+
     return res;
 }
 
