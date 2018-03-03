@@ -38,6 +38,8 @@
         "__locale": "cpp",
         "algorithm": "cpp",
         "chrono": "cpp",
-        "ratio": "cpp"
+        "ratio": "cpp",
+        "functional": "cpp",
+        "cstring": "cpp"
     }
 }

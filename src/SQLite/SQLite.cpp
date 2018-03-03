@@ -1,5 +1,6 @@
 #include "SQLite.hpp"
 #include "../Utility/Util.hpp"
+#include <cstring>
 
 SQLite::SQLite(std::string _path)
 {
