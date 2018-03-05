@@ -10,6 +10,28 @@
     #include <iostream>
 #endif
 
+#ifdef DEBUG
+//address of human readable format
+static inline void * get_in_addr(sockaddr *sa)
+{
+    void *res = nullptr;
+    if (!sa)
+    {
+        return res;
+    }
+
+    if (sa->sa_family == AF_INET)
+    {
+        res = &(((sockaddr_in *)sa)->sin_addr);
+    }
+    else if (sa->sa_family == AF_INET6)
+    {
+        res = &(((sockaddr_in6 *)sa)->sin6_addr);
+    }
+    return res;
+}
+#endif
+
 void Socket::initParam()
 {
     ctx = nullptr;
@@ -81,163 +103,61 @@ void Socket::setAddressInfo(std::string address,const char *port)
 
 void Socket::setSocketFileDescription(socketFDIteration iter)
 {
-    if (!addressInfo || !iter)
+    if (!addressInfo)
     {
         return;
     }
-    
+
+    if (type == SocketType::TCP && !iter)
+    {
+        return;
+    }
+
     currentAddrInfo = addressInfo;
     while (currentAddrInfo)
     {
-        int _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, currentAddrInfo->ai_protocol);
-        if (_sockfd != -1 && iter(_sockfd,currentAddrInfo))
+        auto _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, currentAddrInfo->ai_protocol);
+        if (type == SocketType::TCP)
         {
-            socketfd = _sockfd;
-            break;
+            if (_sockfd != -1 && iter(_sockfd, currentAddrInfo))
+            {
+                socketfd = _sockfd;
+                break;
+            }
+        }
+        else
+        {
+            if (_sockfd != -1)
+            {
+                socketfd = _sockfd;
+                break;
+            }
         }
         currentAddrInfo = currentAddrInfo->ai_next;
     }
 }
 
-//address of human readable format
-void * Socket::get_in_addr(sockaddr *sa)
-{
-    void *res = nullptr;
-    if (sa->sa_family == AF_INET)
-    {
-        res = &(((sockaddr_in *)sa)->sin_addr);
-    }
-    else if (sa->sa_family == AF_INET6)
-    {
-        res = &(((sockaddr_in6 *)sa)->sin6_addr);
-    }
-    return res;
-}
-
 bool Socket::bind()
 {
-    if (addressInfo)
+    if (!addressInfo)
     {
-        auto self = this;
-        setSocketFileDescription([&self](int _sockfd,const addrinfo *addr)
+        return false;
+    }
+
+    setSocketFileDescription([](int _sockfd, const addrinfo *addr) {
+        auto res = ::bind(_sockfd, addr->ai_addr, addr->ai_addrlen) != -1;
+#ifdef DEBUG
+        if (res)
         {
-            bool res = false;
-            if (::bind(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
-            {
-                res = true;
-#ifdef DEBUG
-                char s[INET6_ADDRSTRLEN];
-                inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
-                std::cout<<"bind to "<<s<<std::endl;
+            char s[INET6_ADDRSTRLEN];
+            inet_ntop(addr->ai_family, get_in_addr((sockaddr *)addr->ai_addr), s, sizeof(s));
+            std::cout << "bind to " << s << std::endl;
+        }
 #endif
-            }
-            return res;
-        });
-    }
+        return res;
+    });
+
     return socketfd != -1;
-}
-
-bool Socket::listen()
-{
-    return socketfd != -1 && ::listen(socketfd,10) != -1;
-}
-
-int Socket::accept()
-{
-    sockaddr_storage visitorAddr;
-    socklen_t len = sizeof(visitorAddr);
-    int new_fd = ::accept(socketfd, (sockaddr *)(&visitorAddr), &len);
-
-    if (new_fd == -1)
-    {
-        throwError("some error occur at accept function");
-    }
-#ifdef DEBUG
-    else
-    {
-        char s[INET6_ADDRSTRLEN];
-        inet_ntop(visitorAddr.ss_family,get_in_addr((sockaddr *)&visitorAddr),s,sizeof(s));
-        std::cout<<"connect from "<<s<<std::endl;
-    }
-#endif
-
-    return new_fd;
-}
-
-bool Socket::connect()
-{
-    if (type == SocketType::UDP)
-    {
-        throwError("this function work at tcp mode");
-    }
-    
-    if (addressInfo)
-    {
-        auto self = this;
-        setSocketFileDescription([&self](int _sockfd,const addrinfo *addr)
-        {
-            bool res = false;
-            if (::connect(_sockfd,addr->ai_addr,addr->ai_addrlen) != -1)
-            {
-                res = true;
-#ifdef DEBUG
-                char s[INET6_ADDRSTRLEN];
-                inet_ntop(addr->ai_family,self->get_in_addr((sockaddr *)addr->ai_addr),s,sizeof(s));
-                std::cout<<"connect to "<<s<<std::endl;
-#endif
-            }
-            return res;
-        });
-    }
-    
-    return socketfd != -1;
-}
-
-ssize_t Socket::send(void *buf,size_t len,int fd)
-{
-    if (type == SocketType::UDP)
-    {
-        throwError("this function work at tcp mode");
-    }
-    
-    ssize_t bytes = -1;
-    if (!buf || len == 0)
-    {
-        return bytes;
-    }
-    
-    auto _sockfd = fd == -1?socketfd:fd;
-    bytes = ::send(_sockfd, buf, len, 0);
-    if (bytes == -1)
-    {
-        throwError("some error occur at send function");
-    }
-
-    return bytes;
-}
-
-std::vector<unsigned char> Socket::receive(int fd)
-{
-    if (type == SocketType::UDP)
-    {
-        throwError("this function work at tcp mode");
-    }
-
-    auto sockfd = fd == -1 ? socketfd : fd;
-    if (sockfd == -1)
-    {
-        throwError("invalid socket fd");
-    }
-
-    Util::byte tmpBuf[recvBuffSize];
-    auto bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
-
-    if (bytes < 0)
-    {
-        throwError("receive error : " + std::string(gai_strerror(errno)));
-    }
-
-    return std::vector<Util::byte>(tmpBuf,tmpBuf + bytes);
 }
 
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
@@ -253,42 +173,21 @@ ssize_t Socket::sendto(void *buf,size_t len,sockaddr_in *addr)
         throwError("this function work at udp mode");
     }
 
-    if (!buf || len == 0)
+    if (!buf || len == 0 || !addr)
     {
         return -1;
     }
 
     if (socketfd == -1 && !currentAddrInfo)
     {
-        setSocketFileDescription([](int fd, const addrinfo *info) {
-            auto res = info != nullptr;
-#ifdef DEBUG
-            if (res)
-            {
-                std::cout << "socket file description = " << fd << std::endl;
-            }
-#endif
-            return res;
-        });
-
+        setSocketFileDescription(nullptr);
         if (socketfd == -1 || !currentAddrInfo)
         {
             throwError("socket fd set error");
         }
     }
 
-    ssize_t bytes = -1;
-
-    if (addr)
-    {
-        bytes = ::sendto(socketfd, buf, len, 0, (sockaddr *)addr, sizeof(*addr));
-    }
-    else 
-    {
-        bytes = ::sendto(socketfd, buf, len, 0, currentAddrInfo->ai_addr, currentAddrInfo->ai_addrlen);
-    }
-
-    return bytes;
+    return ::sendto(socketfd, buf, len, 0, (sockaddr *)addr, sizeof(*addr));
 }
 
 std::tuple<std::basic_string<unsigned char>,sockaddr_in> Socket::receiveFrom()
@@ -437,4 +336,105 @@ std::vector<unsigned char> Socket::ssl_read()
     }
 
     return std::vector<Util::byte>(tmpBuf, tmpBuf + bytes);
+}
+
+#pragma mark -- TCP
+bool Socket::listen()
+{
+    return socketfd != -1 && ::listen(socketfd,10) != -1;
+}
+
+ssize_t Socket::send(void *buf,size_t len,int fd)
+{
+    if (type == SocketType::UDP)
+    {
+        throwError("this function work at tcp mode");
+    }
+    
+    ssize_t bytes = -1;
+    if (!buf || len == 0)
+    {
+        return bytes;
+    }
+    
+    auto _sockfd = fd == -1?socketfd:fd;
+    bytes = ::send(_sockfd, buf, len, 0);
+    if (bytes == -1)
+    {
+        throwError("some error occur at send function");
+    }
+
+    return bytes;
+}
+
+std::vector<unsigned char> Socket::receive(int fd)
+{
+    if (type == SocketType::UDP)
+    {
+        throwError("this function work at tcp mode");
+    }
+
+    auto sockfd = fd == -1 ? socketfd : fd;
+    if (sockfd == -1)
+    {
+        throwError("invalid socket fd");
+    }
+
+    Util::byte tmpBuf[recvBuffSize];
+    auto bytes = recv(sockfd, tmpBuf, recvBuffSize, 0);
+
+    if (bytes < 0)
+    {
+        throwError("receive error : " + std::string(gai_strerror(errno)));
+    }
+
+    return std::vector<Util::byte>(tmpBuf,tmpBuf + bytes);
+}
+
+int Socket::accept()
+{
+    sockaddr_storage visitorAddr;
+    socklen_t len = sizeof(visitorAddr);
+    int new_fd = ::accept(socketfd, (sockaddr *)(&visitorAddr), &len);
+
+    if (new_fd == -1)
+    {
+        throwError("some error occur at accept function");
+    }
+
+#ifdef DEBUG
+    char s[INET6_ADDRSTRLEN];
+    inet_ntop(visitorAddr.ss_family, get_in_addr((sockaddr *)&visitorAddr), s, sizeof(s));
+    std::cout << "connect from " << s << std::endl;
+#endif
+
+    return new_fd;
+}
+
+bool Socket::connect()
+{
+    if (type == SocketType::UDP)
+    {
+        throwError("this function work at tcp mode");
+    }
+
+    if (!addressInfo)
+    {
+        return false;
+    }
+
+    setSocketFileDescription([](int _sockfd, const addrinfo *addr) {
+        bool res = ::connect(_sockfd, addr->ai_addr, addr->ai_addrlen) != -1;
+#ifdef DEBUG
+        if (res)
+        {
+            char s[INET6_ADDRSTRLEN];
+            inet_ntop(addr->ai_family, get_in_addr((sockaddr *)addr->ai_addr), s, sizeof(s));
+            std::cout << "connect to " << s << std::endl;
+        }
+#endif
+        return res;
+    });
+
+    return socketfd != -1;
 }

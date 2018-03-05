@@ -130,5 +130,6 @@ void udpServer()
 
 int main(int argc, const char *argv[])
 {
+    udpServer();
     return 0;
 }

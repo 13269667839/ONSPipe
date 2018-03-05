@@ -100,7 +100,6 @@ public:
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
-    void * get_in_addr(sockaddr *sa);
     void initParam();
 };
 

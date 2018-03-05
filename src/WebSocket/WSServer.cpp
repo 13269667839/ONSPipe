@@ -184,7 +184,7 @@ std::string WSServer::parseRecvData(Util::byte *recvdata,size_t len)
     
     auto raw_str = std::string();
 
-    for (auto idx = 0;idx < data.size();++idx)
+    for (decltype(data.size()) idx = 0;idx < data.size();++idx)
     {
         char code = data[idx] ^ mask[idx % 4];
         raw_str += code;
@@ -245,7 +245,8 @@ void WSServer::sendMsg(std::string msg,int fd) const
     while (!bytes.empty()) 
     {
         auto len = sock->send(bytes.data(), bytes.size(),fd);
-        if (len >= bytes.size())
+        long size = bytes.size();
+        if (len >= size)
         {
             break;
         }
