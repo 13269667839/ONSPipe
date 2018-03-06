@@ -116,18 +116,10 @@ void Socket::setSocketFileDescription(socketFDIteration iter)
     currentAddrInfo = addressInfo;
     while (currentAddrInfo)
     {
-        auto _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, currentAddrInfo->ai_protocol);
-        if (type == SocketType::TCP)
+        auto _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, 0);
+        if (_sockfd != -1) 
         {
-            if (_sockfd != -1 && iter(_sockfd, currentAddrInfo))
-            {
-                socketfd = _sockfd;
-                break;
-            }
-        }
-        else
-        {
-            if (_sockfd != -1)
+            if (!iter || iter(_sockfd, currentAddrInfo)) 
             {
                 socketfd = _sockfd;
                 break;
@@ -160,9 +152,37 @@ bool Socket::bind()
     return socketfd != -1;
 }
 
+#pragma mark -- General method
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 {
     return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
+}
+
+std::string Socket::byteOrder()
+{
+    union {
+        short value;
+        char  bytes[sizeof(short)];
+    } buf;
+
+    buf.value = 0x0102;
+
+    auto order = std::string();
+
+    if (buf.bytes[0] == 1 && buf.bytes[1] == 2)
+    {
+        order += "big endian";
+    }
+    else if (buf.bytes[0] == 2 && buf.bytes[1] == 1)
+    {
+        order += "little endian";
+    }
+    else
+    {
+        order += "unknown";
+    }
+
+    return order;
 }
 
 #pragma mark -- UDP

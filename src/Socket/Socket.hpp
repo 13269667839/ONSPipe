@@ -64,6 +64,12 @@ public:
     ssize_t sendto(void *buf,size_t len,sockaddr_in *addr);
     std::tuple<std::basic_string<unsigned char>,sockaddr_in> receiveFrom();
 #pragma mark -- General method
+    /**
+     * test machine byte order
+     * return string
+     */
+    static std::string byteOrder();
+
     template <typename BufferType,typename BufferLength>
     void sendAll(BufferType buffer,BufferLength length,bool ssl,int fd = -1)
     {
