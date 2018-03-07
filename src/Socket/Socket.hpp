@@ -61,9 +61,11 @@ public:
     
     std::vector<unsigned char> receive(int fd = -1);
 #pragma mark -- UDP
-    ssize_t sendto(void *buf,size_t len,sockaddr_in *addr);
-    std::tuple<std::basic_string<unsigned char>,sockaddr_in> receiveFrom();
+    ssize_t sendto(void *buf,size_t len,sockaddr_storage addr);
+    std::tuple<std::basic_string<unsigned char>,sockaddr_storage> receiveFrom();
 #pragma mark -- General method
+    static std::string netAddressToHostAddress(sockaddr addr);
+
     /**
      * test machine byte order
      * return string
@@ -107,6 +109,8 @@ private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
     void initParam();
+    //address of human readable format
+    static void * get_in_addr(sockaddr *sa);
 };
 
 #endif

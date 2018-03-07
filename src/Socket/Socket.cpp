@@ -10,28 +10,6 @@
     #include <iostream>
 #endif
 
-#ifdef DEBUG
-//address of human readable format
-static inline void * get_in_addr(sockaddr *sa)
-{
-    void *res = nullptr;
-    if (!sa)
-    {
-        return res;
-    }
-
-    if (sa->sa_family == AF_INET)
-    {
-        res = &(((sockaddr_in *)sa)->sin_addr);
-    }
-    else if (sa->sa_family == AF_INET6)
-    {
-        res = &(((sockaddr_in6 *)sa)->sin6_addr);
-    }
-    return res;
-}
-#endif
-
 void Socket::initParam()
 {
     ctx = nullptr;
@@ -77,27 +55,33 @@ Socket::~Socket()
     }
 }
 
-void Socket::setAddressInfo(std::string address,const char *port)
+void Socket::setAddressInfo(std::string address, const char *port)
 {
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;//ignore ipv4 or ipv6
-    hints.ai_socktype = type == SocketType::TCP?SOCK_STREAM:SOCK_DGRAM;
+    hints.ai_socktype = type == SocketType::TCP ? SOCK_STREAM : SOCK_DGRAM;
     const char *addr = nullptr;
     if (address.empty())
     {
-        hints.ai_flags = AI_PASSIVE;//127.0.0.1
+        hints.ai_flags = AI_PASSIVE; //127.0.0.1
     }
     else
     {
         addr = address.c_str();
     }
-    
+
+    /**
+     *  DNS or server name query
+     *  @param1 ip or domain name
+     *  @param2 serve name or port name
+     *  @param3 addr info that you customized
+     *  @param4 liked list returns
+     */
     int res = getaddrinfo(addr, port, &hints, &addressInfo);
     if (res != 0)
     {
-        std::string errMsg = "getaddrinfo: " + std::string(gai_strerror(res));
-        throwError(errMsg.c_str());
+        throwError("Error occur on getaddrinfo, reason " + std::string(gai_strerror(res)));
     }
 }
 
@@ -116,10 +100,10 @@ void Socket::setSocketFileDescription(socketFDIteration iter)
     currentAddrInfo = addressInfo;
     while (currentAddrInfo)
     {
-        auto _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, 0);
-        if (_sockfd != -1) 
+        auto _sockfd = socket(currentAddrInfo->ai_family, currentAddrInfo->ai_socktype, currentAddrInfo->ai_protocol);
+        if (_sockfd != -1)
         {
-            if (!iter || iter(_sockfd, currentAddrInfo)) 
+            if (!iter || iter(_sockfd, currentAddrInfo))
             {
                 socketfd = _sockfd;
                 break;
@@ -141,9 +125,7 @@ bool Socket::bind()
 #ifdef DEBUG
         if (res)
         {
-            char s[INET6_ADDRSTRLEN];
-            inet_ntop(addr->ai_family, get_in_addr((sockaddr *)addr->ai_addr), s, sizeof(s));
-            std::cout << "bind to " << s << std::endl;
+            std::cout << "bind to " << Socket::netAddressToHostAddress(addr->ai_addr) << std::endl;
         }
 #endif
         return res;
@@ -153,6 +135,47 @@ bool Socket::bind()
 }
 
 #pragma mark -- General method
+//address of human readable format
+void * Socket::get_in_addr(sockaddr *sa)
+{
+    void *res = nullptr;
+    if (!sa)
+    {
+        return res;
+    }
+
+    if (sa->sa_family == AF_INET)
+    {
+        res = &(((sockaddr_in *)sa)->sin_addr);
+    }
+    else if (sa->sa_family == AF_INET6)
+    {
+        res = &(((sockaddr_in6 *)sa)->sin6_addr);
+    }
+
+    return res;
+}
+
+std::string Socket::netAddressToHostAddress(sockaddr addr)
+{
+    auto hostFormatedAddr = std::string();
+    if (addr.sa_family == AF_INET)
+    {
+        //ipv4
+        char src[INET_ADDRSTRLEN];
+        inet_ntop(addr.sa_family, Socket::get_in_addr(&addr), src, sizeof(src));
+        hostFormatedAddr += src;
+    }
+    else if (addr.sa_family == AF_INET6)
+    {
+        //ipv6
+        char src[INET6_ADDRSTRLEN];
+        inet_ntop(addr.sa_family, Socket::get_in_addr(&addr), src, sizeof(src));
+        hostFormatedAddr += src;
+    }
+    return hostFormatedAddr;
+}
+
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 {
     return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
@@ -186,16 +209,16 @@ std::string Socket::byteOrder()
 }
 
 #pragma mark -- UDP
-ssize_t Socket::sendto(void *buf,size_t len,sockaddr_in *addr)
+ssize_t Socket::sendto(void *buf,size_t len,sockaddr_storage addr)
 {
     if (type == SocketType::TCP)
     {
         throwError("this function work at udp mode");
     }
 
-    if (!buf || len == 0 || !addr)
+    if (!buf || len == 0)
     {
-        return -1;
+        return 0;
     }
 
     if (socketfd == -1 && !currentAddrInfo)
@@ -207,10 +230,19 @@ ssize_t Socket::sendto(void *buf,size_t len,sockaddr_in *addr)
         }
     }
 
-    return ::sendto(socketfd, buf, len, 0, (sockaddr *)addr, sizeof(*addr));
+    auto addri = (sockaddr *)&addr;
+    socklen_t addrlen = addri->sa_len;
+    auto sendedBytes = ::sendto(socketfd, buf, len, 0, addri, addrlen);
+    
+    if (sendedBytes < 0)
+    {
+        throwError("error occur on sendto,reason " + std::string(gai_strerror(errno)));
+    }
+
+    return sendedBytes;
 }
 
-std::tuple<std::basic_string<unsigned char>,sockaddr_in> Socket::receiveFrom()
+std::tuple<std::basic_string<unsigned char>,sockaddr_storage> Socket::receiveFrom()
 {
     if (type == SocketType::TCP)
     {
@@ -222,14 +254,14 @@ std::tuple<std::basic_string<unsigned char>,sockaddr_in> Socket::receiveFrom()
         throwError("socket fd error");
     }
 
-    sockaddr_in clientAddr;
+    sockaddr_storage clientAddr;
     socklen_t addr_len = sizeof(clientAddr);
     Util::byte buffer[recvBuffSize];
     auto recvBytes = recvfrom(socketfd, buffer, recvBuffSize, 0, (sockaddr *)&clientAddr, &addr_len);
 
     if (recvBytes < 0)
     {
-        throwError("receive error : " + std::string(gai_strerror(errno)));
+        throwError("error occur on receiveFrom,reason " + std::string(gai_strerror(errno)));
     }
 
     return {std::basic_string<Util::byte>(buffer, recvBytes),clientAddr};
