@@ -109,8 +109,6 @@ private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
     void initParam();
-    //address of human readable format
-    static void * get_in_addr(sockaddr *sa);
 };
 
 #endif

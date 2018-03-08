@@ -125,7 +125,7 @@ bool Socket::bind()
 #ifdef DEBUG
         if (res)
         {
-            std::cout << "bind to " << Socket::netAddressToHostAddress(addr->ai_addr) << std::endl;
+            std::cout << "bind to " << Socket::netAddressToHostAddress(*addr->ai_addr) << std::endl;
         }
 #endif
         return res;
@@ -135,27 +135,6 @@ bool Socket::bind()
 }
 
 #pragma mark -- General method
-//address of human readable format
-void * Socket::get_in_addr(sockaddr *sa)
-{
-    void *res = nullptr;
-    if (!sa)
-    {
-        return res;
-    }
-
-    if (sa->sa_family == AF_INET)
-    {
-        res = &(((sockaddr_in *)sa)->sin_addr);
-    }
-    else if (sa->sa_family == AF_INET6)
-    {
-        res = &(((sockaddr_in6 *)sa)->sin6_addr);
-    }
-
-    return res;
-}
-
 std::string Socket::netAddressToHostAddress(sockaddr addr)
 {
     auto hostFormatedAddr = std::string();
@@ -163,14 +142,14 @@ std::string Socket::netAddressToHostAddress(sockaddr addr)
     {
         //ipv4
         char src[INET_ADDRSTRLEN];
-        inet_ntop(addr.sa_family, Socket::get_in_addr(&addr), src, sizeof(src));
+        inet_ntop(addr.sa_family, &(((sockaddr_in *)&addr)->sin_addr), src, sizeof(src));
         hostFormatedAddr += src;
     }
     else if (addr.sa_family == AF_INET6)
     {
         //ipv6
         char src[INET6_ADDRSTRLEN];
-        inet_ntop(addr.sa_family, Socket::get_in_addr(&addr), src, sizeof(src));
+        inet_ntop(addr.sa_family, &(((sockaddr_in6 *)&addr)->sin6_addr), src, sizeof(src));
         hostFormatedAddr += src;
     }
     return hostFormatedAddr;
@@ -451,13 +430,11 @@ int Socket::accept()
 
     if (new_fd == -1)
     {
-        throwError("some error occur at accept function");
+        throwError("error occur on accept(),reason " + std::string(gai_strerror(errno)));
     }
 
 #ifdef DEBUG
-    char s[INET6_ADDRSTRLEN];
-    inet_ntop(visitorAddr.ss_family, get_in_addr((sockaddr *)&visitorAddr), s, sizeof(s));
-    std::cout << "connect from " << s << std::endl;
+    std::cout << "connect from " << Socket::netAddressToHostAddress(*((sockaddr *)&visitorAddr)) << std::endl;
 #endif
 
     return new_fd;
@@ -480,9 +457,7 @@ bool Socket::connect()
 #ifdef DEBUG
         if (res)
         {
-            char s[INET6_ADDRSTRLEN];
-            inet_ntop(addr->ai_family, get_in_addr((sockaddr *)addr->ai_addr), s, sizeof(s));
-            std::cout << "connect to " << s << std::endl;
+            std::cout << "connect to " << Socket::netAddressToHostAddress(*addr->ai_addr) << std::endl;
         }
 #endif
         return res;
