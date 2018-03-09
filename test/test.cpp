@@ -4,6 +4,7 @@
 #include "../src/XML/XMLParser.hpp"
 #include "../src/JSON/JSONParser.hpp"
 #include "../src/SQLite/SQLite.hpp"
+#include "../src/WebSocket/WSServer.hpp"
 using namespace std;
 
 void server()
@@ -130,6 +131,29 @@ void udpServer()
     }
 
     socket.close();
+}
+
+void wsserver() 
+{
+    auto ws = WSServer(9999);
+    ws.addEventListener(WSServer::start,[](int fd,std::string msg)
+    {
+        cout<<"receive new client, id "<<fd<<endl;
+    });
+    ws.addEventListener(WSServer::receive,[&ws](int fd,std::string msg)
+    {
+        cout<<"current client id is "<<fd<<",receive msg is "<<msg<<endl;
+        ws.sendMsg(msg,fd);
+    });
+    ws.addEventListener(WSServer::end,[](int fd,std::string msg)
+    {
+        cout<<"connection closed, id "<<fd<<endl;
+    });
+    ws.addEventListener(WSServer::error,[](int fd,std::string msg)
+    {
+        cout<<"client id "<<fd<<",server error "<<msg<<endl;
+    });
+    ws.loop();
 }
 
 int main(int argc, const char *argv[])

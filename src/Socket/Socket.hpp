@@ -22,6 +22,7 @@ using socketFDIteration = std::function<bool(int,const addrinfo *)>;
 class Socket
 {
 public:
+    //default is -1
     int socketfd;
     //default is 512
     int recvBuffSize;

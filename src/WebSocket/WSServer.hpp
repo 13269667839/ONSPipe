@@ -4,24 +4,43 @@
 #include "../Socket/Socket.hpp"
 #include "../Utility/Util.hpp"
 
+using Event = std::function<void (int fd,std::string msg)>;
+
+struct WSClientMsg 
+{
+public:
+    std::string msg;
+    std::string type; 
+    bool connect;
+
+    WSClientMsg() :msg(std::string()),type(std::string()),connect(true) {}
+};
+
 class WSServer 
 {
 public:
-    using Event = std::function<void (const WSServer *server,int fd,std::string msg)>;
-public:
     WSServer(int port);
     ~WSServer();
-    
-    void eventLoop(Event event);
+public:
     void sendMsg(std::string msg,int fd) const;
+    void loop();
+    void addEventListener(std::string tag,Event event);
+public:
+    static const std::string start;
+    static const std::string receive;
+    static const std::string end;
+    static const std::string error;
 private:
+    void triggerEvent(std::string tag,int fd,std::string msg);
     void setSocket();
-    int handShaking();
     
-    std::string parseRecvData(Util::byte *recvdata,size_t len);
+    WSClientMsg parseRecvData(std::vector<Util::byte> bytes);
+
+    int handShaking();
 private:
     Socket *sock;
     int port;
+    std::map<std::string,Event> webSocketEvents;
 };
 
 #endif 
