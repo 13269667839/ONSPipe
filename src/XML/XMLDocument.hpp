@@ -16,8 +16,9 @@ public:
     std::string *content;
     bool isSelfClose;
     bool isCData;
+    bool isHTML;
 public:
-    XMLDocument(std::string _tagName = "");
+    XMLDocument(std::string _tagName,bool _isHTML);
     ~XMLDocument();
     void setAttribute(std::pair<std::string,std::string> pair);
     void setFileAttribute(std::pair<std::string,std::string> pair);

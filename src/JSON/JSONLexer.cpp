@@ -1,6 +1,7 @@
 #include "JSONLexer.hpp"
 #include <cctype>
 #include <regex>
+#include <cstring>
 #include "../Utility/Util.hpp"
 
 #pragma mark -- JSONToken

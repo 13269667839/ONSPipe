@@ -1,11 +1,16 @@
 #include "XMLParser.hpp"
 #include "../Utility/Util.hpp"
+#include <algorithm>
 
-XMLParser::XMLParser(std::string _input,InputType _type)
+XMLParser::XMLParser(std::string _input,InputType _type,bool isHTML)
 {
+    this->isHTML = isHTML;
+    htmlTokQueue = nullptr;
+    
+    lex = new XMLLex(_input,_type);
+
     tokenStack = std::stack<XMLTok *>();
     elementStack = std::stack<XMLDocument *>();
-    lex = new XMLLex(_input,_type);
 }
 
 XMLParser::~XMLParser()
@@ -15,22 +20,85 @@ XMLParser::~XMLParser()
         delete lex;
         lex = nullptr;
     }
+
+    if (htmlTokQueue)
+    {
+        htmlTokQueue->clear();
+        delete htmlTokQueue;
+        htmlTokQueue = nullptr;
+    }
 }
 
 XMLTok * XMLParser::getNextToken()
 {
-    return lex?lex->getNextTok():nullptr;
+    XMLTok *tok = nullptr;
+    if (isHTML)
+    {
+        if (htmlTokQueue && !htmlTokQueue->empty())
+        {
+            tok = htmlTokQueue->at(0);
+            htmlTokQueue->pop_front();
+        }
+    }
+    else
+    {
+        if (lex)
+        {
+            tok = lex->getNextTok();
+        }
+    }
+    return tok;
+}
+
+void XMLParser::getAllToken()
+{
+    if (!lex) 
+    {
+        return;
+    }
+
+    htmlTokQueue = new std::deque<XMLTok *>();
+
+    while (auto tok = lex->getNextTok())
+    {
+        if (tok && htmlTokQueue)
+        {
+            htmlTokQueue->push_back(tok);
+        }
+    }
+}
+
+void XMLParser::fixNoneSelfClosedTag()
+{
+    auto end = htmlTokQueue->end();
+    for (auto ite = htmlTokQueue->begin();ite != end;++ite)
+    {
+        auto token = *ite;
+        if (token->type == TokType::TagDeclare && !token->isSelfClose)
+        {
+            auto isHave = std::find_if(ite + 1,end,[&token](XMLTok *tok)
+            {
+                return tok->type == TokType::TagEnd && Strings::isPrefix(token->content,tok->content);
+            }) != end;
+
+            if (!isHave)
+            {
+                token->isSelfClose = true;
+            }
+        }
+    }
 }
 
 XMLDocument * XMLParser::xmlTextToDocument()
 {
+    if (isHTML)
+    {
+        getAllToken();
+        fixNoneSelfClosedTag();
+    }
+
     while (auto tok = getNextToken())
     {
-        if (tok->content.empty())
-        {
-            continue;
-        }
-        
         switch (tok->type)
         {
             case TokType::FileAttribute:
@@ -130,7 +198,7 @@ void XMLParser::parse_tag_declare()
     {
         throwError("empty tag name");
     }
-    auto element = new XMLDocument(name);
+    auto element = new XMLDocument(name,isHTML);
     elementStack.push(element);
     
     if (!tok->content.empty())

@@ -1,6 +1,7 @@
 #include "WSServer.hpp"
 #include <sys/select.h>
 #include <sys/errno.h>
+#include <algorithm>
 
 WSServer::WSServer(int port)
 {
@@ -328,7 +329,7 @@ int WSServer::handShaking()
         return -1;
     }
     
-    auto kvs = Util::split(recvMsg, std::string("\r\n"));
+    auto kvs = Strings::split(recvMsg, std::string("\r\n"));
     if (kvs.empty())
     {
         return -1;
@@ -341,7 +342,7 @@ int WSServer::handShaking()
     });
     if (ite != kvs.rend())
     {
-        key = Util::split(*ite, std::string(": "))[1];
+        key = Strings::split(*ite, std::string(": "))[1];
     }
     
     if (key.empty())

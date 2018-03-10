@@ -70,7 +70,7 @@ void json()
 
 void sqlite() 
 {
-    auto sql = SQLite(Util::currentWorkDirectory() + "test.db");
+    auto sql = SQLite(FileSystem::currentWorkDirectory() + "test.db");
     auto sqls = vector<string>
     {
         "create table if not exists test (id int primary key,name char(5),age int);",

@@ -67,7 +67,7 @@ std::string HTTPRequest::toRequestMessage()
         }
     }
     
-    return requestLine + "\r\n" + Util::join(arr, std::string("\r\n")) + "\r\n\r\n" + std::string(requestBody.begin(),requestBody.end());
+    return requestLine + "\r\n" + Strings::join(arr, std::string("\r\n")) + "\r\n\r\n" + std::string(requestBody.begin(),requestBody.end());
 }
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res)

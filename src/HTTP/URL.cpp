@@ -87,10 +87,10 @@ std::map<std::string,std::string> URL::queryDic()
 
     if (!query.empty())
     {
-        auto pair = Util::split(query, std::string("&"));
+        auto pair = Strings::split(query, std::string("&"));
         for (auto str : pair)
         {
-            auto kv = Util::split(str, std::string("="));
+            auto kv = Strings::split(str, std::string("="));
             if (kv.size() == 2)
             {
                 dic[kv[0]] = kv[1];
@@ -150,7 +150,7 @@ void URL::parseURLStr(std::string urlStr)
                     auto colonIdx = host.find(":");
                     if (colonIdx != std::string::npos)
                     {
-                        auto arr = Util::split(host, std::string(":"));
+                        auto arr = Strings::split(host, std::string(":"));
                         if (arr.size() == 2)
                         {
                             host = arr[0];

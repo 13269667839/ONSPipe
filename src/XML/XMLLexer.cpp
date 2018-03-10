@@ -428,7 +428,7 @@ XMLTok * XMLLex::contentState(int16_t ch)
     
     if (ch == '<')
     {
-        Util::trimRight(localCache, ' ');
+        Strings::trimRight(localCache, ' ');
         tok = new XMLTok(localCache,TokType::Content);
         state = TokType::TagStart;
     }

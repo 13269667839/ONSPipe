@@ -29,7 +29,58 @@ class Util
 {
 public:
     using byte = unsigned char;
+
+    static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
     
+    static char * base64_encoding(const char *buffer, int length, bool newLine);
+    static byte * sha1_encode(byte *src,size_t len);
+
+    static std::vector<Util::byte> zlib_compress(Util::byte *bytes,size_t len);
+    static std::vector<Util::byte> zlib_uncompress(Util::byte *bytes,size_t len);
+
+    /*
+     *  gzlib compress
+     *  @params data        原始数据
+     *  @params ndata       原始数据长度
+     *  @params zdata       压缩后的数据
+     *  @params nzdata      压缩后的数据长度
+     *  @return 0 == OK
+     */
+    static int gzlib_compress(Bytef *data, uLong ndata,Bytef *zdata, uLong *nzdata);
+    /*
+     *  gzlib uncompress
+     *  @params zdata       压缩后的数据
+     *  @params nzdata      压缩后的数据长度
+     *  @params data        原始数据
+     *  @params ndata       原始数据长度
+     *  @return 0 == OK
+     */
+    static int gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata);
+};
+
+class FileSystem 
+{
+public:
+    static std::vector<char> readFileSync(std::string filePath);
+
+    static bool isDirectory(std::string path);
+
+    static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
+
+    static std::string currentWorkDirectory();
+};
+
+class Strings 
+{
+public:
+    static bool isPrefix(std::string str,std::string prefix);
+
+    static std::wstring s2ws(const std::string &s);
+    
+    static unsigned long u_strlen(const char *utf8_str);
+
+    static std::vector<std::string> split(std::string src,std::vector<std::string> tokens);
+
     template <typename charType>
     static void trimRight(std::basic_string<charType> &src,const charType ch)
     {
@@ -43,7 +94,20 @@ public:
             rite = decltype(rite)(src.erase((++rite).base()));
         }
     }
-    
+
+    template <typename strType>
+    static strType toLowerStr(strType src)
+    {
+        for (auto i = 0;i < src.length();++i) 
+        {
+            if (isupper(src[i]))
+            {
+                src[i] = tolower(src[i]);
+            }
+        }
+        return src;
+    }
+
     template <typename strType>
     static std::vector<strType> split(strType src, strType token)
     {
@@ -88,22 +152,7 @@ public:
         }
         return arr;
     }
-    
-    static std::vector<std::string> split(std::string src,std::vector<std::string> tokens);
-    
-    template <typename strType>
-    static strType toLowerStr(strType src)
-    {
-        for (auto i = 0;i < src.length();++i) 
-        {
-            if (isupper(src[i]))
-            {
-                src[i] = tolower(src[i]);
-            }
-        }
-        return src;
-    }
-    
+
     template <typename strType>
     static strType join(std::vector<strType> srcArr, strType token)
     {
@@ -123,45 +172,6 @@ public:
         }
         return res;
     }
-    
-    static std::vector<char> readFileSync(std::string filePath);
-
-    static std::string currentWorkDirectory();
-
-    static bool isDirectory(std::string path);
-
-    static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
-
-    static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
-    
-    static std::wstring s2ws(const std::string &s);
-    
-    static unsigned long u_strlen(const char *utf8_str);
-    
-    static char * base64_encoding(const char *buffer, int length, bool newLine);
-    static byte * sha1_encode(byte *src,size_t len);
-
-    static std::vector<Util::byte> zlib_compress(Util::byte *bytes,size_t len);
-    static std::vector<Util::byte> zlib_uncompress(Util::byte *bytes,size_t len);
-
-    /*
-     *  gzlib compress
-     *  @params data        原始数据
-     *  @params ndata       原始数据长度
-     *  @params zdata       压缩后的数据
-     *  @params nzdata      压缩后的数据长度
-     *  @return 0 == OK
-     */
-    static int gzlib_compress(Bytef *data, uLong ndata,Bytef *zdata, uLong *nzdata);
-    /*
-     *  gzlib uncompress
-     *  @params zdata       压缩后的数据
-     *  @params nzdata      压缩后的数据长度
-     *  @params data        原始数据
-     *  @params ndata       原始数据长度
-     *  @return 0 == OK
-     */
-    static int gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata);
-};
+}; 
 
 #endif

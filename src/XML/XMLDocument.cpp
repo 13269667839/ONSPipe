@@ -2,7 +2,7 @@
 
 void XMLDocument::addChildNode(XMLDocument *obj)
 {
-    if (content)
+    if (!isHTML && content)
     {
         throw std::logic_error("ethier children or content");
     }
@@ -19,7 +19,7 @@ void XMLDocument::addChildNode(XMLDocument *obj)
 
 void XMLDocument::setContent(std::string _content)
 {
-    if (children)
+    if (!isHTML && content)
     {
         throw std::logic_error("ethier children or content");
     }
@@ -57,7 +57,7 @@ void XMLDocument::setAttribute(std::pair<std::string,std::string> pair)
     }
 }
 
-XMLDocument::XMLDocument(std::string _tagName)
+XMLDocument::XMLDocument(std::string _tagName,bool _isHTML)
 {
     tagName = _tagName;
     content = nullptr;
@@ -66,6 +66,7 @@ XMLDocument::XMLDocument(std::string _tagName)
     fileAttribute = nullptr;
     isSelfClose = false;
     isCData = false;
+    isHTML = _isHTML;
 }
 
 XMLDocument::~XMLDocument()
@@ -193,7 +194,8 @@ std::string XMLDocument::nodePrint(int &tabCount)
         
         out += "\n";
     }
-    else if (children && !children->empty())
+
+    if (children && !children->empty())
     {
         tabCount++;
         for (auto element : *children)

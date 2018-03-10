@@ -4,11 +4,12 @@
 #include "XMLLexer.hpp"
 #include "XMLDocument.hpp"
 #include <stack>
+#include <deque>
 
 class XMLParser
 {
 public:
-    XMLParser(std::string _input,InputType _type);
+    XMLParser(std::string _input,InputType _type,bool isHTML = false);
     ~XMLParser();
     
     XMLDocument * xmlTextToDocument();
@@ -16,6 +17,8 @@ private:
     std::stack<XMLTok *> tokenStack;
     std::stack<XMLDocument *> elementStack;
     XMLLex *lex;
+    bool isHTML;
+    std::deque<XMLTok *> *htmlTokQueue;
 private:
     XMLTok * getNextToken();
     
@@ -30,6 +33,9 @@ private:
     void parse_content();
     
     void parse_tag_end();
+
+    void getAllToken();
+    void fixNoneSelfClosedTag();
 };
 
 #endif
