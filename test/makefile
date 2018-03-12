@@ -1,5 +1,7 @@
 OS = $(shell uname -s)
 
+entry = test.cpp
+
 socket = ../src/Socket/*.cpp
 http = ../src/HTTP/*.cpp
 utility = ../src/Utility/*.cpp
@@ -29,7 +31,7 @@ ifeq ($(OS),Linux)
 endif
 
 build:
-	$(CC) test.cpp $(cpp_flag) $(file_flag) $(extra_flag)
+	$(CC) $(entry) $(file_flag) $(cpp_flag) $(extra_flag)
 
 clean:
 	rm a.out
