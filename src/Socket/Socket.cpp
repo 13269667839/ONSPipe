@@ -135,19 +135,6 @@ bool Socket::bind()
 }
 
 #pragma mark -- General method
-int Socket::sockAddrLen(sockaddr_storage addr)
-{
-    auto len = -1;
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-    len = addr.ss_len;
-#elif defined(__linux__)
-    
-#endif
-
-    return len;
-}
-
 std::string Socket::netAddressToHostAddress(sockaddr addr)
 {
     auto hostFormatedAddr = std::string();
@@ -201,7 +188,7 @@ std::string Socket::byteOrder()
 }
 
 #pragma mark -- UDP
-ssize_t Socket::sendto(void *buf,size_t len,sockaddr_storage addr)
+ssize_t Socket::sendto(void *buf, size_t len, sockaddr_storage addr)
 {
     if (type == SocketType::TCP)
     {
@@ -223,7 +210,16 @@ ssize_t Socket::sendto(void *buf,size_t len,sockaddr_storage addr)
     }
 
     auto addri = (sockaddr *)&addr;
-    socklen_t addrlen = Socket::sockAddrLen(addr);
+    auto addrlen = -1;
+
+    if (addr.ss_family == AF_INET)
+    {
+        addrlen = sizeof(sockaddr_in);
+    }
+    else if (addr.ss_family == AF_INET6)
+    {
+        addrlen = sizeof(sockaddr_in6);
+    }
 
     if (addrlen == -1)
     {

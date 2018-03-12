@@ -66,8 +66,6 @@ public:
     ssize_t sendto(void *buf,size_t len,sockaddr_storage addr);
     std::tuple<std::basic_string<unsigned char>,sockaddr_storage> receiveFrom();
 #pragma mark -- General method
-    static int sockAddrLen(sockaddr_storage addr);
-
     static std::string netAddressToHostAddress(sockaddr addr);
 
     /**
