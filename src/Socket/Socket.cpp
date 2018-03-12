@@ -140,14 +140,7 @@ int Socket::sockAddrLen(sockaddr_storage addr)
     auto len = -1;
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-    if (addr.ss_family == AF_INET)
-    {
-        len = ((sockaddr_in *)&addr)->sin_len;
-    }
-    else if (addr.ss_family == AF_INET6)
-    {
-        len = ((sockaddr_in6 *)&addr)->sin6_len;
-    }
+    len = addr.ss_len;
 #elif defined(__linux__)
     
 #endif
@@ -231,6 +224,12 @@ ssize_t Socket::sendto(void *buf,size_t len,sockaddr_storage addr)
 
     auto addri = (sockaddr *)&addr;
     socklen_t addrlen = Socket::sockAddrLen(addr);
+
+    if (addrlen == -1)
+    {
+        throwError("address len is -1");
+    }
+
     auto sendedBytes = ::sendto(socketfd, buf, len, 0, addri, addrlen);
     
     if (sendedBytes < 0)
@@ -263,7 +262,7 @@ std::tuple<std::basic_string<unsigned char>,sockaddr_storage> Socket::receiveFro
         throwError("error occur on receiveFrom,reason " + std::string(gai_strerror(errno)));
     }
 
-    return {std::basic_string<Util::byte>(buffer, recvBytes),clientAddr};
+    return std::make_tuple(std::basic_string<Util::byte>(buffer, recvBytes),clientAddr);
 }
 
 #pragma mark -- SSL
