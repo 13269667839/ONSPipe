@@ -1,5 +1,4 @@
 #include "HTTPServer.hpp"
-#include "../Utility/HTTPReqMsgParser.hpp"
 
 #ifdef Kqueue
     #define MAX_EVENT_COUNT 64
@@ -115,6 +114,34 @@ void HTTPServer::kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &respon
     sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
 }
 
+void HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
+{
+    request.initParameter();
+    parser.initParams();
+
+    long recvBytes = 0;
+    while (recvBytes < totalLength)
+    {
+        sock->recvBuffSize = totalLength - recvBytes;
+        auto recvBuf = sock->receive(sockfd);
+
+        if (recvBuf.empty())
+        {
+            parser.msg2req(request);
+            break;
+        }
+
+        recvBytes += recvBuf.size();
+
+        parser.addToCache(recvBuf);
+        if (parser.is_parse_msg())
+        {
+            parser.msg2req(request);
+            break;
+        }
+    }
+}
+
 void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 {
     int listenfd = -1;
@@ -158,37 +185,7 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
             
             if (event.filter == EVFILT_READ)//read event
             {
-                request.initParameter();
-                parser.initParams();
-                    
-                long recvBytes = 0;
-                while (recvBytes < event.data) 
-                {
-                    sock->recvBuffSize = event.data - recvBytes;
-                    auto recvBuf = sock->receive(sockfd);
-                        
-                    if (recvBuf.empty())
-                    {
-                        parser.msg2req(request); 
-                        break;
-                    }
-
-                    recvBytes += recvBuf.size();
-                        
-                    if (!parser.cache)
-                    {
-                        parser.cache = new std::deque<Util::byte>();
-                    }
-                        
-                    parser.cache->insert(parser.cache->end(),std::begin(recvBuf),std::end(recvBuf));
-                        
-                    if (parser.is_parse_msg())
-                    {
-                        parser.msg2req(request); 
-                        break;
-                    }
-                }
-
+                kqueueParseRecvRequest(request,parser,event.data,sockfd);
                 if (sockfd != -1)
                 {
                     kqueueSend(sockfd,request,response,callback);
@@ -272,13 +269,7 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
                         break;
                     }
                         
-                    if (!parser.cache)
-                    {
-                        parser.cache = new std::deque<Util::byte>();
-                    }
-                        
-                    parser.cache->insert(parser.cache->end(),std::begin(recvBuf),std::end(recvBuf));
-                        
+                    parser.addToCache(recvBuf);
                     if (parser.is_parse_msg())
                     {
                         parser.msg2req(request);

@@ -4,6 +4,7 @@
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
 #include "../Socket/Socket.hpp"
+#include "../Utility/HTTPReqMsgParser.hpp"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #define Kqueue
@@ -32,6 +33,7 @@ private:
     void kqueueAccept(long count,int kq);
     void kqueueError(int sockfd,int kq);
     void kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback);
+    void kqueueParseRecvRequest(HTTPRequest &request,HTTPReqMsgParser &parser,long totalLength,int sockfd);
 #elif defined(Epoll)
     void epollLoop(const RunAndLoopCallback &callback);
 #endif

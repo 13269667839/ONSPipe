@@ -239,3 +239,18 @@ bool HTTPReqMsgParser::is_parse_msg()
     
     return res;
 }
+
+void HTTPReqMsgParser::addToCache(std::vector<Util::byte> &bytes)
+{
+    if (bytes.empty())
+    {
+        return;
+    }
+
+    if (!cache)
+    {
+        cache = new std::deque<Util::byte>();
+    }
+
+    cache->insert(cache->end(),std::begin(bytes),std::end(bytes));
+}

@@ -15,15 +15,16 @@ public:
     
     void msg2req(HTTPRequest &req);
     void initParams();
+
+    void addToCache(std::vector<Util::byte> &bytes);
 public:
-    std::deque<Util::byte> *cache;
-    
     std::string method;
     std::string path;
     std::string version;
     
     std::map<std::string,std::string> header;
 private:
+    std::deque<Util::byte> *cache;
     HTTPMessageParseState state;
     long content_length;
 private:
