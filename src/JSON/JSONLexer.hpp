@@ -1,6 +1,7 @@
 #ifndef JSONLexer_hpp
 #define JSONLexer_hpp
 
+#include "../Utility/Util.hpp"
 #include <string>
 #include <fstream>
 #include <deque>
@@ -40,12 +41,6 @@ public:
     bool isContainer();
 };
 
-enum class SourceType
-{
-    File = 0,
-    Text
-};
-
 enum class LexerState
 {
     Init = 0,
@@ -58,7 +53,7 @@ enum class LexerState
 class JSONLexer
 {
 public:
-    JSONLexer(SourceType _type,std::string _content);
+    JSONLexer(InputType _type,std::string _content);
     ~JSONLexer();
 public:
     JSONToken * getNextToken();
@@ -71,7 +66,7 @@ private:
     JSONToken * booleanState(int16_t ch);
     JSONToken * nullState(int16_t ch);
 private:
-    SourceType type;
+    InputType type;
     std::string content;
     
     std::ifstream *stream;

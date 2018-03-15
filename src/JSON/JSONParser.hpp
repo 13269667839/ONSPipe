@@ -7,7 +7,7 @@
 class JSONParser
 {
 public:
-    JSONParser(SourceType _type,std::string _content);
+    JSONParser(InputType _type,std::string _content);
     ~JSONParser();
     
     JSObject * token2Object();

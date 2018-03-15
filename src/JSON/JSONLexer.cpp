@@ -2,7 +2,6 @@
 #include <cctype>
 #include <regex>
 #include <cstring>
-#include "../Utility/Util.hpp"
 
 #pragma mark -- JSONToken
 JSONToken::JSONToken(TokenType _type,std::string _content)
@@ -22,7 +21,7 @@ bool JSONToken::isContainer()
 }
 
 #pragma mark -- JSONLexer
-JSONLexer::JSONLexer(SourceType _type,std::string _content)
+JSONLexer::JSONLexer(InputType _type,std::string _content)
 {
     if (_content.empty())
     {
@@ -36,7 +35,7 @@ JSONLexer::JSONLexer(SourceType _type,std::string _content)
     state = LexerState::Init;
     cache = new std::deque<int16_t>();
     
-    if (type == SourceType::File)
+    if (type == InputType::File)
     {
         stream = new std::ifstream(_content);
         if (!stream->is_open())
@@ -75,14 +74,14 @@ int16_t JSONLexer::nextChar()
     }
     else
     {
-        if (type == SourceType::File)
+        if (type == InputType::File)
         {
             if (stream)
             {
                 ch = stream->get();
             }
         }
-        else if (type == SourceType::Text)
+        else if (type == InputType::Text)
         {
             if (index < content.length())
             {

@@ -1,7 +1,7 @@
 #include "JSONParser.hpp"
 #include "../Utility/Util.hpp"
 
-JSONParser::JSONParser(SourceType _type,std::string _content)
+JSONParser::JSONParser(InputType _type,std::string _content)
 {
     lex = new JSONLexer(_type,_content);
 }

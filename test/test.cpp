@@ -58,7 +58,7 @@ void xml()
 void json() 
 {
     auto text = "{\"1\":[1,2,3,[4,5,{\"name\":\"Onion Shen\"}]],\"12345\":[1,2,3,4,5,6,7,8,9]}";
-    auto parser = JSONParser(SourceType::Text,text);
+    auto parser = JSONParser(InputType::Text,text);
     auto obj = parser.token2Object();
     if (obj)
     {
