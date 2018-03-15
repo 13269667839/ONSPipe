@@ -280,7 +280,7 @@ void XMLParser::parse_tag_attr()
                 if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 2);
-                    root->setAttribute(buf);
+                    root->setAttribute(buf.first,buf.second);
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;
@@ -304,7 +304,7 @@ void XMLParser::parse_tag_attr()
                 if (isDoubleQuote || isSingleQuote)
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 1);
-                    root->setAttribute(buf);
+                    root->setAttribute(buf.first,buf.second);
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;
@@ -420,7 +420,7 @@ void XMLParser::parse_file_attr()
                 if (*begin(buf.second) == '\"' && *(end(buf.second) - 1) == '\"')
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 2);
-                    element->setFileAttribute({buf.first,buf.second});
+                    element->setFileAttribute(buf.first,buf.second);
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;
@@ -435,7 +435,7 @@ void XMLParser::parse_file_attr()
                 if (ch == '\"' && *begin(buf.second) == '\"')
                 {
                     buf.second = buf.second.substr(1,buf.second.size() - 1);
-                    element->setFileAttribute({buf.first,buf.second});
+                    element->setFileAttribute(buf.first,buf.second);
                     buf.first.clear();
                     buf.second.clear();
                     state = 1;

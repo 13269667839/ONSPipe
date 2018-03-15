@@ -1,37 +1,9 @@
 #ifndef XMLLexer_hpp
 #define XMLLexer_hpp
 
-#include <ostream>
 #include <fstream>
 #include "../Utility/Util.hpp"
-
-enum class TokType : int
-{
-    Init = 0,
-    Comment,
-    FileAttribute,
-    TagStart,
-    TagDeclare,
-    TagEnd,
-    Content,
-    DocType,
-    CData
-};
-    
-struct XMLTok
-{
-public:
-    std::string content;
-    TokType type;
-    bool isSelfClose;
-        
-    XMLTok(std::string _content,TokType _type);
-    
-    friend std::ostream & operator << (std::ostream &os,const XMLTok &tok);
-    friend std::ostream & operator << (std::ostream &os,const XMLTok *tok);
-private:
-    std::string type2Str() const;
-};
+#include "XMLTok.hpp"
 
 class XMLLex
 {
@@ -45,7 +17,7 @@ private:
     InputType type;
     
     std::ifstream *stream;
-    std::string::size_type *idx;
+    std::string::size_type idx;
     
     TokType state;
     

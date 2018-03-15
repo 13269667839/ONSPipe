@@ -31,30 +31,34 @@ void XMLDocument::setContent(std::string _content)
     content->assign(_content);
 }
 
-void XMLDocument::setFileAttribute(std::pair<std::string,std::string> pair)
+void XMLDocument::setFileAttribute(std::string key, std::string value)
 {
+    if (key.empty())
+    {
+        return;
+    }
+
     if (!fileAttribute)
     {
-        fileAttribute = new std::map<std::string,std::string>();
+        fileAttribute = new std::map<std::string, std::string>();
     }
-    
-    if (!pair.first.empty())
-    {
-        fileAttribute->insert(pair);
-    }
+
+    fileAttribute->insert(std::make_pair(key, value));
 }
 
-void XMLDocument::setAttribute(std::pair<std::string,std::string> pair)
+void XMLDocument::setAttribute(std::string key, std::string value)
 {
+    if (key.empty())
+    {
+        return;
+    }
+
     if (!attribute)
     {
-        attribute = new std::map<std::string,std::string>();
+        attribute = new std::map<std::string, std::string>();
     }
-    
-    if (!pair.first.empty())
-    {
-        attribute->insert(pair);
-    }
+
+    attribute->insert(std::make_pair(key, value));
 }
 
 XMLDocument::XMLDocument(std::string _tagName,bool _isHTML)

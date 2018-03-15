@@ -20,8 +20,8 @@ public:
 public:
     XMLDocument(std::string _tagName,bool _isHTML);
     ~XMLDocument();
-    void setAttribute(std::pair<std::string,std::string> pair);
-    void setFileAttribute(std::pair<std::string,std::string> pair);
+    void setAttribute(std::string key,std::string value);
+    void setFileAttribute(std::string key,std::string value);
     void setContent(std::string _content);
     void addChildNode(XMLDocument *obj);
     

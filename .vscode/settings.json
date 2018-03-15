@@ -49,6 +49,9 @@
         "__tuple": "cpp",
         "thread": "cpp",
         "cmath": "cpp",
-        "cstdlib": "cpp"
+        "cstdlib": "cpp",
+        "__functional_03": "cpp",
+        "system_error": "cpp",
+        "atomic": "cpp"
     }
 }

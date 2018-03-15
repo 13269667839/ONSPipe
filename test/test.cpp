@@ -44,7 +44,7 @@ void request()
 
 void xml() 
 {
-    auto text = "<root><layer>1</layer><layer>2</layer><layer>3</layer><layer>4</layer><layer>5</layer><layer>6</layer></root>";
+    auto text = "<root count=\"6\"><layer id=\"1\">1</layer><layer id=\"2\">2</layer><layer id=\"3\">3</layer><layer id=\"4\">4</layer><layer id=\"5\">5</layer><layer id=\"6\">6</layer></root>";
     auto parser = XMLParser(text,InputType::Text);
     auto document = parser.xmlTextToDocument();
     if (document)
