@@ -192,20 +192,24 @@ void XMLParser::parse_tag_declare()
     {
         throwError("token type error!");
     }
-    
-    auto name = parse_tag_name(tok->content);
+
+    auto name = tok->tagName();
     if (name.empty())
     {
         throwError("empty tag name");
     }
     auto element = new XMLDocument(name,isHTML);
     elementStack.push(element);
-    
-    if (!tok->content.empty())
+
+    auto attrDic = tok->attribute();
+    if (!attrDic.empty())
     {
-        parse_tag_attr();
+        for (auto pair : attrDic)
+        {
+            element->setAttribute(pair.first, pair.second);
+        }
     }
-    
+
     if (tok->isSelfClose)
     {
         elementStack.top()->isSelfClose = true;
@@ -227,149 +231,6 @@ void XMLParser::parse_tag_declare()
     {
         parse_file_attr();
     }
-}
-
-void XMLParser::parse_tag_attr()
-{
-    auto tok = tokenStack.top();
-    auto attrStr = tok->content;
-    auto root = elementStack.top();
-    
-    auto state = 1;
-    auto buf = std::pair<std::string, std::string>();
-    for (decltype(attrStr.size()) i = 0;i < attrStr.size();++i)
-    {
-        auto ch = attrStr[i];
-
-        if (state == 1)
-        {
-            if (ch == '=')
-            {
-                if (buf.first.empty())
-                {
-                    throwError("empty attribute key at tag " + root->tagName);
-                }
-
-                state = 2;
-            }
-            else
-            {
-                if (buf.first.empty())
-                {
-                    if (!isspace(ch))
-                    {
-                        buf.first += ch;
-                    }
-                }
-                else
-                {
-                    buf.first += ch;
-                }
-            }
-        }
-        else if (state == 2)
-        {
-            if (isspace(ch))
-            {
-                auto firstCh = *begin(buf.second);
-                auto lastCh = *(end(buf.second) - 1);
-
-                auto isDoubleQuote = firstCh == '\"' && lastCh == '\"';
-                auto isSingleQuote = firstCh == '\'' && lastCh == '\'';
-
-                if (isDoubleQuote || isSingleQuote)
-                {
-                    buf.second = buf.second.substr(1,buf.second.size() - 2);
-                    root->setAttribute(buf.first,buf.second);
-                    buf.first.clear();
-                    buf.second.clear();
-                    state = 1;
-                }
-                else if (i == attrStr.size() - 1)
-                {
-                    throwError("attribute value must inside of the quote");
-                }
-                else
-                {
-                    buf.second += ch;
-                }
-            }
-            else if (i == attrStr.size() - 1)
-            {
-                auto firstCh = buf.second[0];
-
-                auto isDoubleQuote = ch == '\"' && firstCh == '\"';
-                auto isSingleQuote = ch == '\'' && firstCh == '\'';
-
-                if (isDoubleQuote || isSingleQuote)
-                {
-                    buf.second = buf.second.substr(1,buf.second.size() - 1);
-                    root->setAttribute(buf.first,buf.second);
-                    buf.first.clear();
-                    buf.second.clear();
-                    state = 1;
-                }
-                else
-                {
-                    throwError("attribute value must inside of the quote");
-                }
-            }
-            else
-            {
-                if (buf.second.empty())
-                {
-                    if (ch == '\"' || ch == '\'')
-                    {
-                        buf.second += ch;
-                    }
-                }
-                else
-                {
-                    buf.second += ch;
-                }
-            }
-        }
-    }
-}
-
-std::string XMLParser::parse_tag_name(std::string &content)
-{
-    auto name = std::string();
-    
-    if (content.empty())
-    {
-        return name;
-    }
-    
-    auto i = content.find(" ");
-    if (i != std::string::npos)
-    {
-        auto j = content.find("=",i);
-        if (j != std::string::npos)
-        {
-            if (j > i)
-            {
-                name = content.substr(0,i);
-                content = content.substr(i + 1);
-            }
-            else
-            {
-                throwError("invalid tag declare format");
-            }
-        }
-        else
-        {
-            name = content.substr(0,i);
-            content = content.substr(i + 1);
-        }
-    }
-    else
-    {
-        name = content;
-        content.clear();
-    }
-    
-    return name;
 }
 
 void XMLParser::parse_file_attr()
@@ -465,4 +326,3 @@ void XMLParser::parse_file_attr()
     delete tok;
     tok = nullptr;
 }
-

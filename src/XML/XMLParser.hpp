@@ -25,8 +25,6 @@ private:
     void parse_file_attr();
     
     void parse_tag_declare();
-    std::string parse_tag_name(std::string &content);
-    void parse_tag_attr();
     
     void parse_cdata();
     

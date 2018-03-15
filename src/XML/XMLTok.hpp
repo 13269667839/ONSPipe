@@ -2,7 +2,7 @@
 #define XMLTok_hpp
 
 #include <ostream>
-#include <string>
+#include "../Utility/Util.hpp"
 
 enum class TokType
 {
@@ -28,6 +28,9 @@ public:
     
     friend std::ostream & operator << (std::ostream &os,const XMLTok &tok);
     friend std::ostream & operator << (std::ostream &os,const XMLTok *tok);
+public:
+    std::string tagName();
+    std::map<std::string,std::string> attribute();
 private:
     std::string type2Str() const;
 };

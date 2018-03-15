@@ -1,4 +1,5 @@
 #include "XMLTok.hpp"
+#include <cctype>
 
 XMLTok::XMLTok(std::string _content,TokType _type)
 {
@@ -61,4 +62,151 @@ std::string XMLTok::type2Str() const
     }
     
     return str;
+}
+
+#pragma mark -- XML Element Attributes
+std::string XMLTok::tagName()
+{
+    auto name = std::string();
+
+    if (content.empty())
+    {
+        return name;
+    }
+
+    if (type == TokType::TagDeclare)
+    {
+        auto idx = content.find(" ");
+        if (idx == std::string::npos)
+        {
+            name += content;
+        }
+        else
+        {
+            name = content.substr(0, idx);
+        }
+    }
+    else if (type == TokType::TagEnd)
+    {
+        name += content;
+    }
+
+    return name;
+}
+
+std::map<std::string, std::string> XMLTok::attribute()
+{
+    auto dic = std::map<std::string, std::string>();
+
+    if (content.empty() || type != TokType::TagDeclare)
+    {
+        return dic;
+    }
+
+    auto name = tagName();
+    auto nameSize = name.size();
+    if (nameSize == content.size())
+    {
+        return dic;
+    }
+
+    auto attrStr = content.substr(nameSize);
+
+    auto state = 1;
+    auto buf = std::pair<std::string, std::string>();
+    for (std::string::size_type i = 0; i < attrStr.size(); ++i)
+    {
+        auto ch = attrStr[i];
+
+        if (state == 1)
+        {
+            if (ch == '=')
+            {
+                if (buf.first.empty())
+                {
+                    throwError("empty attribute key at tag " + name);
+                }
+
+                state = 2;
+            }
+            else
+            {
+                if (buf.first.empty())
+                {
+                    if (!isspace(ch))
+                    {
+                        buf.first += ch;
+                    }
+                }
+                else
+                {
+                    buf.first += ch;
+                }
+            }
+        }
+        else if (state == 2)
+        {
+            if (isspace(ch))
+            {
+                auto firstCh = *begin(buf.second);
+                auto lastCh = *(end(buf.second) - 1);
+
+                auto isDoubleQuote = firstCh == '\"' && lastCh == '\"';
+                auto isSingleQuote = firstCh == '\'' && lastCh == '\'';
+
+                if (isDoubleQuote || isSingleQuote)
+                {
+                    buf.second = buf.second.substr(1, buf.second.size() - 2);
+                    dic.insert(buf);
+                    buf.first.clear();
+                    buf.second.clear();
+                    state = 1;
+                }
+                else if (i == attrStr.size() - 1)
+                {
+                    throwError("attribute value must inside of the quote");
+                }
+                else
+                {
+                    buf.second += ch;
+                }
+            }
+            else if (i == attrStr.size() - 1)
+            {
+                auto firstCh = buf.second[0];
+
+                auto isDoubleQuote = ch == '\"' && firstCh == '\"';
+                auto isSingleQuote = ch == '\'' && firstCh == '\'';
+
+                if (isDoubleQuote || isSingleQuote)
+                {
+                    buf.second = buf.second.substr(1, buf.second.size() - 1);
+                    dic.insert(buf);
+                    buf.first.clear();
+                    buf.second.clear();
+                    state = 1;
+                }
+                else
+                {
+                    throwError("attribute value must inside of the quote");
+                }
+            }
+            else
+            {
+                if (buf.second.empty())
+                {
+                    if (ch == '\"' || ch == '\'')
+                    {
+                        buf.second += ch;
+                    }
+                }
+                else
+                {
+                    buf.second += ch;
+                }
+            }
+        }
+    }
+
+    return dic;
 }
