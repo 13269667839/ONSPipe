@@ -262,18 +262,23 @@ std::tuple<std::basic_string<unsigned char>,sockaddr_storage> Socket::receiveFro
 }
 
 #pragma mark -- SSL
-void Socket::ssl_config()
+void Socket::ssl_config(int target)
 {
-    if (socketfd < 0)
-    {
-        throwError("socket fd is invalid");
-        return;
-    }
-
     SSL_load_error_strings();
     SSL_library_init();
 
-    ctx = SSL_CTX_new(SSLv23_client_method());
+    const SSL_METHOD *sslMethod = nullptr;
+    if (target == 0) 
+    {
+        sslMethod = SSLv23_client_method();
+    }
+
+    if (!sslMethod) 
+    {
+        throwError("ssl method is null");
+    }
+
+    ctx = SSL_CTX_new(sslMethod);
     if (!ctx)
     {
         auto err = ERR_reason_error_string(ERR_get_error());
@@ -291,21 +296,16 @@ void Socket::ssl_config()
         auto err = ERR_reason_error_string(ERR_get_error());
         if (err)
         {
-            std::string msg = "new SSL with created CTX failed:" + std::string(err);
-            throwError(msg);
+            throwError("new SSL with created CTX failed:" + std::string(err));
         }
-        return;
     }
+}
 
-    if (SSL_set_fd(ssl, socketfd) == 0)
+void Socket::ssl_connect()
+{
+    if (!ssl) 
     {
-        auto err = ERR_reason_error_string(ERR_get_error());
-        if (err)
-        {
-            std::string msg = "add SSL to tcp socket failed:" + std::string(err);
-            throwError(msg);
-        }
-        return;
+        throwError("ssl connect params invalid");
     }
 
     RAND_poll();
@@ -320,8 +320,27 @@ void Socket::ssl_config()
         auto err = ERR_reason_error_string(ERR_get_error());
         if (err)
         {
-            std::string msg = "SSL connection failed:" + std::string(err);
-            throwError(msg);
+            throwError("SSL connection failed:" + std::string(err));
+            delete err;
+        }
+    }
+}
+
+void Socket::ssl_set_fd(int fd)
+{
+    if (!ssl || fd < 0) 
+    {
+        throwError("ssl_set_fd params invalid");
+    }
+
+    auto res = SSL_set_fd(ssl,fd);
+    if (res == 0)
+    {
+        auto err = ERR_reason_error_string(ERR_get_error());
+        if (err) 
+        {
+            throwError("add SSL to tcp socket failed:" + std::string(err));
+            delete err;
         }
     }
 }

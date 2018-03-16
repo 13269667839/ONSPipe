@@ -25,15 +25,8 @@ void server()
 void request()
 {
     auto client = HTTPClient("https://cn.bing.com/");
-
-    client.setRequestHeader("accept-language", "zh-CN,zh;q=0.9,en;q=0.8");
-    client.setRequestHeader("Accept-Encoding", "gzip, deflate, br");
     client.setRequestHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.186 Safari/537.36");
-    client.setRequestHeader("upgrade-insecure-requests", "1");
-    client.setRequestHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8");
-    client.setRequestHeader("cache-control", "max-age=0");
-
-    auto response = client.syncRequest();
+    auto response = client.request();
     if (response)
     {
         cout << response << endl;

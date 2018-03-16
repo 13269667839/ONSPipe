@@ -1,5 +1,4 @@
 #include "HTTPClient.hpp"
-#include <thread>
 #include "../Utility/HTTPRecvMsgParser.hpp"
 
 HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
@@ -38,56 +37,31 @@ void HTTPClient::setRequestHeader(std::string key,std::string value)
     }
 }
 
-void HTTPClient::asyncRequest(RequestCallback callback)
-{
-    if (!callback)
-    {
-        return;
-    }
-    
-    auto thread_main = [](HTTPClient *client,RequestCallback callback)
-    {
-        HTTPResponse *res = nullptr;
-        auto err = std::string();
-        
-        try
-        {
-            res = client->syncRequest();
-        }
-        catch (std::logic_error error)
-        {
-            err = error.what();
-        }
-        
-        if (callback)
-        {
-            callback(res,err);
-        }
-        
-        if (res)
-        {
-            delete res;
-            res = nullptr;
-        }
-    };
-    
-    std::thread(thread_main,this,callback).detach();
-}
-
-HTTPResponse * HTTPClient::syncRequest()
+void HTTPClient::checkParams()
 {
     if (!httpRequest)
     {
         throwError("http request is not set");
-        return nullptr;
     }
     else if (!url || url->path.empty())
     {
         throwError("url is null");
-        return nullptr;
     }
+}
+
+HTTPResponse * HTTPClient::request()
+{
+    checkParams();
     
     auto socket = Socket(url->host, url->portNumber);
+
+    auto https = url->scheme == "https";
+    
+    if (https)
+    {
+        socket.ssl_config(0);
+    }
+
     if (!socket.connect())
     {
         throwError("can not connect to server");
@@ -95,11 +69,10 @@ HTTPResponse * HTTPClient::syncRequest()
     
     setSocketConfig(socket);
 
-    auto https = url->scheme == "https";
-    
-    if (https)
+    if (https) 
     {
-        socket.ssl_config();
+        socket.ssl_set_fd(socket.socketfd);
+        socket.ssl_connect();
     }
 
     auto clientMsg = httpRequest->toRequestMessage();
@@ -117,21 +90,8 @@ HTTPResponse * HTTPClient::syncRequest()
     while (1)
     {
         auto recvbuf = https ? (socket.ssl_read()) : (socket.receive());
-
-        if (recvbuf.empty())
-        {
-            res = parser.msg2res();
-            break;
-        }
-
-        if (!parser.cache)
-        {
-            parser.cache = new std::deque<Util::byte>();
-        }
-
-        parser.cache->insert(parser.cache->end(), std::begin(recvbuf), std::end(recvbuf));
-
-        if (parser.is_parse_msg())
+        parser.addToCache(recvbuf);
+        if (recvbuf.empty() || parser.is_parse_msg())
         {
             res = parser.msg2res();
             break;

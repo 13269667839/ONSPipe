@@ -103,10 +103,13 @@ public:
     int setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd = -1);
 
 #pragma mark -- ssl
-    void ssl_config();
+    //target 0:client 1:server
+    void ssl_config(int target);
     void ssl_close();
     ssize_t ssl_send(void *buf,size_t len);
     std::vector<unsigned char> ssl_read();
+    void ssl_set_fd(int fd);
+    void ssl_connect();
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);

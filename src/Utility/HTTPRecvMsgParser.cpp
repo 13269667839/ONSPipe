@@ -24,6 +24,21 @@ HTTPRecvMsgParser::HTTPRecvMsgParser()
     method = std::string();
 }
 
+void HTTPRecvMsgParser::addToCache(std::vector<Util::byte> &bytes)
+{
+    if (bytes.empty())
+    {
+        return;
+    }
+
+    if (!cache)
+    {
+        cache = new std::deque<Util::byte>();
+    }
+    
+    cache->insert(cache->end(), std::begin(bytes), std::end(bytes));
+}
+
 bool HTTPRecvMsgParser::is_parse_msg()
 {   
     if (!cache || cache->empty())
