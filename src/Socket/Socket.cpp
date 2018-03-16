@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <cstring>
-#include "../Utility/Util.hpp"
 
 #ifdef DEBUG
     #include <iostream>
@@ -284,8 +283,7 @@ void Socket::ssl_config(int target)
         auto err = ERR_reason_error_string(ERR_get_error());
         if (err)
         {
-            std::string msg = "init SSL CTX failed:" + std::string(err);
-            throwError(msg);
+            throwError("init SSL CTX failed:" + std::string(err));
         }
         return;
     }
@@ -321,7 +319,6 @@ void Socket::ssl_connect()
         if (err)
         {
             throwError("SSL connection failed:" + std::string(err));
-            delete err;
         }
     }
 }
@@ -340,7 +337,6 @@ void Socket::ssl_set_fd(int fd)
         if (err) 
         {
             throwError("add SSL to tcp socket failed:" + std::string(err));
-            delete err;
         }
     }
 }
@@ -355,8 +351,7 @@ void Socket::ssl_close()
             auto err = ERR_reason_error_string(ERR_get_error());
             if (err) 
             {
-                std::string msg = "SSL shutdown failed:" + std::string(err);
-                throwError(msg);
+                throwError("SSL shutdown failed:" + std::string(err));
             }
             return;
         }
@@ -402,6 +397,29 @@ std::vector<unsigned char> Socket::ssl_read()
 
     return std::vector<Util::byte>(tmpBuf, tmpBuf + bytes);
 }
+
+#ifdef DEBUG
+void Socket::ssl_certification_info()
+{
+    if (!ssl)
+    {
+        return;
+    }
+
+    X509 *cert = SSL_get_peer_certificate(ssl);
+
+    if (!cert)
+    {
+        std::cout << "无证书信息" << std::endl;
+        return;
+    }
+
+    std::cout<<"证书 : "<<X509_NAME_oneline(X509_get_subject_name(cert), 0, 0)<<std::endl;
+    std::cout<<"颁发者 : "<<X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0)<<std::endl;
+
+    X509_free(cert);
+}
+#endif
 
 #pragma mark -- TCP
 bool Socket::listen()

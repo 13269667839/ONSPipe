@@ -1,11 +1,11 @@
 #ifndef Socket_hpp
 #define Socket_hpp
 
-#include <string>
+#include "../Utility/Util.hpp"
+
 #include <netdb.h>
 #include <functional>
 #include <tuple>
-#include <vector>
 
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
@@ -110,6 +110,9 @@ public:
     std::vector<unsigned char> ssl_read();
     void ssl_set_fd(int fd);
     void ssl_connect();
+#ifdef DEBUG
+    void ssl_certification_info();
+#endif
 private:
     void setAddressInfo(std::string address,const char *port);
     void setSocketFileDescription(socketFDIteration iter);
