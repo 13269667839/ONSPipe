@@ -22,8 +22,6 @@ private:
 private:
     XMLTok * getNextToken();
     
-    void parse_file_attr();
-    
     void parse_tag_declare();
     
     void parse_cdata();

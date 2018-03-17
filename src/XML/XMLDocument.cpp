@@ -1,4 +1,5 @@
 #include "XMLDocument.hpp"
+#include <deque>
 
 void XMLDocument::addChildNode(XMLDocument *obj)
 {
@@ -231,4 +232,99 @@ std::string XMLDocument::fileAttrPrint()
     }
     
     return out;
+}
+
+std::vector<XMLDocument *> XMLDocument::getElementsByClassName(std::string className)
+{
+    auto elements = std::vector<XMLDocument *>();
+
+    if (className.empty())
+    {
+        return elements;
+    }
+
+    auto queue = std::deque<XMLDocument *>{this};
+    while (!queue.empty())
+    {
+        auto top = queue[0];
+        queue.pop_front();
+
+        if (top->attribute && !top->attribute->empty())
+        {
+            auto ite = top->attribute->find("class");
+            if (ite != top->attribute->end() && ite->second == className)
+            {
+                elements.push_back(top);
+            }
+        }
+
+        if (top->children && !top->children->empty())
+        {
+            queue.insert(std::end(queue), top->children->begin(), top->children->end());
+        }
+    }
+
+    return elements;
+}
+
+std::vector<XMLDocument *> XMLDocument::getElementsByTagName(std::string _tagName)
+{
+    auto elements = std::vector<XMLDocument *>();
+
+    if (_tagName.empty())
+    {
+        return elements;
+    }
+
+    auto queue = std::deque<XMLDocument *>{this};
+    while (!queue.empty())
+    {
+        auto top = queue[0];
+        queue.pop_front();
+
+        if (top->tagName == _tagName)
+        {
+            elements.push_back(top);
+        }
+
+        if (top->children && !top->children->empty())
+        {
+            queue.insert(std::end(queue), top->children->begin(), top->children->end());
+        }
+    }
+
+    return elements;
+}
+
+XMLDocument * XMLDocument::getElementById(std::string id)
+{
+    if (id.empty())
+    {
+        return nullptr;
+    }
+
+    if (attribute && !attribute->empty())
+    {
+        auto ite = attribute->find("id");
+        if (ite != attribute->end() && ite->second == id)
+        {
+            return this;
+        }
+    }
+
+    XMLDocument *res = nullptr;
+    if (children && !children->empty())
+    {
+        for (auto subNode : *children)
+        {
+            auto element = subNode->getElementById(id);
+            if (element)
+            {
+                res = element;
+                break;
+            }
+        }
+    }
+
+    return res;
 }

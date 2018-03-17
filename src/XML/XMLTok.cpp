@@ -210,3 +210,98 @@ std::map<std::string, std::string> XMLTok::attribute()
 
     return dic;
 }
+
+std::map<std::string, std::string> XMLTok::fileAttribute()
+{
+    auto dic = std::map<std::string, std::string>();
+
+    if (content.empty() || type != TokType::FileAttribute)
+    {
+        return dic;
+    }
+
+    auto lexStr = content;
+
+    auto state = 1;
+    auto buf = std::pair<std::string, std::string>();
+    for (std::string::size_type i = 0; i < lexStr.size(); ++i)
+    {
+        auto ch = lexStr[i];
+
+        if (state == 1)
+        {
+            if (ch == '=')
+            {
+                if (buf.first.empty())
+                {
+                    throwError("empty attribute key at xml file attribute");
+                }
+
+                state = 2;
+            }
+            else
+            {
+                if (buf.first.empty())
+                {
+                    if (!isspace(ch))
+                    {
+                        buf.first += ch;
+                    }
+                }
+                else
+                {
+                    buf.first += ch;
+                }
+            }
+        }
+        else if (state == 2)
+        {
+            if (isspace(ch))
+            {
+                if (*begin(buf.second) == '\"' && *(end(buf.second) - 1) == '\"')
+                {
+                    buf.second = buf.second.substr(1, buf.second.size() - 2);
+                    dic.insert(buf);
+                    buf.first.clear();
+                    buf.second.clear();
+                    state = 1;
+                }
+                else
+                {
+                    throwError("attribute value must inside of the quote");
+                }
+            }
+            else if (i == lexStr.size() - 1)
+            {
+                if (ch == '\"' && *begin(buf.second) == '\"')
+                {
+                    buf.second = buf.second.substr(1, buf.second.size() - 1);
+                    dic.insert(buf);
+                    buf.first.clear();
+                    buf.second.clear();
+                    state = 1;
+                }
+                else
+                {
+                    throwError("attribute value must inside of the quote");
+                }
+            }
+            else
+            {
+                if (buf.second.empty())
+                {
+                    if (ch == '\"')
+                    {
+                        buf.second += ch;
+                    }
+                }
+                else
+                {
+                    buf.second += ch;
+                }
+            }
+        }
+    }
+
+    return dic;
+}

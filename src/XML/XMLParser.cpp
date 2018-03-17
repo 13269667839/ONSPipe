@@ -225,104 +225,21 @@ void XMLParser::parse_tag_declare()
     
     delete tok;
     tok = nullptr;
-    
-    if (!tokenStack.empty() &&
-        tokenStack.top()->type == TokType::FileAttribute)
+
+    if (!tokenStack.empty() && tokenStack.top()->type == TokType::FileAttribute)
     {
-        parse_file_attr();
-    }
-}
+        auto fileAttrTok = tokenStack.top();
+        tokenStack.pop();
 
-void XMLParser::parse_file_attr()
-{
-    auto tok = tokenStack.top();
-    tokenStack.pop();
-    
-    auto element = elementStack.top();
-    
-    auto lexStr = tok->content;
-    
-    auto state = 1;
-    auto buf = std::pair<std::string, std::string>();
-    for (decltype(lexStr.size()) i = 0;i < lexStr.size();++i)
-    {
-        auto ch = lexStr[i];
+        auto elementTop = elementStack.top();
 
-        if (state == 1)
+        auto fileAttr = fileAttrTok->fileAttribute();
+        for (auto pair : fileAttr)
         {
-            if (ch == '=')
-            {
-                if (buf.first.empty())
-                {
-                    throwError("empty attribute key at xml file attribute");
-                }
+            elementTop->setFileAttribute(pair.first, pair.second);
+        }
 
-                state = 2;
-            }
-            else
-            {
-                if (buf.first.empty())
-                {
-                    if (!isspace(ch))
-                    {
-                        buf.first += ch;
-                    }
-                }
-                else
-                {
-                    buf.first += ch;
-                }
-            }
-        }
-        else if (state == 2)
-        {
-            if (isspace(ch))
-            {
-                if (*begin(buf.second) == '\"' && *(end(buf.second) - 1) == '\"')
-                {
-                    buf.second = buf.second.substr(1,buf.second.size() - 2);
-                    element->setFileAttribute(buf.first,buf.second);
-                    buf.first.clear();
-                    buf.second.clear();
-                    state = 1;
-                }
-                else
-                {
-                    throwError("attribute value must inside of the quote");
-                }
-            }
-            else if (i == lexStr.size() - 1)
-            {
-                if (ch == '\"' && *begin(buf.second) == '\"')
-                {
-                    buf.second = buf.second.substr(1,buf.second.size() - 1);
-                    element->setFileAttribute(buf.first,buf.second);
-                    buf.first.clear();
-                    buf.second.clear();
-                    state = 1;
-                }
-                else
-                {
-                    throwError("attribute value must inside of the quote");
-                }
-            }
-            else
-            {
-                if (buf.second.empty())
-                {
-                    if (ch == '\"')
-                    {
-                        buf.second += ch;
-                    }
-                }
-                else
-                {
-                    buf.second += ch;
-                }
-            }
-        }
+        delete fileAttrTok;
+        fileAttrTok = nullptr;
     }
-    
-    delete tok;
-    tok = nullptr;
 }

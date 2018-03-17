@@ -24,6 +24,10 @@ public:
     void setFileAttribute(std::string key,std::string value);
     void setContent(std::string _content);
     void addChildNode(XMLDocument *obj);
+
+    XMLDocument * getElementById(std::string id);
+    std::vector<XMLDocument *> getElementsByTagName(std::string _tagName);
+    std::vector<XMLDocument *> getElementsByClassName(std::string className);
     
     std::string prettyPrint();
 private:

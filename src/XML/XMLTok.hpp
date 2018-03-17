@@ -31,6 +31,7 @@ public:
 public:
     std::string tagName();
     std::map<std::string,std::string> attribute();
+    std::map<std::string,std::string> fileAttribute();
 private:
     std::string type2Str() const;
 };
