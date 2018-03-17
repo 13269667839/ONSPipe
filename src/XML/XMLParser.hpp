@@ -31,7 +31,7 @@ private:
     void parse_tag_end();
 
     void getAllToken();
-    void fixNoneSelfClosedTag();
+    bool fixNoneSelfClosedTag(std::string name);
 };
 
 #endif

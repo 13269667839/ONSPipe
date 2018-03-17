@@ -68,25 +68,13 @@ void XMLParser::getAllToken()
     }
 }
 
-void XMLParser::fixNoneSelfClosedTag()
+bool XMLParser::fixNoneSelfClosedTag(std::string name)
 {
     auto end = htmlTokQueue->end();
-    for (auto ite = htmlTokQueue->begin();ite != end;++ite)
+    return std::find_if(htmlTokQueue->begin(), end, [&name](XMLTok *tok) 
     {
-        auto token = *ite;
-        if (token->type == TokType::TagDeclare && !token->isSelfClose)
-        {
-            auto isHave = std::find_if(ite + 1,end,[&token](XMLTok *tok)
-            {
-                return tok->type == TokType::TagEnd && Strings::isPrefix(token->content,tok->content);
-            }) != end;
-
-            if (!isHave)
-            {
-                token->isSelfClose = true;
-            }
-        }
-    }
+        return tok->type == TokType::TagEnd && Strings::isPrefix(name, tok->content);
+    }) == end;
 }
 
 XMLDocument * XMLParser::xmlTextToDocument()
@@ -94,7 +82,6 @@ XMLDocument * XMLParser::xmlTextToDocument()
     if (isHTML)
     {
         getAllToken();
-        fixNoneSelfClosedTag();
     }
 
     while (auto tok = getNextToken())
@@ -208,6 +195,11 @@ void XMLParser::parse_tag_declare()
         {
             element->setAttribute(pair.first, pair.second);
         }
+    }
+
+    if (isHTML && !tok->isSelfClose)
+    {
+        tok->isSelfClose = fixNoneSelfClosedTag(name);
     }
 
     if (tok->isSelfClose)
