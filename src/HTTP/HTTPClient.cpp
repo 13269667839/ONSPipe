@@ -73,6 +73,10 @@ HTTPResponse * HTTPClient::request()
     {
         socket.ssl_set_fd(socket.socketfd);
         socket.ssl_connect();
+
+#ifdef DEBUG
+        socket.ssl_certification_info();
+#endif
     }
 
     auto clientMsg = httpRequest->toRequestMessage();

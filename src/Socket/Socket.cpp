@@ -414,8 +414,21 @@ void Socket::ssl_certification_info()
         return;
     }
 
-    std::cout<<"证书 : "<<X509_NAME_oneline(X509_get_subject_name(cert), 0, 0)<<std::endl;
-    std::cout<<"颁发者 : "<<X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0)<<std::endl;
+    auto str = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+    if (str)
+    {
+        std::cout << "证书 : " << str << std::endl;
+        delete str;
+        str = nullptr;
+    }
+
+    str = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+    if (str)
+    {
+        std::cout << "颁发者 : " << str << std::endl;
+        delete str;
+        str = nullptr;
+    }
 
     X509_free(cert);
 }
