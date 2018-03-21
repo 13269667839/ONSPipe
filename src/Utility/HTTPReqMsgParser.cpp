@@ -43,9 +43,7 @@ HTTPReqMsgParser::~HTTPReqMsgParser()
 
 void HTTPReqMsgParser::msg2req(HTTPRequest &req)
 {
-    req.method = method;
-    req.path = path;
-    req.version = version;
+    req.setRequestLine(method,path,version);
     
     for (auto kv : header)
     {
@@ -54,7 +52,7 @@ void HTTPReqMsgParser::msg2req(HTTPRequest &req)
     
     Util::byte u_str[cache->size()];
     std::copy(cache->begin(),cache->end(),u_str);
-    req.requestBody.assign(std::basic_string<Util::byte>(u_str,cache->size()));
+    req.body.assign(std::basic_string<Util::byte>(u_str,cache->size()));
 }
 
 bool HTTPReqMsgParser::parse_line()

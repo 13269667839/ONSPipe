@@ -344,12 +344,12 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
             Byte uncompressedBuffer[uncompressedBufferLen];
             if (Util::gzlib_uncompress(buffer,bufferLen,uncompressedBuffer,&uncompressedBufferLen) == 0)
             {
-                res->responseBody.assign(std::basic_string<Util::byte>(uncompressedBuffer,uncompressedBufferLen));
+                res->body.assign(std::basic_string<Util::byte>(uncompressedBuffer,uncompressedBufferLen));
             }
         }
         else 
         {
-            res->responseBody.assign(std::basic_string<Util::byte>(buffer,bufferLen));
+            res->body.assign(std::basic_string<Util::byte>(buffer,bufferLen));
         }
     }
     

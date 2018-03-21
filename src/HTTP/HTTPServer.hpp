@@ -26,6 +26,7 @@ private:
     Socket *sock;
 private:
     void setSocket();
+    void disconnect(int sockfd);
     
 #ifdef Kqueue
     void kqueueLoop(RunAndLoopCallback &callback);
@@ -33,7 +34,7 @@ private:
     void kqueueAccept(long count,int kq);
     void kqueueError(int sockfd,int kq);
     void kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback);
-    void kqueueParseRecvRequest(HTTPRequest &request,HTTPReqMsgParser &parser,long totalLength,int sockfd);
+    bool kqueueParseRecvRequest(HTTPRequest &request,HTTPReqMsgParser &parser,long totalLength,int sockfd);
 #elif defined(Epoll)
     void epollLoop(const RunAndLoopCallback &callback);
 #endif

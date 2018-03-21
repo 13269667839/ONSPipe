@@ -15,6 +15,7 @@ public:
     
     std::string toRequestMessage();
     void addRequestHeader(std::string key,std::string value);
+    void setRequestLine(std::string _method,std::string _path,std::string _version);
 public:
     std::string method;
     std::string path;
@@ -22,7 +23,7 @@ public:
     
     std::map<std::string,std::string> *header;
     
-    std::basic_string<unsigned char> requestBody;
+    std::basic_string<unsigned char> body;
 };
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res);

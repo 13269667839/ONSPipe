@@ -24,6 +24,14 @@ HTTPServer::~HTTPServer()
     }
 }
 
+void HTTPServer::disconnect(int sockfd)
+{
+    if (sock && sockfd > 0)
+    {
+        sock->close(sockfd);
+    }
+}
+
 void HTTPServer::setSocket()
 {
     if (sock)
@@ -102,8 +110,6 @@ void HTTPServer::kqueueError(int sockfd,int kq)
 {
     struct kevent event = {static_cast<unsigned long>(sockfd),EVFILT_READ,EV_DELETE,0,0,nullptr};
     kevent(kq, &event, 1, nullptr, 0, nullptr);
-
-    sock->close(sockfd);
 }
 
 void HTTPServer::kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback)
@@ -114,32 +120,57 @@ void HTTPServer::kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &respon
     sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
 }
 
-void HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
+bool HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
 {
+    auto empty = false;
+
     request.initParameter();
     parser.initParams();
 
     long recvBytes = 0;
-    while (recvBytes < totalLength)
+    auto recvBuf = std::vector<Util::byte>();
+    while (recvBytes <= totalLength)
     {
-        sock->recvBuffSize = totalLength - recvBytes;
-        auto recvBuf = sock->receive(sockfd);
-
-        if (recvBuf.empty())
+        auto size = totalLength - recvBytes;
+        if (size > 0) 
         {
+            sock->recvBuffSize = size;
+        }
+
+        try 
+        {
+            auto buff = sock->receive(sockfd);
+            recvBuf.insert(recvBuf.end(),buff.begin(),buff.end());
+        }
+        catch (std::logic_error error)
+        {
+            #ifdef DEBUG
+            std::cerr<<error.what()<<endl;
+            #endif
+
+            empty = true;
             parser.msg2req(request);
             break;
         }
 
-        recvBytes += recvBuf.size();
+        empty = recvBuf.empty();
+        if (!empty) 
+        {
+            recvBytes += recvBuf.size();
+            parser.addToCache(recvBuf);
+            recvBuf.clear();
+        }
 
-        parser.addToCache(recvBuf);
-        if (parser.is_parse_msg())
+        auto parsed = parser.is_parse_msg();
+
+        if (empty || parsed)
         {
             parser.msg2req(request);
             break;
         }
     }
+
+    return empty;
 }
 
 void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
@@ -180,16 +211,23 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
             if (event.flags & EV_ERROR)//error event
             {
                 kqueueError(sockfd,kq);
+                disconnect(sockfd);
                 continue;
             }
-            
-            if (event.filter == EVFILT_READ)//read event
+
+            if (event.filter == EVFILT_READ && sockfd > 0) //read event
             {
-                kqueueParseRecvRequest(request,parser,event.data,sockfd);
-                if (sockfd != -1)
+                auto empty = kqueueParseRecvRequest(request, parser, event.data, sockfd);
+
+                if (!empty)
                 {
-                    kqueueSend(sockfd,request,response,callback);
-                    kqueueError(sockfd,kq);
+                    kqueueSend(sockfd, request, response, callback);
+                }
+
+                if (empty || request.header->find("Connection")->second == "Close")
+                {
+                    kqueueError(sockfd, kq);
+                    disconnect(sockfd);
                 }
             }
         }

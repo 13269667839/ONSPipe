@@ -24,7 +24,7 @@ public:
     int statusCode;
     std::string reason;
     std::map<std::string,std::string> *header;
-    std::basic_string<unsigned char> responseBody;
+    std::basic_string<unsigned char> body;
 };
 
 #endif

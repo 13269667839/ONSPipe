@@ -3,9 +3,13 @@
 
 HTTPRequest::HTTPRequest()
 {
+    method = std::string();
+    path = std::string();
+    version = std::string();
+
     header = nullptr;
-    
-    initParameter();
+
+    body = std::basic_string<Util::byte>();
 }
 
 HTTPRequest::~HTTPRequest()
@@ -20,16 +24,16 @@ HTTPRequest::~HTTPRequest()
 
 void HTTPRequest::initParameter()
 {
-    method = "GET";
-    path = "/";
-    version = "HTTP/1.1";
-    
+    method.clear();
+    path.clear();
+    version.clear();
+
     if (header)
     {
         header->clear();
     }
-    
-    requestBody = std::basic_string<Util::byte>();
+
+    body.clear();
 }
 
 void HTTPRequest::addRequestHeader(std::string key,std::string value)
@@ -44,30 +48,27 @@ void HTTPRequest::addRequestHeader(std::string key,std::string value)
     }
 }
 
+void HTTPRequest::setRequestLine(std::string _method,std::string _path,std::string _version)
+{
+    method = _method;
+    path = _path;
+    version = _version;
+}
+
 std::string HTTPRequest::toRequestMessage()
 {
-    if (method.empty() || version.empty() || path.empty())
-    {
-        throwError("invalid http request line format");
-    }
     auto requestLine = method + " " + path + " " + version;
-    
-    
-    if (!header || header->empty())
+
+    auto headerStr = std::string();
+    if (header && !header->empty())
     {
-        throwError("invalid http request header format");
-        return "";
-    }
-    auto arr = std::vector<std::string>();
-    for (auto pair : *header)
-    {
-        if (!pair.first.empty() && !pair.second.empty())
+        for (auto pair : *header)
         {
-            arr.push_back(pair.first + ": " + pair.second);
+            headerStr += pair.first + ": " + pair.second + "\r\n";
         }
     }
-    
-    return requestLine + "\r\n" + Strings::join(arr, std::string("\r\n")) + "\r\n\r\n" + std::string(requestBody.begin(),requestBody.end());
+
+    return requestLine + "\r\n" + headerStr + "\r\n" + std::string(body.begin(), body.end());
 }
 
 std::ostream & operator << (std::ostream &os,HTTPRequest *res)

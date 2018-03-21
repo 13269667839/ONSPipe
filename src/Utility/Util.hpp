@@ -157,19 +157,20 @@ public:
     static strType join(std::vector<strType> srcArr, strType token)
     {
         auto res = strType();
-        if (!srcArr.empty())
+
+        if (srcArr.empty())
         {
-            const bool empty = token.empty();
-            for (auto src : srcArr)
-            {
-                auto itemStr = src;
-                if (!empty && src != *(end(srcArr) - 1))
-                {   
-                    itemStr += token;
-                }
-                res += itemStr;
-            }
+            return res;
         }
+
+        auto end = srcArr.end() - 1;
+        for (auto ite = srcArr.begin(); ite != end; ++ite)
+        {
+            res += (*ite + token);
+        }
+
+        res += *end;
+
         return res;
     }
 }; 

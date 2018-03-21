@@ -3,25 +3,27 @@
 
 HTTPResponse::HTTPResponse()
 {
+    version = std::string();
+    statusCode = 0;
+    reason = std::string();
+
     header = nullptr;
-    
-    initParameter();
+
+    body = std::basic_string<Util::byte>();
 }
 
 void HTTPResponse::initParameter()
 {
-    version = std::string();
+    version.clear();
     statusCode = 0;
-    reason = std::string();
+    reason.clear();
+
     if (header)
     {
         header->clear();
     }
-    else
-    {
-        header = nullptr;
-    }
-    responseBody = std::basic_string<Util::byte>();
+
+    body.clear();
 }
 
 HTTPResponse::~HTTPResponse()
@@ -62,7 +64,7 @@ std::string HTTPResponse::toResponseMessage()
         }
     }
 
-    return line + "\r\n" + head + "\r\n" + std::string(responseBody.begin(),responseBody.end()) + "\r\n";
+    return line + "\r\n" + head + "\r\n" + std::string(body.begin(),body.end()) + "\r\n";
 }
 
 void HTTPResponse::addResponseHead(std::string key,std::string value)

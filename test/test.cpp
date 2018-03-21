@@ -15,10 +15,10 @@ void server()
 
         response.setResponseLine("HTTP/1.1", 200, "OK");
         
-        response.responseBody = (unsigned char *)"Hello World!\n";
+        response.body = (unsigned char *)"Hello World!\n";
 
         response.addResponseHead("Content-Type", "text/plain");
-        response.addResponseHead("Content-Length", to_string(response.responseBody.size()));
+        response.addResponseHead("Content-Length", to_string(response.body.size()));
     });
 }
 
