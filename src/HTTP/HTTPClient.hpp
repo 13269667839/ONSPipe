@@ -5,6 +5,7 @@
 #include "HTTPResponse.hpp"
 #include "HTTPRequest.hpp"
 #include "../Socket/Socket.hpp"
+#include <memory>
 
 enum class HTTPMethod
 {
@@ -31,7 +32,7 @@ class HTTPClient
 public:
     void setRequestHeader(std::string key,std::string value);
     
-    HTTPResponse * request();
+    std::unique_ptr<HTTPResponse> request();
 public:
     HTTPClient(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTPClient();

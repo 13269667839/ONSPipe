@@ -52,6 +52,8 @@
         "cstdlib": "cpp",
         "__functional_03": "cpp",
         "system_error": "cpp",
-        "atomic": "cpp"
+        "atomic": "cpp",
+        "unordered_map": "cpp",
+        "__hash_table": "cpp"
     }
 }

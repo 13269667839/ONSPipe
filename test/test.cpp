@@ -29,9 +29,7 @@ void request()
     auto response = client.request();
     if (response)
     {
-        cout << response << endl;
-        delete response;
-        response = nullptr;
+        cout<<*response<<endl;
     }
 }
 

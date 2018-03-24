@@ -1,11 +1,12 @@
 #include "XMLDocument.hpp"
 #include <deque>
+#include "../Utility/Util.hpp"
 
 void XMLDocument::addChildNode(XMLDocument *obj)
 {
     if (!isHTML && content)
     {
-        throw std::logic_error("ethier children or content");
+        throwError("ethier children or content");
     }
     
     if (obj)
@@ -22,7 +23,7 @@ void XMLDocument::setContent(std::string _content)
 {
     if (!isHTML && content)
     {
-        throw std::logic_error("ethier children or content");
+        throwError("ethier children or content");
     }
     
     if (!content)
@@ -97,17 +98,9 @@ XMLDocument::~XMLDocument()
         content = nullptr;
     }
     
+    STLExtern::releaseVector(children);
     if (children)
     {
-        for (auto ite : *children)
-        {
-            if (ite)
-            {
-                delete ite;
-                ite = nullptr;
-            }
-        }
-        std::vector<XMLDocument *>().swap(*children);
         delete children;
         children = nullptr;
     }

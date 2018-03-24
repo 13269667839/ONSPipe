@@ -173,6 +173,49 @@ public:
 
         return res;
     }
-}; 
+};
+
+namespace STLExtern
+{
+template <typename ValueType>
+void releaseVector(std::vector<ValueType> &vec)
+{
+    if (vec.empty())
+    {
+        return;
+    }
+
+    for (auto val : vec)
+    {
+        if (val)
+        {
+            delete val;
+            val = nullptr;
+        }
+    }
+
+    std::vector<ValueType>().swap(vec);
+}
+
+template <typename ValueType>
+void releaseVector(std::vector<ValueType> *vec)
+{
+    if (!vec || vec->empty())
+    {
+        return;
+    }
+
+    for (auto val : *vec)
+    {
+        if (val)
+        {
+            delete val;
+            val = nullptr;
+        }
+    }
+
+    std::vector<ValueType>().swap(*vec);
+}
+};
 
 #endif

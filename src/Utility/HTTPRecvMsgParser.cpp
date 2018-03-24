@@ -1,5 +1,7 @@
 #include "HTTPRecvMsgParser.hpp"
 #include <cctype>
+#include <algorithm>
+#include <initializer_list>
 
 HTTPRecvMsgParser::~HTTPRecvMsgParser()
 {
@@ -100,23 +102,12 @@ bool HTTPRecvMsgParser::parse_body()
     }
     else if (isChunk)
     {
-        long idx = -1;
-        for (long i = cache->size() - 1;i >= 0;--i)
+        auto idx = -1;
+        auto bytes = {Util::byte('\r'),Util::byte('\n'),Util::byte('0'),Util::byte('\r'),Util::byte('\n'),Util::byte('\r'),Util::byte('\n')};
+        auto ite = std::search(cache->begin(),cache->end(),bytes.begin(),bytes.end());
+        if (ite != cache->end())
         {
-            if (cache->size() - i >= 7)
-            {
-                if (cache->at(i)     == Util::byte('\r') &&
-                    cache->at(i + 1) == Util::byte('\n') &&
-                    cache->at(i + 2) == Util::byte('0')  &&
-                    cache->at(i + 3) == Util::byte('\r') &&
-                    cache->at(i + 4) == Util::byte('\n') &&
-                    cache->at(i + 5) == Util::byte('\r') &&
-                    cache->at(i + 6) == Util::byte('\n'))
-                {
-                    idx = i;
-                    break;
-                }
-            }
+            idx = ite - cache->begin();
         }
         
         if (idx != -1)
@@ -166,36 +157,24 @@ bool HTTPRecvMsgParser::parse_body()
 
 bool HTTPRecvMsgParser::parse_header()
 {
-    auto res = false;
-    
-    auto idx = -1;
+    std::initializer_list<Util::byte> bytes;
     if (method == "HEAD")
     {
-        for (decltype(cache->size()) i = 0;i < cache->size() - 2;++i)
-        {
-            if (cache->at(i)     == Util::byte('\r') &&
-                cache->at(i + 1) == Util::byte('\n'))
-            {
-                idx = i;
-                break;
-            }
-        }
+        bytes = {Util::byte('\r'), Util::byte('\n')};
     }
-    else 
+    else
     {
-        for (decltype(cache->size()) i = 0;i < cache->size() - 4;++i)
-        {
-            if (cache->at(i)     == Util::byte('\r') &&
-                cache->at(i + 1) == Util::byte('\n') &&
-                cache->at(i + 2) == Util::byte('\r') &&
-                cache->at(i + 3) == Util::byte('\n'))
-            {
-                idx = i;
-                break;
-            }
-        }
+        bytes = {Util::byte('\r'), Util::byte('\n'), Util::byte('\r'), Util::byte('\n')};
     }
-    
+    auto ite = std::search(cache->begin(), cache->end(), bytes.begin(), bytes.end());
+
+    if (ite == cache->end())
+    {
+        return false;
+    }
+
+    auto idx = ite - cache->begin();
+
     if (idx != -1)
     {
         auto key = std::string();
@@ -248,8 +227,6 @@ bool HTTPRecvMsgParser::parse_header()
         cache->pop_front();
         cache->pop_front();
         
-        res = true;
-        
         auto ite = header.find("Content-Length");
         if (ite != header.end())
         {
@@ -265,60 +242,52 @@ bool HTTPRecvMsgParser::parse_header()
         }
     }
     
-    return res;
+    return true;
 }
 
 bool HTTPRecvMsgParser::parse_line()
 {
-    auto res = false;
-    
-    auto idx = -1;
-    for (decltype(cache->size()) i = 0;i < cache->size() - 1;++i)
+    auto LF = {Util::byte('\r'), Util::byte('\n')};
+    auto ite = std::search(cache->begin(), cache->end(), LF.begin(), LF.end());
+
+    if (ite == cache->end())
     {
-        if (cache->at(i)     == Util::byte('\r') &&
-            cache->at(i + 1) == Util::byte('\n'))
+        return false;
+    }
+
+    auto idx = ite - cache->begin();
+
+    auto space_count = 0;
+    for (auto i = 0; i < idx; ++i)
+    {
+        auto ch = cache->at(0);
+        cache->pop_front();
+
+        if (isspace(ch) && space_count < 2)
         {
-            idx = i;
-            break;
+            space_count++;
+            continue;
+        }
+
+        if (space_count == 0)
+        {
+            version += ch;
+        }
+        else if (space_count == 1)
+        {
+            status_code += ch;
+        }
+        else if (space_count == 2)
+        {
+            reason += ch;
         }
     }
-    
-    if (idx != -1)
-    {
-        auto space_count = 0;
-        for (auto i = 0;i < idx;++i)
-        {
-            auto ch = cache->at(0);
-            cache->pop_front();
-            
-            if (isspace(ch) && space_count < 2)
-            {
-                space_count++;
-                continue;
-            }
-            
-            if (space_count == 0)
-            {
-                version += ch;
-            }
-            else if (space_count == 1)
-            {
-                status_code += ch;
-            }
-            else if (space_count == 2)
-            {
-                reason += ch;
-            }
-        }
-        
-        //pop \r\n
-        cache->pop_front();
-        cache->pop_front();
-        
-        res = true;
-    }
-    
-    return res;
+
+    //pop \r\n
+    cache->pop_front();
+    cache->pop_front();
+
+    return true;
 }
 
 HTTPResponse * HTTPRecvMsgParser::msg2res()

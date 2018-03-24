@@ -49,7 +49,7 @@ void HTTPClient::checkParams()
     }
 }
 
-HTTPResponse * HTTPClient::request()
+std::unique_ptr<HTTPResponse> HTTPClient::request()
 {
     checkParams();
     
@@ -102,7 +102,7 @@ HTTPResponse * HTTPClient::request()
         }
     }
 
-    return res;
+    return std::unique_ptr<HTTPResponse>(res);
 }
 
 void HTTPClient::setSocketConfig(Socket &socket)
