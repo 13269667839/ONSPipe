@@ -1,15 +1,17 @@
 #include "HTTPClient.hpp"
 #include "../Utility/HTTPRecvMsgParser.hpp"
 
-HTTPClient::HTTPClient(std::string _url,HTTPMethod _method)
+HTTPClient::HTTPClient(std::string _url, HTTPMethod _method)
 {
     url = nullptr;
     httpRequest = nullptr;
-    
+    https = false;
+
     if (!_url.empty())
     {
         method = _method;
         url = new URL(_url);
+        https = url->scheme == "https";
         setHttpRequest();
     }
 }
@@ -49,13 +51,40 @@ void HTTPClient::checkParams()
     }
 }
 
+void HTTPClient::sendMsg(Socket &socket)
+{
+    auto clientMsg = httpRequest->toRequestMessage();
+    if (clientMsg.empty())
+    {
+        throwError("http request message is null");
+        return;
+    }
+    socket.sendAll(const_cast<char *>(clientMsg.c_str()), clientMsg.size(), https);
+}
+
+HTTPResponse * HTTPClient::recvMsg(Socket &socket)
+{
+    HTTPResponse *res = nullptr;
+    auto parser = HTTPRecvMsgParser();
+    parser.method = methodStr();
+    while (1)
+    {
+        auto recvbuf = https ? (socket.ssl_read()) : (socket.receive());
+        parser.addToCache(recvbuf);
+        if (recvbuf.empty() || parser.is_parse_msg())
+        {
+            res = parser.msg2res();
+            break;
+        }
+    }
+    return res;
+}
+
 std::unique_ptr<HTTPResponse> HTTPClient::request()
 {
     checkParams();
     
     auto socket = Socket(url->host, url->portNumber);
-
-    auto https = url->scheme == "https";
     
     if (https)
     {
@@ -79,29 +108,9 @@ std::unique_ptr<HTTPResponse> HTTPClient::request()
 #endif
     }
 
-    auto clientMsg = httpRequest->toRequestMessage();
-    if (clientMsg.empty())
-    {
-        throwError("http request message is null");
-        return nullptr;
-    }
-    
-    socket.sendAll(const_cast<char *>(clientMsg.c_str()),clientMsg.size(),https);
-    
-    HTTPResponse *res = nullptr;
-    auto parser = HTTPRecvMsgParser();
-    parser.method = methodStr();
-    while (1)
-    {
-        auto recvbuf = https ? (socket.ssl_read()) : (socket.receive());
-        parser.addToCache(recvbuf);
-        if (recvbuf.empty() || parser.is_parse_msg())
-        {
-            res = parser.msg2res();
-            break;
-        }
-    }
+    sendMsg(socket);
 
+    HTTPResponse *res = recvMsg(socket);
     return std::unique_ptr<HTTPResponse>(res);
 }
 

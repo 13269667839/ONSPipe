@@ -54,11 +54,12 @@ Socket::~Socket()
     }
 }
 
-void Socket::setAddressInfo(std::string address, const char *port)
+addrinfo * Socket::setAddressInfo(std::string address, int port, int family)
 {
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;//ignore ipv4 or ipv6
+    //AF_UNSPEC,AF_INET,AF_INET6
+    hints.ai_family = family;
     hints.ai_socktype = type == SocketType::TCP ? SOCK_STREAM : SOCK_DGRAM;
     const char *addr = nullptr;
     if (address.empty())
@@ -70,6 +71,8 @@ void Socket::setAddressInfo(std::string address, const char *port)
         addr = address.c_str();
     }
 
+    addrinfo *allAddrinfo = nullptr;
+
     /**
      *  DNS or server name query
      *  @param1 ip or domain name
@@ -77,11 +80,13 @@ void Socket::setAddressInfo(std::string address, const char *port)
      *  @param3 addr info that you customized
      *  @param4 liked list returns
      */
-    int res = getaddrinfo(addr, port, &hints, &addressInfo);
+    int res = getaddrinfo(addr, std::to_string(port).c_str(), &hints, &allAddrinfo);
     if (res != 0)
     {
         throwError("Error occur on getaddrinfo, reason " + std::string(gai_strerror(res)));
     }
+
+    return allAddrinfo;
 }
 
 void Socket::setSocketFileDescription(socketFDIteration iter)

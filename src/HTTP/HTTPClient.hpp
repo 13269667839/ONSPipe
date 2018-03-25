@@ -42,10 +42,13 @@ private:
     std::string methodStr();
 
     void checkParams();
+    void sendMsg(Socket &socket);
+    HTTPResponse * recvMsg(Socket &socket);
 private:
     HTTPMethod method;
     URL *url;
     HTTPRequest *httpRequest;
+    bool https;
 };
 
 #endif

@@ -45,7 +45,7 @@ public:
         if (port > 0)
         {
             type = _type;
-            setAddressInfo(addr, std::to_string(port).c_str());
+            addressInfo = setAddressInfo(addr, port,AF_UNSPEC);
         }
     }
 
@@ -114,7 +114,7 @@ public:
     void ssl_certification_info();
 #endif
 private:
-    void setAddressInfo(std::string address,const char *port);
+    addrinfo * setAddressInfo(std::string address,int port,int family);
     void setSocketFileDescription(socketFDIteration iter);
     void initParam();
 };
