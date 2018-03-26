@@ -463,7 +463,11 @@ std::vector<std::string> Strings::split(std::string src, std::vector<std::string
                                 lastIndex = 0;
                             }
 
-                            arr.push_back(src.substr(lastIndex, i - lastIndex));
+                            auto subStr = src.substr(lastIndex, i - lastIndex);
+                            if (!subStr.empty())
+                            {
+                                arr.push_back(subStr);
+                            }
 
                             i += tok.size() - 1;
                             lastIndex = i + 1;
@@ -474,7 +478,11 @@ std::vector<std::string> Strings::split(std::string src, std::vector<std::string
                 long size = src.size();
                 if (lastIndex != -1 && lastIndex < size)
                 {
-                    arr.push_back(src.substr(lastIndex));
+                    auto subStr = src.substr(lastIndex);
+                    if (!subStr.empty())
+                    {
+                        arr.push_back(subStr);
+                    }
                 }
             }
         }

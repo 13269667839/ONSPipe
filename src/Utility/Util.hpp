@@ -82,6 +82,20 @@ public:
     static std::vector<std::string> split(std::string src,std::vector<std::string> tokens);
 
     template <typename charType>
+    static void trimLeft(std::basic_string<charType> &src, const charType ch)
+    {
+        auto ite = src.begin();
+        while (ite != src.end())
+        {
+            if (*ite != ch)
+            {
+                break;
+            }
+            ite = src.erase(ite);
+        }
+    }
+
+    template <typename charType>
     static void trimRight(std::basic_string<charType> &src,const charType ch)
     {
         auto rite = src.rbegin();
@@ -93,6 +107,13 @@ public:
             }
             rite = decltype(rite)(src.erase((++rite).base()));
         }
+    }
+
+    template <typename charType>
+    static void trim(std::basic_string<charType> &src, const charType ch)
+    {
+        trimLeft(src, ch);
+        trimRight(src, ch);
     }
 
     template <typename strType>
