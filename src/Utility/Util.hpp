@@ -119,7 +119,7 @@ public:
     template <typename strType>
     static strType toLowerStr(strType src)
     {
-        for (auto i = 0;i < src.length();++i) 
+        for (decltype(src.length()) i = 0; i < src.length(); ++i)
         {
             if (isupper(src[i]))
             {

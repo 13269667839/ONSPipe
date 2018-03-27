@@ -3,7 +3,6 @@
 #include "../src/HTTP/HTTPClient.hpp"
 #include "../src/XML/XMLParser.hpp"
 #include "../src/JSON/JSONParser.hpp"
-#include "../src/SQLite/SQLite.hpp"
 #include "../src/WebSocket/WSServer.hpp"
 using namespace std;
 
@@ -56,40 +55,6 @@ void json()
         cout<<obj<<endl;
         delete obj;
         obj = nullptr;
-    }
-}
-
-void sqlite() 
-{
-    auto sql = SQLite(FileSystem::currentWorkDirectory() + "test.db");
-    auto sqls = vector<string>
-    {
-        "create table if not exists test (id int primary key,name char(5),age int);",
-        "insert into test values(1,'12345',12345);",
-        "insert into test values(2,'23456',23456);",
-        "insert into test values(3,'45678',45678);",
-        "insert into test values(4,'56789',56789);",
-        "select * from test;"
-    };
-    for (auto s : sqls)
-    {
-        sql.execSQL(s,[&s](ResultSet set,std::string errMsg)
-        {
-            if (!errMsg.empty()) 
-            {
-                cout<<s<<" error : "<<errMsg<<endl;
-            }
-            else 
-            {
-                for (auto row : set)
-                {
-                    for (auto pair : row)
-                    {
-                        cout<<pair.first<<" : "<<pair.second<<endl;
-                    }
-                }
-            }
-        });
     }
 }
 

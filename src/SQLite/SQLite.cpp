@@ -77,51 +77,57 @@ static int sql_callback(void *arg,int count,char **columns,char **rows)
     return 0;
 }
 
-void SQLite::execSQL(std::string sql,SQLiteCallback _callback)
+std::tuple<ResultSet, std::string> SQLite::execSQL(std::string sql)
 {
-    if (!sql.empty() && _callback && db)
+    if (sql.empty() || !db)
     {
-        auto set = ResultSet();
-        char *err = nullptr;
-        sqlite3_exec(db, sql.c_str(), sql_callback, &set, &err);
-        auto errMsg = std::string();
-        if (err) 
-        {
-            errMsg += err;
-            delete err;
-            err = nullptr;
-        } 
-        _callback(set,errMsg);
+        throwError("invalid parameters");
     }
+
+    auto set = ResultSet();
+    char *err = nullptr;
+
+    sqlite3_exec(db, sql.c_str(), sql_callback, &set, &err);
+
+    auto errMsg = std::string();
+    if (err)
+    {
+        errMsg += err;
+        delete err;
+        err = nullptr;
+    }
+
+    return std::make_tuple(set, errMsg);
 }
 
 void SQLite::parseTableInfo()
 {
-    if (!db) 
+    if (!db)
     {
         return;
     }
 
-    auto self = this;
-    execSQL("select sql from sqlite_master where type='table';",[&self](const ResultSet set,std::string err) 
+    auto sql = "select sql from sqlite_master where type='table';";
+    auto result = execSQL(sql);
+
+    auto err = std::get<1>(result);
+    if (!err.empty())
     {
-        if (!err.empty() && set.empty())
+        return;
+    }
+
+    auto set = std::get<0>(result);
+    for (auto row : set)
+    {
+        auto sql = row["sql"];
+        if (sql.empty())
         {
-            return;
+            continue;
         }
 
-        for (auto row : set)
-        {
-            auto sql = row["sql"];
-            if (sql.empty())
-            {
-                continue;
-            }
-
-            auto table = new Table(sql);
-            self->addTable(table);
-        }
-    });
+        auto table = new Table(sql);
+        addTable(table);
+    }
 }
 
 void SQLite::addTable(Table *table)

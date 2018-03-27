@@ -8,7 +8,6 @@
 #include "Table.hpp"
 
 using ResultSet = std::vector<std::map<std::string,std::string>>;
-using SQLiteCallback = std::function<void(ResultSet,std::string)>;
 
 class SQLite
 {
@@ -16,7 +15,7 @@ public:
     SQLite(std::string _path);
     ~SQLite();
 public:
-    void execSQL(std::string sql,SQLiteCallback _callback);
+    std::tuple<ResultSet,std::string> execSQL(std::string sql);
     void parseTableInfo();
 private:
     sqlite3 *db;
