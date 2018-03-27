@@ -5,6 +5,7 @@
 SQLite::SQLite(std::string _path)
 {
     db = nullptr;
+    tables = nullptr;
     
     if (!_path.empty())
     {
@@ -14,12 +15,19 @@ SQLite::SQLite(std::string _path)
             closeDB();
             throwError(errMsg);
         }
+        parseTableInfo();
     }
 }
 
 SQLite::~SQLite()
 {
     closeDB();
+    if (tables)
+    {
+        tables->clear();
+        delete tables;
+        tables = nullptr;
+    }
 }
 
 void SQLite::closeDB()
@@ -76,29 +84,57 @@ void SQLite::execSQL(std::string sql,SQLiteCallback _callback)
         auto set = ResultSet();
         char *err = nullptr;
         sqlite3_exec(db, sql.c_str(), sql_callback, &set, &err);
-        _callback(set,err);
+        auto errMsg = std::string();
+        if (err) 
+        {
+            errMsg += err;
+            delete err;
+            err = nullptr;
+        } 
+        _callback(set,errMsg);
     }
 }
 
-std::vector<std::string> SQLite::allTablesName()
+void SQLite::parseTableInfo()
 {
-    auto names = std::vector<std::string>();
-    if (db)
+    if (!db) 
     {
-        execSQL("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", [&names](const ResultSet set,char *err)
-        {
-            if (!err && !set.empty())
-            {
-                for (auto row : set)
-                {
-                    auto name = row["name"];
-                    if (!name.empty())
-                    {
-                        names.push_back(name);
-                    }
-                }
-            }
-        });
+        return;
     }
-    return names;
+
+    auto self = this;
+    execSQL("select sql from sqlite_master where type='table';",[&self](const ResultSet set,std::string err) 
+    {
+        if (!err.empty() && set.empty())
+        {
+            return;
+        }
+
+        for (auto row : set)
+        {
+            auto sql = row["sql"];
+            if (sql.empty())
+            {
+                continue;
+            }
+
+            auto table = new Table(sql);
+            self->addTable(table);
+        }
+    });
+}
+
+void SQLite::addTable(Table *table)
+{
+    if (!table || table->name.empty())
+    {
+        return;
+    }
+
+    if (!tables)
+    {
+        tables = new std::map<std::string,Table *>();
+    }
+
+    tables->insert(std::make_pair(table->name,table));
 }

@@ -73,9 +73,9 @@ void sqlite()
     };
     for (auto s : sqls)
     {
-        sql.execSQL(s,[&s](ResultSet set,char *errMsg)
+        sql.execSQL(s,[&s](ResultSet set,std::string errMsg)
         {
-            if (errMsg) 
+            if (!errMsg.empty()) 
             {
                 cout<<s<<" error : "<<errMsg<<endl;
             }

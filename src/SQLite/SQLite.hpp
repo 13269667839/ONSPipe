@@ -5,10 +5,10 @@
 #include <functional>
 #include <map>
 #include <vector>
-#include <string>
+#include "Table.hpp"
 
 using ResultSet = std::vector<std::map<std::string,std::string>>;
-using SQLiteCallback = std::function<void(ResultSet set,char *errMsg)>;
+using SQLiteCallback = std::function<void(ResultSet,std::string)>;
 
 class SQLite
 {
@@ -17,11 +17,13 @@ public:
     ~SQLite();
 public:
     void execSQL(std::string sql,SQLiteCallback _callback);
-    std::vector<std::string> allTablesName();
+    void parseTableInfo();
 private:
     sqlite3 *db;
+    std::map<std::string,Table *> *tables;
     
     void closeDB();
+    void addTable(Table *table);
 };
 
 #endif 
