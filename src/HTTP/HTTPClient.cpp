@@ -1,11 +1,18 @@
 #include "HTTPClient.hpp"
 #include "../Utility/HTTPRecvMsgParser.hpp"
 
+#ifdef DEBUG 
+    #include <cerrno>
+    #include <cstdio>
+#endif
+
+
 HTTPClient::HTTPClient(std::string _url, HTTPMethod _method)
 {
     url = nullptr;
     httpRequest = nullptr;
     https = false;
+    timeoutSeconds = 10;
 
     if (!_url.empty())
     {
@@ -116,9 +123,24 @@ std::unique_ptr<HTTPResponse> HTTPClient::request()
 
 void HTTPClient::setSocketConfig(Socket &socket)
 {
+    //recv buff size
     int recvBufSize = 1024 * 10;
     socket.recvBuffSize = recvBufSize;
-    socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize));
+    if (socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize)) == -1)
+    {
+#ifdef DEBUG
+        perror("set recv buff error : ");
+#endif
+    }
+
+    //timeout
+    struct timeval timeout = {.tv_sec = timeoutSeconds, .tv_usec = 0};
+    if (socket.setSocketOpt(SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) == -1)
+    {
+#ifdef DEBUG
+        perror("set timeout error : ");
+#endif
+    }
 }
 
 void HTTPClient::setHttpRequest()

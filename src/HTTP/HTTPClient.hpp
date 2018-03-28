@@ -33,6 +33,9 @@ public:
     void setRequestHeader(std::string key,std::string value);
     
     std::unique_ptr<HTTPResponse> request();
+
+    //default is 10
+    long timeoutSeconds;
 public:
     HTTPClient(std::string _url,HTTPMethod _method = HTTPMethod::GET);
     ~HTTPClient();

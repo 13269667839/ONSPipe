@@ -8,6 +8,10 @@
     #include <sys/epoll.h>
 #endif
 
+#ifdef DEBUG
+    #include <iostream>
+#endif
+
 HTTPServer::HTTPServer(int port)
 {
     this->port = port;
@@ -137,16 +141,16 @@ bool HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &
             sock->recvBuffSize = size;
         }
 
-        try 
+        try
         {
             auto buff = sock->receive(sockfd);
-            recvBuf.insert(recvBuf.end(),buff.begin(),buff.end());
+            recvBuf.insert(recvBuf.end(), buff.begin(), buff.end());
         }
         catch (std::logic_error error)
         {
-            #ifdef DEBUG
-            std::cerr<<error.what()<<endl;
-            #endif
+#ifdef DEBUG
+            std::cerr << error.what() << std::endl;
+#endif
 
             empty = true;
             parser.msg2req(request);
