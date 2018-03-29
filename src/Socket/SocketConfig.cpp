@@ -96,3 +96,15 @@ std::string SocketConfig::byteOrder()
 
     return "unknown";
 }
+
+bool SocketConfig::isIPV4Address(const std::string &address)
+{
+    sockaddr_in sa;
+    return inet_pton(AF_INET, address.c_str(), &sa.sin_addr) == 1;
+}
+
+bool SocketConfig::isIPV6Address(const std::string &address)
+{
+    sockaddr_in6 sa;
+    return inet_pton(AF_INET6, address.c_str(), &sa.sin6_addr) == 1;
+}

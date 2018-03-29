@@ -5,6 +5,7 @@
 #include "XMLDocument.hpp"
 #include <stack>
 #include <deque>
+#include <memory>
 
 class XMLParser
 {
@@ -12,7 +13,7 @@ public:
     XMLParser(std::string _input,InputType _type,bool isHTML = false);
     ~XMLParser();
     
-    XMLDocument * xmlTextToDocument();
+    std::unique_ptr<XMLDocument> xmlTextToDocument();
 private:
     std::stack<XMLTok *> tokenStack;
     std::stack<XMLDocument *> elementStack;

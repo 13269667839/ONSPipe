@@ -77,7 +77,7 @@ bool XMLParser::fixNoneSelfClosedTag(std::string name)
     }) == end;
 }
 
-XMLDocument * XMLParser::xmlTextToDocument()
+std::unique_ptr<XMLDocument> XMLParser::xmlTextToDocument()
 {
     if (isHTML)
     {
@@ -88,31 +88,32 @@ XMLDocument * XMLParser::xmlTextToDocument()
     {
         switch (tok->type)
         {
-            case TokType::FileAttribute:
-                tokenStack.push(tok);
-                break;
-            case TokType::TagDeclare:
-                tokenStack.push(tok);
-                parse_tag_declare();
-                break;
-            case TokType::CData:
-                tokenStack.push(tok);
-                parse_cdata();
-                break;
-            case TokType::TagEnd:
-                tokenStack.push(tok);
-                parse_tag_end();
-                break;
-            case TokType::Content:
-                tokenStack.push(tok);
-                parse_content();
-                break;
-            default:
-                break;
+        case TokType::FileAttribute:
+            tokenStack.push(tok);
+            break;
+        case TokType::TagDeclare:
+            tokenStack.push(tok);
+            parse_tag_declare();
+            break;
+        case TokType::CData:
+            tokenStack.push(tok);
+            parse_cdata();
+            break;
+        case TokType::TagEnd:
+            tokenStack.push(tok);
+            parse_tag_end();
+            break;
+        case TokType::Content:
+            tokenStack.push(tok);
+            parse_content();
+            break;
+        default:
+            break;
         }
     }
-    
-    return elementStack.empty()?nullptr:(elementStack.size() == 1?elementStack.top():nullptr);
+
+    auto head = elementStack.empty() ? nullptr : (elementStack.size() == 1 ? elementStack.top() : nullptr);
+    return std::unique_ptr<XMLDocument>(head);
 }
 
 void XMLParser::parse_content()

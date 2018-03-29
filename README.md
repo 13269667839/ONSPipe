@@ -4,7 +4,7 @@ a self-customed toy
 # config
 * paltform:macOS,Linux(Ubuntu)
 * compiler:clang++,llvm-g++,g++
-* cpp core lib version:std >= c++11
+* cpp core lib version: c++14
 
 # test case
 
@@ -17,5 +17,17 @@ auto obj = parser.token2Object();
 if (obj)
 {
     cout<<*obj<<endl;
+}
+```
+
+## xml
+```
+#include <XMLParser.hpp>
+auto parser = XMLParser(text,InputType::Text);
+//auto parser = XMLParser(filePath,InputType::File);
+auto document = parser.xmlTextToDocument();
+if (document)
+{
+    cout<<*document<<endl;
 }
 ```

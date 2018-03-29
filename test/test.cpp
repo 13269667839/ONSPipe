@@ -1,8 +1,6 @@
 #include <iostream>
 #include "../src/HTTP/HTTPServer.hpp"
 #include "../src/HTTP/HTTPClient.hpp"
-#include "../src/XML/XMLParser.hpp"
-#include "../src/JSON/JSONParser.hpp"
 #include "../src/WebSocket/WSServer.hpp"
 using namespace std;
 
@@ -29,19 +27,6 @@ void request()
     if (response)
     {
         cout<<*response<<endl;
-    }
-}
-
-void xml() 
-{
-    auto text = "<root count=\"6\"><layer id=\"1\">1</layer><layer id=\"2\">2</layer><layer id=\"3\">3</layer><layer id=\"4\">4</layer><layer id=\"5\">5</layer><layer id=\"6\">6</layer></root>";
-    auto parser = XMLParser(text,InputType::Text);
-    auto document = parser.xmlTextToDocument();
-    if (document)
-    {
-        cout<<document<<endl;
-        delete document;
-        document = nullptr;
     }
 }
 

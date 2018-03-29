@@ -37,6 +37,10 @@ public:
 
     ///machine byte order
     static std::string byteOrder();
+
+    static bool isIPV4Address(const std::string &address);
+
+    static bool isIPV6Address(const std::string &address);
 };
 
 #endif
