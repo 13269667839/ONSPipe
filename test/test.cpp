@@ -45,19 +45,6 @@ void xml()
     }
 }
 
-void json() 
-{
-    auto text = "{\"1\":[1,2,3,[4,5,{\"name\":\"Onion Shen\"}]],\"12345\":[1,2,3,4,5,6,7,8,9]}";
-    auto parser = JSONParser(InputType::Text,text);
-    auto obj = parser.token2Object();
-    if (obj)
-    {
-        cout<<obj<<endl;
-        delete obj;
-        obj = nullptr;
-    }
-}
-
 void udpServer()
 {
     auto socket = Socket("", 8888, SocketType::UDP);

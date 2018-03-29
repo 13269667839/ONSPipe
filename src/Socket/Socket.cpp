@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <sys/errno.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <cstring>
 
 #ifdef DEBUG
@@ -52,41 +51,6 @@ Socket::~Socket()
         //free by above
         currentAddrInfo = nullptr;
     }
-}
-
-addrinfo * Socket::setAddressInfo(std::string address, int port, int family)
-{
-    addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    //AF_UNSPEC,AF_INET,AF_INET6
-    hints.ai_family = family;
-    hints.ai_socktype = type == SocketType::TCP ? SOCK_STREAM : SOCK_DGRAM;
-    const char *addr = nullptr;
-    if (address.empty())
-    {
-        hints.ai_flags = AI_PASSIVE; //127.0.0.1
-    }
-    else
-    {
-        addr = address.c_str();
-    }
-
-    addrinfo *allAddrinfo = nullptr;
-
-    /**
-     *  DNS or server name query
-     *  @param1 ip or domain name
-     *  @param2 serve name or port name
-     *  @param3 addr info that you customized
-     *  @param4 liked list returns
-     */
-    int res = getaddrinfo(addr, std::to_string(port).c_str(), &hints, &allAddrinfo);
-    if (res != 0)
-    {
-        throwError("Error occur on getaddrinfo, reason " + std::string(gai_strerror(res)));
-    }
-
-    return allAddrinfo;
 }
 
 void Socket::setSocketFileDescription(socketFDIteration iter)
@@ -139,56 +103,9 @@ bool Socket::bind()
 }
 
 #pragma mark -- General method
-std::string Socket::netAddressToHostAddress(sockaddr addr)
-{
-    auto hostFormatedAddr = std::string();
-    if (addr.sa_family == AF_INET)
-    {
-        //ipv4
-        char src[INET_ADDRSTRLEN];
-        inet_ntop(addr.sa_family, &(((sockaddr_in *)&addr)->sin_addr), src, sizeof(src));
-        hostFormatedAddr += src;
-    }
-    else if (addr.sa_family == AF_INET6)
-    {
-        //ipv6
-        char src[INET6_ADDRSTRLEN];
-        inet_ntop(addr.sa_family, &(((sockaddr_in6 *)&addr)->sin6_addr), src, sizeof(src));
-        hostFormatedAddr += src;
-    }
-    return hostFormatedAddr;
-}
-
 int Socket::setSocketOpt(int item,int opt,const void *val,socklen_t len,int fd)
 {
     return setsockopt(fd == -1?socketfd:fd, item, opt, val, len);
-}
-
-std::string Socket::byteOrder()
-{
-    union {
-        short value;
-        char  bytes[sizeof(short)];
-    } buf;
-
-    buf.value = 0x0102;
-
-    auto order = std::string();
-
-    if (buf.bytes[0] == 1 && buf.bytes[1] == 2)
-    {
-        order += "big endian";
-    }
-    else if (buf.bytes[0] == 2 && buf.bytes[1] == 1)
-    {
-        order += "little endian";
-    }
-    else
-    {
-        order += "unknown";
-    }
-
-    return order;
 }
 
 #pragma mark -- UDP

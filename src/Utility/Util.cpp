@@ -1,10 +1,7 @@
 #include "Util.hpp"
 #include <cctype>
-#include <fstream>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <cstring>
+#include <clocale>
 
 #include <openssl/buffer.h>
 #include <openssl/bio.h>
@@ -271,60 +268,6 @@ int Util::gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata)
     *ndata = d_stream.total_out;
     
     return 0;
-}
-
-#pragma mark -- File System
-bool FileSystem::isDirectory(std::string path)
-{
-    struct stat buf;
-    return lstat(path.c_str(), &buf) < 0 ? false : S_ISDIR(buf.st_mode);
-}
-
-std::vector<char> FileSystem::readFileSync(std::string filePath)
-{
-    std::vector<char> chars;
-
-    std::ifstream file(filePath, std::ios::binary);
-    if (file.is_open())
-    {
-        chars = std::vector<char>(file.seekg(0, std::ios::end).tellg(), 0);
-        file.seekg(0, std::ios::beg).read(&chars[0], static_cast<std::streamsize>(chars.size()));
-        file.close();
-    }
-    return chars;
-}
-
-std::vector<std::string> FileSystem::filesInTheCurrentDirectory(std::string filePath)
-{
-    std::vector<std::string> files = {};
-
-    if (auto dp = opendir(filePath.c_str()))
-    {
-        while (auto dirp = readdir(dp))
-        {
-            files.push_back(dirp->d_name);
-        }
-
-        closedir(dp);
-    }
-
-    return files;
-}
-
-std::string FileSystem::currentWorkDirectory()
-{
-    auto str = getcwd(nullptr, 0);
-
-    if (!str)
-    {
-        return std::string();
-    }
-
-    auto r_str = std::string(str);
-    delete str;
-    str = nullptr;
-
-    return r_str;
 }
 
 #pragma mark -- Strings

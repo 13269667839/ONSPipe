@@ -19,6 +19,8 @@ public:
 
 std::ostream & operator << (std::ostream &os,JSObject *obj);
 
+std::ostream & operator << (std::ostream &os,JSObject &obj);
+
 class JSString : public JSObject
 {
 public:
@@ -37,7 +39,7 @@ public:
     
     void addObject(JSObject *obj);
     std::string toString() override;
-    std::deque<JSObject *> *arrayRef;
+    std::vector<JSObject *> *arrayRef;
 };
 
 class JSMap : public JSObject

@@ -1,6 +1,8 @@
 #ifndef JSONParser_hpp
 #define JSONParser_hpp
 
+#include <memory>
+
 #include "JSONLexer.hpp"
 #include "JSObject.hpp"
 
@@ -10,7 +12,7 @@ public:
     JSONParser(InputType _type,std::string _content);
     ~JSONParser();
     
-    JSObject * token2Object();
+    std::unique_ptr<JSObject> token2Object();
 private:
     JSONToken * nextToken();
     JSString * elementObject(JSONToken *tok);

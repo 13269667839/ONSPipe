@@ -1,9 +1,10 @@
 #ifndef Util_hpp
 #define Util_hpp
 
-#include <vector>
+#include "STLExtern.hpp"
+#include "FileSystem.hpp"
+
 #include <string>
-#include <map>
 #include <exception>
 
 #include <zlib.h>
@@ -56,18 +57,6 @@ public:
      *  @return 0 == OK
      */
     static int gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata);
-};
-
-class FileSystem 
-{
-public:
-    static std::vector<char> readFileSync(std::string filePath);
-
-    static bool isDirectory(std::string path);
-
-    static std::vector<std::string> filesInTheCurrentDirectory(std::string filePath);
-
-    static std::string currentWorkDirectory();
 };
 
 class Strings 
@@ -194,49 +183,6 @@ public:
 
         return res;
     }
-};
-
-namespace STLExtern
-{
-template <typename ValueType>
-void releaseVector(std::vector<ValueType> &vec)
-{
-    if (vec.empty())
-    {
-        return;
-    }
-
-    for (auto val : vec)
-    {
-        if (val)
-        {
-            delete val;
-            val = nullptr;
-        }
-    }
-
-    std::vector<ValueType>().swap(vec);
-}
-
-template <typename ValueType>
-void releaseVector(std::vector<ValueType> *vec)
-{
-    if (!vec || vec->empty())
-    {
-        return;
-    }
-
-    for (auto val : *vec)
-    {
-        if (val)
-        {
-            delete val;
-            val = nullptr;
-        }
-    }
-
-    std::vector<ValueType>().swap(*vec);
-}
 };
 
 #endif

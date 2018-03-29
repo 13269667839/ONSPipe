@@ -173,7 +173,7 @@ JSMap * JSONParser::mapObject()
     return map;
 }
 
-JSObject * JSONParser::token2Object()
+std::unique_ptr<JSObject> JSONParser::token2Object()
 {
     if (!lex)
     {
@@ -212,5 +212,5 @@ JSObject * JSONParser::token2Object()
         }
     }
     
-    return obj;
+    return std::unique_ptr<JSObject>(obj);
 }

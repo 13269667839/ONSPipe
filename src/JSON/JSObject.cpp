@@ -21,6 +21,12 @@ std::ostream & operator << (std::ostream &os,JSObject *obj)
     return os;
 }
 
+std::ostream & operator << (std::ostream &os,JSObject &obj)
+{
+    os<<obj.toString();
+    return os;
+}
+
 #pragma mark -- JSString
 JSString::JSString(std::string _str,TokenType _type)
 {
@@ -69,7 +75,7 @@ JSArray::~JSArray()
 {
     if (arrayRef)
     {
-        arrayRef->clear();
+        STLExtern::releaseVector(arrayRef);
         delete arrayRef;
         arrayRef = nullptr;
     }
@@ -79,7 +85,7 @@ void JSArray::addObject(JSObject *obj)
 {
     if (!arrayRef)
     {
-        arrayRef = new std::deque<JSObject *>();
+        arrayRef = new std::vector<JSObject *>();
     }
     arrayRef->push_back(obj);
 }
@@ -115,14 +121,7 @@ JSMap::~JSMap()
 {
     if (mapRef)
     {
-        for (auto pair : *mapRef)
-        {
-            if (pair.second)
-            {
-                delete pair.second;
-            }
-        }
-        mapRef->clear();
+        STLExtern::releaseMap(mapRef);
         delete mapRef;
         mapRef = nullptr;
     }

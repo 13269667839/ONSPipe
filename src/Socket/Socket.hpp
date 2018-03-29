@@ -1,9 +1,8 @@
 #ifndef Socket_hpp
 #define Socket_hpp
 
-#include "../Utility/Util.hpp"
+#include "SocketConfig.hpp"
 
-#include <netdb.h>
 #include <functional>
 #include <tuple>
 
@@ -11,12 +10,6 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-
-enum class SocketType
-{
-    TCP,
-    UDP
-};
     
 using socketFDIteration = std::function<bool(int,const addrinfo *)>;
     
@@ -40,12 +33,12 @@ public:
         initParam();
     }
 
-    Socket(std::string addr,int port,SocketType _type = SocketType::TCP) : Socket()
+    Socket(std::string addr, int port, SocketType _type = SocketType::TCP) : Socket()
     {
         if (port > 0)
         {
             type = _type;
-            addressInfo = setAddressInfo(addr, port,AF_UNSPEC);
+            addressInfo = SocketConfig::getAddressInfo(addr, std::to_string(port), AddressFamily::Default, _type);
         }
     }
 
@@ -66,14 +59,6 @@ public:
     ssize_t sendto(void *buf,size_t len,sockaddr_storage addr);
     std::tuple<std::basic_string<unsigned char>,sockaddr_storage> receiveFrom();
 #pragma mark -- General method
-    static std::string netAddressToHostAddress(sockaddr addr);
-
-    /**
-     * test machine byte order
-     * return string
-     */
-    static std::string byteOrder();
-
     template <typename BufferType,typename BufferLength>
     void sendAll(BufferType buffer,BufferLength length,bool ssl,int fd = -1)
     {
@@ -114,7 +99,6 @@ public:
     void ssl_certification_info();
 #endif
 private:
-    addrinfo * setAddressInfo(std::string address,int port,int family);
     void setSocketFileDescription(socketFDIteration iter);
     void initParam();
 };
