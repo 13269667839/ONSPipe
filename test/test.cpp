@@ -30,37 +30,6 @@ void request()
     }
 }
 
-void udpServer()
-{
-    auto socket = Socket("", 8888, SocketType::UDP);
-    if (!socket.bind())
-    {
-        socket.close();
-        return;
-    }
-
-    try
-    {
-        while (true)
-        {
-            auto recvs = socket.receiveFrom();
-            auto bytes = get<0>(recvs);
-            cout << "recv from client : " << string(bytes.begin(), bytes.end()) << endl;
-
-            auto addr = get<1>(recvs);
-            char chs[] = "Hello World!\n";
-            socket.sendto(chs, sizeof(chs) / sizeof(char), addr);
-        }
-    }
-    catch (logic_error error)
-    {
-        cout << "error occur : " << error.what() << endl;
-        socket.close();
-    }
-
-    socket.close();
-}
-
 void wsserver() 
 {
     auto ws = WSServer(9999);

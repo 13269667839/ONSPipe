@@ -7,27 +7,21 @@ addrinfo * SocketConfig::getAddressInfo(std::string address, std::string port, A
     addrinfo hints;
     memset(&hints, 0, sizeof(hints));
 
-    if (family == AddressFamily::Default)
+    auto _family = SocketConfig::addressFamilyRawValue(family);
+    if (_family == -1)
     {
-        hints.ai_family = AF_UNSPEC;
+        throwError("error family value");
+        return nullptr;
     }
-    else if (family == AddressFamily::IPV4)
-    {
-        hints.ai_family = AF_INET;
-    }
-    else if (family == AddressFamily::IPV6)
-    {
-        hints.ai_family = AF_INET6;
-    }
+    hints.ai_family = _family;
 
-    if (socktype == SocketType::TCP)
+    auto _socktype = SocketConfig::socketTypeRawValue(socktype);
+    if (_socktype == -1) 
     {
-        hints.ai_socktype = SOCK_STREAM;
+        throwError("error socket type");
+        return nullptr;
     }
-    else if (socktype == SocketType::UDP)
-    {
-        hints.ai_socktype = SOCK_DGRAM;
-    }
+    hints.ai_socktype = _socktype;
 
     const char *addr = nullptr;
     if (address.empty())
@@ -107,4 +101,60 @@ bool SocketConfig::isIPV6Address(const std::string &address)
 {
     sockaddr_in6 sa;
     return inet_pton(AF_INET6, address.c_str(), &sa.sin6_addr) == 1;
+}
+
+//-1 is error
+int SocketConfig::socketTypeRawValue(SocketType &type)
+{
+    auto res = -1;
+
+    switch (type) 
+    {
+        case SocketType::TCP:
+            res = SOCK_STREAM;
+            break;
+        case SocketType::UDP:
+            res = SOCK_DGRAM;
+            break;
+        default:
+            break;
+    }
+
+    return res;
+}
+
+//-1 is error
+int SocketConfig::addressFamilyRawValue(AddressFamily &family)
+{
+    auto res = -1;
+
+    switch (family) 
+    {
+        case AddressFamily::Default:
+            res = AF_UNSPEC;
+            break;
+        case AddressFamily::IPV4:
+            res = AF_INET;
+            break;
+        case AddressFamily::IPV6:
+            res = AF_INET6;
+            break;
+        default:
+            break;
+    }
+
+    return res;
+}
+
+socklen_t SocketConfig::addressLen(sockaddr_storage &addr)
+{
+    if (addr.ss_family == AF_INET) 
+    {
+        return sizeof(sockaddr_in);
+    }
+    else if (addr.ss_family == AF_INET6)
+    {
+        return sizeof(sockaddr_in6);
+    }
+    return 0;
 }

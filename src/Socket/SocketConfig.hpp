@@ -41,6 +41,14 @@ public:
     static bool isIPV4Address(const std::string &address);
 
     static bool isIPV6Address(const std::string &address);
+
+    //-1 is error
+    static int socketTypeRawValue(SocketType &type);
+
+    //-1 is error
+    static int addressFamilyRawValue(AddressFamily &family);
+
+    static socklen_t addressLen(sockaddr_storage &addr);
 };
 
 #endif
