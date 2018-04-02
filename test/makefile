@@ -15,8 +15,8 @@ file_flag = $(socket) $(http) $(utility) $(json) $(xml) $(sqlite) $(websocket)
 ifeq ($(OS),Darwin)
 	CC = clang++
 
-	openssl_lib = /usr/local/Cellar/openssl/1.0.2n/lib
-	openssl_include = /usr/local/Cellar/openssl/1.0.2n/include
+	openssl_lib = /usr/local/Cellar/openssl/1.0.2o_1/lib
+	openssl_include = /usr/local/Cellar/openssl/1.0.2o_1/include
 	openssl_flag = $(openssl_lib)/*.a -L $(openssl_lib) -I $(openssl_include)
 
 	cpp_flag = -std=c++14 -g -W -lz -lsqlite3

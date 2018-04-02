@@ -5,9 +5,7 @@
 
 BasicSocket::BasicSocket(int _domain,SocketType _socktype, AddressFamily _family)
 {
-    recvBuffSize = 256;
-    sockaddrinfo = nullptr;
-    socketfd = -1;
+    initParams();
 
     domain = _domain;
     socktype = _socktype;
@@ -33,6 +31,49 @@ BasicSocket::~BasicSocket()
         delete sockaddrinfo;
         sockaddrinfo = nullptr;
     }
+}
+
+BasicSocket::BasicSocket(int _socketfd, sockaddr_storage *addr, SocketType _socktype)
+{
+    initParams();
+
+    if (_socketfd == -1)
+    {
+        throwError("socket fd is -1");
+        return;
+    }
+
+    socketfd = _socketfd;
+
+    if (!addr)
+    {
+        throwError("address is nullptr");
+        return;
+    }
+
+    sockaddrinfo = addr;
+
+    if (addr->ss_family == AF_INET)
+    {
+        addressFamily = AddressFamily::IPV4;
+    }
+    else if (addr->ss_family == AF_INET6)
+    {
+        addressFamily = AddressFamily::IPV6;
+    }
+
+    socktype = _socktype;
+}
+
+void BasicSocket::initParams()
+{
+    recvBuffSize = 256;
+    sockaddrinfo = nullptr;
+    socketfd = -1;
+
+    domain = 0;
+    socktype = SocketType::TCP;
+    addressFamily = AddressFamily::IPV4;
 }
 
 bool BasicSocket::initSocketfd()
@@ -114,4 +155,9 @@ void BasicSocket::initSockaddr(std::string &address, int &port)
 int BasicSocket::sockfd()
 {
     return socketfd;
+}
+
+bool BasicSocket::setSocketOpt(int item, int opt, const void *val, socklen_t len)
+{
+    return setsockopt(socketfd, item, opt, val, len) == 0;
 }
