@@ -55,7 +55,7 @@ std::vector<Util::byte> TCPSocket::receive()
     return std::vector<Util::byte>(tmpBuf, tmpBuf + bytes);
 }
 
-std::unique_ptr<TCPSocket> TCPSocket::accept()
+std::shared_ptr<TCPSocket> TCPSocket::accept()
 {
     auto client = (sockaddr_storage *)malloc(sizeof(sockaddr_storage));
     socklen_t len = sizeof(sockaddr_storage);
@@ -66,6 +66,6 @@ std::unique_ptr<TCPSocket> TCPSocket::accept()
         throwError("accept error " + std::string(gai_strerror(errno)));
         return nullptr;
     }
-
-    return std::make_unique<TCPSocket>(clientfd, client, SocketType::TCP);
+    
+    return std::make_shared<TCPSocket>(clientfd, client, SocketType::TCP);
 }

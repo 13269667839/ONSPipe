@@ -25,7 +25,7 @@ public:
 
     std::vector<Util::byte> receive();
 
-    std::unique_ptr<TCPSocket> accept();
+    std::shared_ptr<TCPSocket> accept();
 
     template <typename BufferType>
     void sendAll(BufferType buffer,size_t size)
