@@ -64,7 +64,7 @@ std::string HTTPResponse::toResponseMessage()
         }
     }
 
-    return line + "\r\n" + head + "\r\n" + std::string(body.begin(),body.end()) + "\r\n";
+    return line + "\r\n" + head + "\r\n" + std::string(body.begin(),body.end());
 }
 
 void HTTPResponse::addResponseHead(std::string key,std::string value)

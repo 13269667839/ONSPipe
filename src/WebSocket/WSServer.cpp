@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "../Utility/HTTPReqMsgParser.hpp"
+#include "../HTTP/HTTPResponse.hpp"
 
 WSServer::WSServer(int port)
 {
@@ -378,12 +379,14 @@ std::shared_ptr<TCPSocket> WSServer::handShaking()
         return nullptr;
     }
 
-    key = b64_str;
+    auto response = HTTPResponse();
+    response.setResponseLine("HTTP/1.1", 101, "Switching Protocols");
+    response.addResponseHead("Upgrade", "websocket");
+    response.addResponseHead("Connection", "Upgrade");
+    response.addResponseHead("Sec-WebSocket-Accept", b64_str);
 
-    auto line = std::string("HTTP/1.1 101 Switching Protocols\r\n");
-    auto header = std::string("Upgrade: websocket\r\n") + "Connection: Upgrade\r\n" + "Sec-WebSocket-Accept: " + key + "\r\n\r\n";
-    auto send_msg = line + header;
-    fd->sendAll(send_msg, send_msg.size());
+    auto msg = response.toResponseMessage();
+    fd->sendAll(msg, msg.size());
 
     return fd;
 }

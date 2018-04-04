@@ -5,7 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(lldb) Launch",
+            "name": "LLDB Debugger",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/a.out",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Microsoft CPP Tool LLDB Debugger",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/test/a.out",
