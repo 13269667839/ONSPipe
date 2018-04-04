@@ -3,6 +3,8 @@
 #include <sys/errno.h>
 #include <algorithm>
 
+#include "../Utility/HTTPReqMsgParser.hpp"
+
 WSServer::WSServer(int port)
 {
     this->port = port;
@@ -309,42 +311,25 @@ int WSServer::handShaking()
         return -1;
     }
 
-    auto recvMsg = std::string();
-    while (1)
+    auto key = std::string();
+    auto parser = HTTPReqMsgParser();
+    while (true)
     {
         auto recvbuf = sock->receive(fd);
-
-        if (recvbuf.empty())
+        parser.addToCache(recvbuf);
+        if (parser.is_parse_msg() || recvbuf.empty())
         {
+            auto request = HTTPRequest();
+            parser.msg2req(request);
+
+            auto iter = request.header->find("Sec-WebSocket-Key");
+            if (iter != request.header->end())
+            {
+                key += iter->second;
+            }
+
             break;
         }
-
-        recvMsg += (char *)recvbuf.data();
-
-        if (recvMsg.rfind("\r\n\r\n") != std::string::npos)
-        {
-            break;
-        }
-    }
-
-    if (recvMsg.empty())
-    {
-        return -1;
-    }
-
-    auto kvs = Strings::split(recvMsg, std::string("\r\n"));
-    if (kvs.empty())
-    {
-        return -1;
-    }
-
-    auto key = std::string();
-    auto ite = std::find_if(kvs.rbegin(), kvs.rend(), [](auto item) {
-        return item.find("Sec-WebSocket-Key: ") != std::string::npos;
-    });
-    if (ite != kvs.rend())
-    {
-        key = Strings::split(*ite, std::string(": "))[1];
     }
 
     if (key.empty())
