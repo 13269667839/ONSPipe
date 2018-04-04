@@ -7,28 +7,39 @@ WSServer::WSServer(int port)
 {
     this->port = port;
     this->sock = nullptr;
-    this->webSocketEvents = std::map<std::string,Event>();
+
+    start = nullptr;
+    end = nullptr;
+
+    error = nullptr;
+    receive = nullptr;
 }
 
 WSServer::~WSServer()
 {
-    if (sock) 
+    if (sock)
     {
         sock->close();
         delete sock;
         sock = nullptr;
     }
+
+    start = nullptr;
+    end = nullptr;
+
+    error = nullptr;
+    receive = nullptr;
 }
 
 void WSServer::setSocket()
 {
-    if (!sock) 
+    if (!sock)
     {
-        sock = new Socket("",port);
-        
+        sock = new Socket("", port);
+
         int yes = 1;
         sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-        
+
         if (!(sock->bind() && sock->listen()))
         {
             throwError("some error occur on bind or listen function");
@@ -73,23 +84,23 @@ WSClientMsg WSServer::parseRecvData(std::vector<Util::byte> bytes)
     }
 
     auto len = bytes.size();
-    
-    auto data = std::vector<Util::byte>();//数据
-    auto mask = std::vector<Util::byte>();//掩码(4位)
-    
+
+    auto data = std::vector<Util::byte>(); //数据
+    auto mask = std::vector<Util::byte>(); //掩码(4位)
+
     //第二个字节的后7位表示数据的长度
     auto code_len = bytes[1] & 127;
-    
+
     if (code_len == 126)
     {
         //等于126，用后面相邻的2个字节来保存一个64bit位的无符号整数作为数据的长度,mask从第5个字节(4)开始
-        for (decltype(len) i = 4;i < len;++i)
+        for (decltype(len) i = 4; i < len; ++i)
         {
             if (i >= 8)
             {
                 data.push_back(bytes[i]);
             }
-            else 
+            else
             {
                 mask.push_back(bytes[i]);
             }
@@ -98,40 +109,40 @@ WSClientMsg WSServer::parseRecvData(std::vector<Util::byte> bytes)
     else if (code_len > 126)
     {
         //大于126，用后面相邻的8个字节来保存一个64bit位的无符号整数作为数据的长度,mask从第11个字节(10)开始
-        for (decltype(len) i = 10;i < len;++i)
+        for (decltype(len) i = 10; i < len; ++i)
         {
             if (i >= 14)
             {
                 data.push_back(bytes[i]);
             }
-            else 
+            else
             {
                 mask.push_back(bytes[i]);
             }
         }
     }
-    else 
+    else
     {
         //小于126时playload只有1位，所以mask从第三位(2)开始
-        for (decltype(len) i = 2;i < len;++i)
+        for (decltype(len) i = 2; i < len; ++i)
         {
             if (i >= 6)
             {
                 data.push_back(bytes[i]);
             }
-            else 
+            else
             {
                 mask.push_back(bytes[i]);
             }
         }
     }
 
-    for (decltype(data.size()) idx = 0;idx < data.size();++idx)
+    for (decltype(data.size()) idx = 0; idx < data.size(); ++idx)
     {
         char code = data[idx] ^ mask[idx % 4];
         msg.msg += code;
     }
-    
+
     return msg;
 }
 
@@ -183,12 +194,6 @@ void WSServer::sendMsg(std::string msg, int fd) const
     sock->sendAll(bytes.data(), bytes.size(), false, fd);
 }
 
-#pragma mark -- Event
-const std::string WSServer::start = "start";
-const std::string WSServer::receive = "receive";
-const std::string WSServer::end = "end";
-const std::string WSServer::error = "error";
-
 void WSServer::loop()
 {
     setSocket();
@@ -202,26 +207,26 @@ void WSServer::loop()
     const auto listener = sock->socketfd;
     if (listener == -1)
     {
-        triggerEvent(WSServer::error,-1,"listener fd is invalid");
+        throwError("listener fd is invalid");
         return;
     }
     FD_SET(listener, &master);
 
     auto fd_max = listener;
 
-    while (true) 
+    while (true)
     {
         read_fds = master;
 
         if (select(fd_max + 1, &read_fds, nullptr, nullptr, nullptr) == -1)
         {
-            triggerEvent(WSServer::error,-1,std::string(gai_strerror(errno)));
+            throwError("select error " + std::string(gai_strerror(errno)));
             return;
         }
 
-        for (auto i = 0;i <= fd_max;++i)
+        for (auto i = 0; i <= fd_max; ++i)
         {
-            if (!FD_ISSET(i,&read_fds))
+            if (!FD_ISSET(i, &read_fds))
             {
                 continue;
             }
@@ -233,40 +238,55 @@ void WSServer::loop()
                 {
                     FD_SET(clientfd, &master);
                     fd_max = std::max(clientfd, fd_max);
-                    triggerEvent(WSServer::start,clientfd,"");
+                    if (start)
+                    {
+                        start(clientfd);
+                    }
                 }
                 continue;
             }
 
             while (true)
             {
-                try 
+                try
                 {
                     auto recvBuf = sock->receive(i);
                     if (recvBuf.empty())
                     {
-                        triggerEvent(WSServer::end,i,"");
+                        if (end)
+                        {
+                            end(i);
+                        }
                         FD_CLR(i, &master);
                         break;
                     }
-                    else 
+                    else
                     {
                         auto msg = parseRecvData(recvBuf);
                         if (msg.connect)
                         {
-                            triggerEvent(WSServer::receive,i,msg.msg);
+                            if (receive)
+                            {
+                                receive(i, msg);
+                            }
                         }
-                        else 
+                        else
                         {
-                            triggerEvent(WSServer::end,i,"");
+                            if (end)
+                            {
+                                end(i);
+                            }
                             FD_CLR(i, &master);
                             break;
                         }
                     }
                 }
-                catch (std::logic_error err) 
+                catch (std::logic_error err)
                 {
-                    triggerEvent(WSServer::error,i,err.what());
+                    if (error)
+                    {
+                        error(i, err.what());
+                    }
                     FD_CLR(i, &master);
                     break;
                 }
@@ -275,31 +295,14 @@ void WSServer::loop()
     }
 }
 
-void WSServer::addEventListener(std::string tag,Event event)
-{
-    if (!tag.empty() && event) 
-    {
-        webSocketEvents[tag] = event;
-    }
-}
-
-void WSServer::triggerEvent(std::string tag,int fd,std::string msg)
-{
-    auto iter = webSocketEvents.find(tag);
-    if (iter != std::end(webSocketEvents))
-    {
-        iter->second(fd,msg);
-    }
-}
-
-#pragma mark -- Hand Shaking
+#pragma mark-- Hand Shaking
 int WSServer::handShaking()
 {
     if (!sock)
     {
         throwError("socket is null");
     }
-    
+
     auto fd = sock->accept();
     if (fd == -1)
     {
@@ -307,77 +310,73 @@ int WSServer::handShaking()
     }
 
     auto recvMsg = std::string();
-    while (1) 
-    {       
+    while (1)
+    {
         auto recvbuf = sock->receive(fd);
-        
-        if (recvbuf.empty()) 
+
+        if (recvbuf.empty())
         {
             break;
         }
-        
+
         recvMsg += (char *)recvbuf.data();
-        
+
         if (recvMsg.rfind("\r\n\r\n") != std::string::npos)
         {
             break;
         }
     }
-    
+
     if (recvMsg.empty())
     {
         return -1;
     }
-    
+
     auto kvs = Strings::split(recvMsg, std::string("\r\n"));
     if (kvs.empty())
     {
         return -1;
     }
-    
+
     auto key = std::string();
-    auto ite = std::find_if(kvs.rbegin(), kvs.rend(), [](auto item)
-    {
+    auto ite = std::find_if(kvs.rbegin(), kvs.rend(), [](auto item) {
         return item.find("Sec-WebSocket-Key: ") != std::string::npos;
     });
     if (ite != kvs.rend())
     {
         key = Strings::split(*ite, std::string(": "))[1];
     }
-    
+
     if (key.empty())
     {
         return -1;
     }
-    
+
     key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    
-    auto sha1_str = Util::sha1_encode((Util::byte *)(const_cast<char *>(key.c_str())), key.size());
-    if (!sha1_str) 
+
+    auto sha1_str = Utility::sha1_encode((Util::byte *)(const_cast<char *>(key.c_str())), key.size());
+    if (!sha1_str)
     {
         return -1;
     }
-    
+
     auto u8_str = (char *)sha1_str;
-    auto b64_str = Util::base64_encoding(u8_str, (int)strlen(u8_str), false);
-    
+    auto b64_str = Crypto::b64encode(u8_str);
+
     delete sha1_str;
     sha1_str = nullptr;
-    
-    if (!b64_str) 
+
+    if (b64_str.empty())
     {
         return -1;
     }
-    
+
     key = b64_str;
-    
-    delete b64_str;
-    b64_str = nullptr;
-    
+
     auto line = std::string("HTTP/1.1 101 Switching Protocols\r\n");
     auto header = std::string("Upgrade: websocket\r\n") + "Connection: Upgrade\r\n" + "Sec-WebSocket-Accept: " + key + "\r\n\r\n";
     auto send_msg = line + header;
-    sock->sendAll(const_cast<char *>(send_msg.c_str()),send_msg.size(),false,fd);
-    
+    sock->sendAll(const_cast<char *>(send_msg.c_str()), send_msg.size(), false, fd);
+
     return fd;
 }

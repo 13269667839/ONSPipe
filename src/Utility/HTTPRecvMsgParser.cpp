@@ -311,7 +311,7 @@ HTTPResponse * HTTPRecvMsgParser::msg2res()
         {
             uLong uncompressedBufferLen = bufferLen * 9;
             Byte uncompressedBuffer[uncompressedBufferLen];
-            if (Util::gzlib_uncompress(buffer,bufferLen,uncompressedBuffer,&uncompressedBufferLen) == 0)
+            if (Utility::gzlib_uncompress(buffer,bufferLen,uncompressedBuffer,&uncompressedBufferLen) == 0)
             {
                 res->body.assign(std::basic_string<Util::byte>(uncompressedBuffer,uncompressedBufferLen));
             }

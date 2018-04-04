@@ -1,7 +1,6 @@
 #include "Util.hpp"
 #include <cctype>
 #include <cstring>
-#include <clocale>
 
 #include <openssl/buffer.h>
 #include <openssl/bio.h>
@@ -9,7 +8,7 @@
 #include <openssl/sha.h>
 #include <openssl/des.h>
 
-std::map<std::string,std::string> Util::Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule)
+std::map<std::string,std::string> Utility::Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule)
 {
     auto dic = std::map<std::string,std::string>();
 
@@ -48,33 +47,7 @@ std::map<std::string,std::string> Util::Argv2Map(const char * argv[],int len,con
     return dic;
 }
 
-char * Util::base64_encoding(const char *buffer, int length, bool newLine)
-{
-    BIO *bmem = nullptr;
-    BIO *b64 = nullptr;
-    BUF_MEM *bptr = nullptr;
-    
-    b64 = BIO_new(BIO_f_base64());
-    if (!newLine) 
-    {
-        BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    }
-    bmem = BIO_new(BIO_s_mem());
-    b64 = BIO_push(b64, bmem);
-    BIO_write(b64, buffer, length);
-    BIO_flush(b64);
-    BIO_get_mem_ptr(b64, &bptr);
-    BIO_set_close(b64, BIO_NOCLOSE);
-    
-    char *buff = (char *)malloc(bptr->length + 1);
-    memcpy(buff, bptr->data, bptr->length);
-    buff[bptr->length] = 0;
-    BIO_free_all(b64);
-    
-    return buff;
-}
-
-Util::byte * Util::sha1_encode(Util::byte *src,size_t len)
+Util::byte * Utility::sha1_encode(Util::byte *src,size_t len)
 {
     SHA_CTX c;
     Util::byte *dest = (Util::byte *)malloc((SHA_DIGEST_LENGTH + 1) * sizeof(Util::byte));
@@ -90,7 +63,7 @@ Util::byte * Util::sha1_encode(Util::byte *src,size_t len)
     return dest;
 }
 
-std::vector<Util::byte> Util::zlib_compress(Util::byte *bytes,size_t len)
+std::vector<Util::byte> Utility::zlib_compress(Util::byte *bytes,size_t len)
 {
     if (!bytes || len == 0) 
     {
@@ -115,7 +88,7 @@ std::vector<Util::byte> Util::zlib_compress(Util::byte *bytes,size_t len)
     return compressedBuffer;
 }
 
-std::vector<Util::byte> Util::zlib_uncompress(Util::byte *bytes,size_t len)
+std::vector<Util::byte> Utility::zlib_uncompress(Util::byte *bytes,size_t len)
 {
     if (!bytes || len == 0) 
     {
@@ -139,7 +112,7 @@ std::vector<Util::byte> Util::zlib_uncompress(Util::byte *bytes,size_t len)
     return uncompressedBuffer;
 }
 
-int Util::gzlib_compress(Bytef *data, uLong ndata,Bytef *zdata, uLong *nzdata)
+int Utility::gzlib_compress(Bytef *data, uLong ndata,Bytef *zdata, uLong *nzdata)
 {
     if (!data || ndata == 0 || !zdata || *nzdata == 0)
     {
@@ -204,7 +177,7 @@ int Util::gzlib_compress(Bytef *data, uLong ndata,Bytef *zdata, uLong *nzdata)
     return -1;
 }
 
-int Util::gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata)
+int Utility::gzlib_uncompress(Byte *zdata, uLong nzdata,Byte *data, uLong *ndata)
 {
     if (!data || ndata == 0 || !zdata || *ndata == 0)
     {

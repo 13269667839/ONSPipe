@@ -4,37 +4,17 @@
 #include "STLExtern.hpp"
 #include "FileSystem.hpp"
 #include "Strings.hpp"
-
-#include <exception>
+#include "UtilConstant.hpp"
+#include "Crypto.hpp"
 
 #include <zlib.h>
 
-#define throwError(msg) throw std::logic_error(msg)
-
-// #define DEBUG
-    
-enum class InputType : int
-{
-    File = 0,
-    Text
-};
-
-enum class HTTPMessageParseState : int
-{
-    Line = 0,
-    Header,
-    Body
-};
-
-class Util
+class Utility
 {
 public:
-    using byte = unsigned char;
-
     static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
     
-    static char * base64_encoding(const char *buffer, int length, bool newLine);
-    static byte * sha1_encode(byte *src,size_t len);
+    static Util::byte * sha1_encode(Util::byte *src,size_t len);
 
     static std::vector<Util::byte> zlib_compress(Util::byte *bytes,size_t len);
     static std::vector<Util::byte> zlib_uncompress(Util::byte *bytes,size_t len);
