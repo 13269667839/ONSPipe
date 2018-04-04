@@ -2,9 +2,37 @@
 #include <algorithm>
 #include <cstring>
 
+//for base64
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
 #include <openssl/bio.h>
+
+//for sha1
+#include <openssl/sha.h>
+
+std::basic_string<Util::byte> Crypto::sha1encode(Util::byte *src, size_t len)
+{
+    SHA_CTX c;
+    if (!SHA1_Init(&c))
+    {
+        return std::basic_string<Util::byte>();
+    }
+
+    auto size = SHA_DIGEST_LENGTH + 1;
+    auto dest = new Util::byte[size];
+    std::fill(dest, dest + size, 0);
+
+    SHA1_Update(&c, src, len);
+    SHA1_Final(dest, &c);
+    OPENSSL_cleanse(&c, sizeof(c));
+
+    auto result = std::basic_string<Util::byte>(dest, size);
+    
+    delete[] dest;
+    dest = nullptr;
+
+    return result;
+}
 
 std::string Crypto::b64encode(std::string buffer, bool newline)
 {

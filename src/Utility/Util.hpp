@@ -13,8 +13,6 @@ class Utility
 {
 public:
     static std::map<std::string,std::string> Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule);
-    
-    static Util::byte * sha1_encode(Util::byte *src,size_t len);
 
     static std::vector<Util::byte> zlib_compress(Util::byte *bytes,size_t len);
     static std::vector<Util::byte> zlib_uncompress(Util::byte *bytes,size_t len);

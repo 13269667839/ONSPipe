@@ -364,17 +364,14 @@ std::shared_ptr<TCPSocket> WSServer::handShaking()
 
     key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-    auto sha1_str = Utility::sha1_encode((Util::byte *)(const_cast<char *>(key.c_str())), key.size());
-    if (!sha1_str)
+    auto sha1_str = Crypto::sha1encode(reinterpret_cast<Util::byte *>(const_cast<char *>(key.c_str())), key.size());
+    if (sha1_str.empty())
     {
         return nullptr;
     }
 
-    auto u8_str = (char *)sha1_str;
+    auto u8_str = reinterpret_cast<char *>(const_cast<Util::byte *>(sha1_str.c_str()));
     auto b64_str = Crypto::b64encode(u8_str);
-
-    delete sha1_str;
-    sha1_str = nullptr;
 
     if (b64_str.empty())
     {

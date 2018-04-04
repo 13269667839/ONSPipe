@@ -1,12 +1,5 @@
 #include "Util.hpp"
-#include <cctype>
 #include <cstring>
-
-#include <openssl/buffer.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
-#include <openssl/sha.h>
-#include <openssl/des.h>
 
 std::map<std::string,std::string> Utility::Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule)
 {
@@ -45,22 +38,6 @@ std::map<std::string,std::string> Utility::Argv2Map(const char * argv[],int len,
     }
 
     return dic;
-}
-
-Util::byte * Utility::sha1_encode(Util::byte *src,size_t len)
-{
-    SHA_CTX c;
-    Util::byte *dest = (Util::byte *)malloc((SHA_DIGEST_LENGTH + 1) * sizeof(Util::byte));
-    memset(dest, 0, SHA_DIGEST_LENGTH + 1);
-    if(!SHA1_Init(&c))
-    {
-        free(dest);
-        return nullptr;
-    }
-    SHA1_Update(&c, src, len);
-    SHA1_Final(dest,&c);
-    OPENSSL_cleanse(&c,sizeof(c));
-    return dest;
 }
 
 std::vector<Util::byte> Utility::zlib_compress(Util::byte *bytes,size_t len)
