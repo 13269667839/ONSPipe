@@ -21,7 +21,6 @@ WSServer::~WSServer()
 {
     if (sock)
     {
-        sock->close();
         delete sock;
         sock = nullptr;
     }
@@ -35,17 +34,38 @@ WSServer::~WSServer()
 
 void WSServer::setSocket()
 {
-    if (!sock)
+    auto address = std::string();
+    auto family = AddressFamily::IPV4;
+
+    auto addressList = SocketConfig::getAddressInfo(address, std::to_string(port), family, SocketType::TCP);
+    if (!addressList)
     {
-        sock = new Socket("", port);
+        throwError("getAddressInfo() return null");
+        return;
+    }
 
-        int yes = 1;
-        sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    auto domain = addressList->ai_family;
+    freeaddrinfo(addressList);
+    addressList = nullptr;
 
-        if (!(sock->bind() && sock->listen()))
-        {
-            throwError("some error occur on bind or listen function");
-        }
+    sock = new TCPSocket(domain, family);
+
+    int yes = 1;
+    if (!sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)))
+    {
+        throwError("set SO_REUSEADDR flag error");
+        return;
+    }
+
+    if (!sock->bind(address, port))
+    {
+        throwError("bind() error " + std::string(gai_strerror(errno)));
+        return;
+    }
+
+    if (!sock->listen())
+    {
+        throwError("listen() error " + std::string(gai_strerror(errno)));
     }
 }
 
@@ -148,21 +168,9 @@ WSClientMsg WSServer::parseRecvData(std::vector<Util::byte> bytes)
     return msg;
 }
 
-void WSServer::sendMsg(std::string msg, int fd) const
+void WSServer::sendMsg(std::string msg, std::shared_ptr<TCPSocket> fd) const
 {
-    if (!sock)
-    {
-        throwError("socket is null");
-        return;
-    }
-
-    if (fd == -1)
-    {
-        throwError("invalid file descriptor");
-        return;
-    }
-
-    if (msg.empty())
+    if (msg.empty() || !fd)
     {
         return;
     }
@@ -193,7 +201,7 @@ void WSServer::sendMsg(std::string msg, int fd) const
     }
 
     bytes.insert(std::end(bytes), std::begin(msg), std::end(msg));
-    sock->sendAll(bytes.data(), bytes.size(), false, fd);
+    fd->sendAll(bytes.data(), bytes.size());
 }
 
 void WSServer::loop()
@@ -206,7 +214,7 @@ void WSServer::loop()
     auto master = fd_set();
     FD_ZERO(&master);
 
-    const auto listener = sock->socketfd;
+    const auto listener = sock->sockfd();
     if (listener == -1)
     {
         throwError("listener fd is invalid");
@@ -215,6 +223,8 @@ void WSServer::loop()
     FD_SET(listener, &master);
 
     auto fd_max = listener;
+
+    auto clients = std::map<int, std::shared_ptr<TCPSocket>>();
 
     while (true)
     {
@@ -236,29 +246,43 @@ void WSServer::loop()
             if (i == listener)
             {
                 auto clientfd = handShaking();
-                if (clientfd != -1)
+                if (clientfd)
                 {
-                    FD_SET(clientfd, &master);
-                    fd_max = std::max(clientfd, fd_max);
+                    clients[clientfd->sockfd()] = clientfd;
+
+                    FD_SET(clientfd->sockfd(), &master);
+                    fd_max = std::max(clientfd->sockfd(), fd_max);
                     if (start)
                     {
-                        start(clientfd);
+                        start(clientfd->sockfd());
                     }
                 }
                 continue;
             }
 
+            auto iter = clients.find(i);
+            if (iter == std::end(clients))
+            {
+                if (error)
+                {
+                    error(i, "not have this client");
+                }
+                continue;
+            }
+
+            auto client = iter->second;
             while (true)
             {
                 try
                 {
-                    auto recvBuf = sock->receive(i);
+                    auto recvBuf = client->receive();
                     if (recvBuf.empty())
                     {
                         if (end)
                         {
                             end(i);
                         }
+                        clients.erase(i);
                         FD_CLR(i, &master);
                         break;
                     }
@@ -269,7 +293,7 @@ void WSServer::loop()
                         {
                             if (receive)
                             {
-                                receive(i, msg);
+                                receive(client, msg);
                             }
                         }
                         else
@@ -278,6 +302,7 @@ void WSServer::loop()
                             {
                                 end(i);
                             }
+                            clients.erase(i);
                             FD_CLR(i, &master);
                             break;
                         }
@@ -289,6 +314,7 @@ void WSServer::loop()
                     {
                         error(i, err.what());
                     }
+                    clients.erase(i);
                     FD_CLR(i, &master);
                     break;
                 }
@@ -297,8 +323,7 @@ void WSServer::loop()
     }
 }
 
-#pragma mark-- Hand Shaking
-int WSServer::handShaking()
+std::shared_ptr<TCPSocket> WSServer::handShaking()
 {
     if (!sock)
     {
@@ -306,16 +331,16 @@ int WSServer::handShaking()
     }
 
     auto fd = sock->accept();
-    if (fd == -1)
+    if (!fd)
     {
-        return -1;
+        return nullptr;
     }
 
     auto key = std::string();
     auto parser = HTTPReqMsgParser();
     while (true)
     {
-        auto recvbuf = sock->receive(fd);
+        auto recvbuf = fd->receive();
         parser.addToCache(recvbuf);
         if (parser.is_parse_msg() || recvbuf.empty())
         {
@@ -334,7 +359,7 @@ int WSServer::handShaking()
 
     if (key.empty())
     {
-        return -1;
+        return nullptr;
     }
 
     key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -342,7 +367,7 @@ int WSServer::handShaking()
     auto sha1_str = Utility::sha1_encode((Util::byte *)(const_cast<char *>(key.c_str())), key.size());
     if (!sha1_str)
     {
-        return -1;
+        return nullptr;
     }
 
     auto u8_str = (char *)sha1_str;
@@ -353,7 +378,7 @@ int WSServer::handShaking()
 
     if (b64_str.empty())
     {
-        return -1;
+        return nullptr;
     }
 
     key = b64_str;
@@ -361,7 +386,7 @@ int WSServer::handShaking()
     auto line = std::string("HTTP/1.1 101 Switching Protocols\r\n");
     auto header = std::string("Upgrade: websocket\r\n") + "Connection: Upgrade\r\n" + "Sec-WebSocket-Accept: " + key + "\r\n\r\n";
     auto send_msg = line + header;
-    sock->sendAll(const_cast<char *>(send_msg.c_str()), send_msg.size(), false, fd);
+    fd->sendAll(send_msg, send_msg.size());
 
     return fd;
 }
