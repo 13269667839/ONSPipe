@@ -87,7 +87,7 @@ std::string Crypto::b64decode(std::string buffer, bool newline)
 
     auto length = buffer.size();
 
-    auto bmem = BIO_new_mem_buf(buffer.c_str(), length);
+    auto bmem = BIO_new_mem_buf(const_cast<char *>(buffer.c_str()), length);
     bmem = BIO_push(b64, bmem);
 
     char decodeStr[length];
