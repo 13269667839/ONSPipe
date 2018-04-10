@@ -1,21 +1,28 @@
 #include "HTTPServer.hpp"
 
 #ifdef Kqueue
-    #define MAX_EVENT_COUNT 64
 
-    #include <sys/event.h>
+constexpr int MaxEventCount = 10;
+
+#include <sys/event.h>
+
 #elif defined(Epoll)
-    #include <sys/epoll.h>
+#include <sys/epoll.h>
 #endif
 
 #ifdef DEBUG
-    #include <iostream>
+#include <iostream>
 #endif
 
 HTTPServer::HTTPServer(int port)
 {
     this->port = port;
     sock = nullptr;
+    listenfd = -1;
+
+#ifdef Kqueue
+    fds = std::set<int>();
+#endif
 }
 
 HTTPServer::~HTTPServer()
@@ -30,6 +37,10 @@ HTTPServer::~HTTPServer()
 
 void HTTPServer::disconnect(int sockfd)
 {
+#ifdef Kqueue
+    fds.erase(sockfd);
+#endif
+
     if (sock && sockfd > 0)
     {
         sock->close(sockfd);
@@ -42,15 +53,21 @@ void HTTPServer::setSocket()
     {
         return;
     }
-    
-    sock = new Socket("",port);
-    
+
+    sock = new Socket("", port);
+
     int yes = 1;
     sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-    
+
     if (!(sock->bind() && sock->listen()))
     {
         throwError("some error occur on bind or listen function");
+    }
+
+    listenfd = sock->socketfd;
+    if (listenfd == -1)
+    {
+        throwError("listen fd is -1");
     }
 }
 
@@ -60,9 +77,9 @@ void HTTPServer::runAndLoop(RunAndLoopCallback callback)
     {
         return;
     }
-    
+
     setSocket();
-    
+
 #ifdef Kqueue
     kqueueLoop(callback);
 #elif defined(Epoll)
@@ -70,63 +87,54 @@ void HTTPServer::runAndLoop(RunAndLoopCallback callback)
 #endif
 }
 
-#pragma mark -- Kqueue
+#pragma mark-- Kqueue
 #ifdef Kqueue
-std::tuple<int,int> HTTPServer::setupKqueue()
+int HTTPServer::setupKqueue()
 {
-    auto listenfd = sock->socketfd;
-    if (listenfd == -1)
-    {
-        throwError("listen fd is invalid");
-    }
-
     auto kq = kqueue();
     if (kq == -1)
     {
         throwError("kqueue() error : " + std::string(gai_strerror(errno)));
     }
-    
-    struct kevent listen_event = {static_cast<unsigned long>(listenfd),EVFILT_READ,EV_ADD,0,0,nullptr};
-    if (kevent(kq, &listen_event, 1, nullptr, 0, nullptr) == -1)
+
+    struct kevent listenEvent;
+    EV_SET(&listenEvent, listenfd, EVFILT_READ, EV_ADD, 0, 0, nullptr);
+    if (kevent(kq, &listenEvent, 1, nullptr, 0, nullptr) == -1)
     {
         throwError("kevent() error : " + std::string(gai_strerror(errno)));
     }
 
-    return std::make_tuple(listenfd,kq);
+    return kq;
 }
 
-void HTTPServer::kqueueAccept(long count,int kq)
+void HTTPServer::kqueueAccept(long count, int kq)
 {
-    for (auto i = 0;i < count;++i)
+    for (auto i = 0; i < count; ++i)
     {
         auto clientfd = sock->accept();
         if (clientfd > 0)
         {
             struct kevent changelist[2];
-            EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD, 0, 0, nullptr);
-            EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD, 0, 0, nullptr);
-            kevent(kq, changelist, 1, nullptr, 0, nullptr);
+            EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
+            EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, nullptr);
+            kevent(kq, changelist, 2, nullptr, 0, nullptr);
+
+            fds.insert(clientfd);
         }
     }
 }
 
-void HTTPServer::kqueueError(int sockfd,int kq)
+void HTTPServer::kqueueError(int sockfd, int kq, int eventType)
 {
-    struct kevent event = {static_cast<unsigned long>(sockfd),EVFILT_READ,EV_DELETE,0,0,nullptr};
+    struct kevent event;
+    EV_SET(&event, sockfd, eventType, EV_DELETE, 0, 0, nullptr);
     kevent(kq, &event, 1, nullptr, 0, nullptr);
 }
 
-void HTTPServer::kqueueSend(int sockfd,HTTPRequest &request,HTTPResponse &response,RunAndLoopCallback &callback)
+//0 : normal 1 : empty 2 : error
+int HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
 {
-    response.initParameter();
-    callback(request,response);
-    auto msg = response.toResponseMessage();
-    sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
-}
-
-bool HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
-{
-    auto empty = false;
+    int status = 0;
 
     request.initParameter();
     parser.initParams();
@@ -136,7 +144,7 @@ bool HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &
     while (recvBytes <= totalLength)
     {
         auto size = totalLength - recvBytes;
-        if (size > 0) 
+        if (size > 0)
         {
             sock->recvBuffSize = size;
         }
@@ -152,86 +160,111 @@ bool HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &
             std::cerr << error.what() << std::endl;
 #endif
 
-            empty = true;
+            status = 2;
             parser.msg2req(request);
             break;
         }
 
-        empty = recvBuf.empty();
-        if (!empty) 
+        if (recvBuf.empty())
         {
-            recvBytes += recvBuf.size();
-            parser.addToCache(recvBuf);
-            recvBuf.clear();
+            status = 1;
+            parser.msg2req(request);
+            break;
         }
 
-        auto parsed = parser.is_parse_msg();
+        recvBytes += recvBuf.size();
+        parser.addToCache(recvBuf);
+        recvBuf.clear();
 
-        if (empty || parsed)
+        if (parser.is_parse_msg())
         {
             parser.msg2req(request);
             break;
         }
     }
 
-    return empty;
+    return status;
 }
 
 void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 {
-    int listenfd = -1;
-    int kq = -1;
-    std::tie(listenfd,kq) = setupKqueue();
-    if (listenfd == -1 || kq == -1) 
-    {
-        throwError("setupKqueue() error");
-        return;
-    }
-    
+    auto kq = setupKqueue();
     auto request = HTTPRequest();
     auto response = HTTPResponse();
     auto parser = HTTPReqMsgParser();
-    
+
+    struct kevent eventlist[MaxEventCount];
     while (true)
     {
-        struct kevent eventlist[MAX_EVENT_COUNT];
-        int ret = kevent(kq, nullptr, 0, eventlist, MAX_EVENT_COUNT, nullptr);
-        if (ret <= 0)
-        {
-            continue;
-        }
-            
-        for (int i = 0;i < ret;i++)
+        auto activeEventCount = kevent(kq, nullptr, 0, eventlist, MaxEventCount, nullptr);
+
+        for (auto i = 0; i < activeEventCount; i++)
         {
             auto event = eventlist[i];
             auto sockfd = static_cast<int>(event.ident);
-            
-            if (sockfd == listenfd)//new client
+
+            if (event.flags & EV_ERROR || sockfd <= 0) //error event
             {
-                kqueueAccept(event.data,kq);
-                continue;
-            }
-            
-            if (event.flags & EV_ERROR)//error event
-            {
-                kqueueError(sockfd,kq);
+                kqueueError(sockfd, kq, EVFILT_READ);
+                kqueueError(sockfd, kq, EVFILT_WRITE);
                 disconnect(sockfd);
+                break;
+            }
+
+            if (sockfd == listenfd) //new client
+            {
+                kqueueAccept(event.data, kq);
                 continue;
             }
 
-            if (event.filter == EVFILT_READ && sockfd > 0) //read event
+            if (event.filter == EVFILT_READ) //read event
             {
-                auto empty = kqueueParseRecvRequest(request, parser, event.data, sockfd);
+                auto status = kqueueParseRecvRequest(request, parser, event.data, sockfd);
 
-                if (!empty)
+                if (status == 0)
                 {
-                    kqueueSend(sockfd, request, response, callback);
+                    response.initParameter();
+                    callback(request, response);
+                }
+                else if (status == 1)
+                {
+                    kqueueError(sockfd, kq, EVFILT_READ);
+                    disconnect(sockfd);
+                }
+                else if (status == 2)
+                {
+                    kqueueError(sockfd, kq, EVFILT_READ);
+                    kqueueError(sockfd, kq, EVFILT_WRITE);
+                    disconnect(sockfd);
+                    break;
                 }
 
-                if (empty || request.header->find("Connection")->second == "Close")
+                if (request.header->find("Connection")->second == "Close")
                 {
-                    kqueueError(sockfd, kq);
-                    disconnect(sockfd);
+                    kqueueError(sockfd, kq, EVFILT_READ);
+                }
+            }
+            else if (event.filter == EVFILT_WRITE) //write event
+            {
+                if (fds.find(sockfd) == std::end(fds))
+                {
+                    kqueueError(sockfd, kq, EVFILT_WRITE);
+                }
+                else
+                {
+                    try
+                    {
+                        auto resMsg = response.toResponseMessage();
+                        sock->sendAll(resMsg, resMsg.size(), false, sockfd);
+                    }
+                    catch (std::logic_error error)
+                    {
+#ifdef DEBUG
+                        std::cerr << error.what() << std::endl;
+#endif
+                        kqueueError(sockfd, kq, EVFILT_WRITE);
+                        disconnect(sockfd);
+                    }
                 }
             }
         }
@@ -239,7 +272,7 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 }
 #endif
 
-#pragma mark -- Epoll
+#pragma mark-- Epoll
 #ifdef Epoll
 void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
 {
@@ -247,8 +280,6 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
     epoll_event events[20];
     //生成用于处理accept的epoll专用的文件描述符
     auto epfd = epoll_create(256);
-
-    const auto listenfd = sock->socketfd;
 
     //用于注册事件
     epoll_event ev;
@@ -270,9 +301,9 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
         auto nfds = epoll_wait(epfd, events, 20, 500);
 
         //处理所发生的所有事件
-        for (auto i = 0;i < nfds;++i)
+        for (auto i = 0; i < nfds; ++i)
         {
-            if (events[i].data.fd == listenfd) 
+            if (events[i].data.fd == listenfd)
             {
                 int connfd = sock->accept();
                 if (connfd > 0)
@@ -310,7 +341,7 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
                         parser.msg2req(request);
                         break;
                     }
-                        
+
                     parser.addToCache(recvBuf);
                     if (parser.is_parse_msg())
                     {
@@ -318,17 +349,17 @@ void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
                         break;
                     }
                 }
-                    
+
                 if (sockfd != -1)
                 {
                     response.initParameter();
-                    callback(request,response);
+                    callback(request, response);
                     auto msg = response.toResponseMessage();
-                    sock->sendAll(const_cast<char *>(msg.c_str()),msg.size(),false,sockfd);
+                    sock->sendAll(const_cast<char *>(msg.c_str()), msg.size(), false, sockfd);
 
                     ev.data.fd = sockfd;
                     ev.events = EPOLLOUT | EPOLLET;
-                    epoll_ctl(epfd,EPOLL_CTL_MOD,sockfd,&ev);
+                    epoll_ctl(epfd, EPOLL_CTL_MOD, sockfd, &ev);
                 }
             }
         }
