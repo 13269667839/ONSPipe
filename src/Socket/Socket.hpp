@@ -75,12 +75,8 @@ public:
                 else 
                 {
                     auto _sendBytes = send(&buffer[sendBytes],length - sendBytes,fd);
-                    sendBytes = _sendBytes;
+                    sendBytes += _sendBytes;
                 }
-            }
-            else if (type == SocketType::UDP)
-            {
-
             }
         }
     }

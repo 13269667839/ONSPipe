@@ -19,10 +19,6 @@ HTTPServer::HTTPServer(int port)
     this->port = port;
     sock = nullptr;
     listenfd = -1;
-
-#ifdef Kqueue
-    fds = std::set<int>();
-#endif
 }
 
 HTTPServer::~HTTPServer()
@@ -37,10 +33,6 @@ HTTPServer::~HTTPServer()
 
 void HTTPServer::disconnect(int sockfd)
 {
-#ifdef Kqueue
-    fds.erase(sockfd);
-#endif
-
     if (sock && sockfd > 0)
     {
         sock->close(sockfd);
@@ -118,13 +110,11 @@ void HTTPServer::kqueueAccept(long count, int kq)
             EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
             EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, nullptr);
             kevent(kq, changelist, 2, nullptr, 0, nullptr);
-
-            fds.insert(clientfd);
         }
     }
 }
 
-void HTTPServer::kqueueError(int sockfd, int kq, int eventType)
+void HTTPServer::deleteEvent(int sockfd, int kq, int eventType)
 {
     struct kevent event;
     EV_SET(&event, sockfd, eventType, EV_DELETE, 0, 0, nullptr);
@@ -192,8 +182,8 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
     auto request = HTTPRequest();
     auto response = HTTPResponse();
     auto parser = HTTPReqMsgParser();
-
     struct kevent eventlist[MaxEventCount];
+    
     while (true)
     {
         auto activeEventCount = kevent(kq, nullptr, 0, eventlist, MaxEventCount, nullptr);
@@ -205,10 +195,14 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 
             if (event.flags & EV_ERROR || sockfd <= 0) //error event
             {
-                kqueueError(sockfd, kq, EVFILT_READ);
-                kqueueError(sockfd, kq, EVFILT_WRITE);
-                disconnect(sockfd);
-                break;
+                deleteEvent(sockfd, kq, event.filter);
+
+                if (i + 1 == activeEventCount)
+                {
+                    disconnect(sockfd);
+                }
+
+                continue;
             }
 
             if (sockfd == listenfd) //new client
@@ -220,52 +214,34 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
             if (event.filter == EVFILT_READ) //read event
             {
                 auto status = kqueueParseRecvRequest(request, parser, event.data, sockfd);
-
-                if (status == 0)
+                switch (status)
+                {
+                case 0:
                 {
                     response.initParameter();
                     callback(request, response);
+
+                    auto message = response.toResponseMessage();
+                    sock->sendAll(const_cast<char *>(message.c_str()), message.size(), false, sockfd);
+
+                    if (request.header->find("Connection")->second == "Close")
+                    {
+                        deleteEvent(sockfd, kq, EVFILT_READ);
+                        disconnect(sockfd);
+                    }
                 }
-                else if (status == 1)
-                {
-                    kqueueError(sockfd, kq, EVFILT_READ);
-                    disconnect(sockfd);
-                }
-                else if (status == 2)
-                {
-                    kqueueError(sockfd, kq, EVFILT_READ);
-                    kqueueError(sockfd, kq, EVFILT_WRITE);
+                break;
+                case 1 ... 2:
+                    deleteEvent(sockfd, kq, EVFILT_READ);
                     disconnect(sockfd);
                     break;
-                }
-
-                if (request.header->find("Connection")->second == "Close")
-                {
-                    kqueueError(sockfd, kq, EVFILT_READ);
+                default:
+                    break;
                 }
             }
             else if (event.filter == EVFILT_WRITE) //write event
             {
-                if (fds.find(sockfd) == std::end(fds))
-                {
-                    kqueueError(sockfd, kq, EVFILT_WRITE);
-                }
-                else
-                {
-                    try
-                    {
-                        auto resMsg = response.toResponseMessage();
-                        sock->sendAll(resMsg, resMsg.size(), false, sockfd);
-                    }
-                    catch (std::logic_error error)
-                    {
-#ifdef DEBUG
-                        std::cerr << error.what() << std::endl;
-#endif
-                        kqueueError(sockfd, kq, EVFILT_WRITE);
-                        disconnect(sockfd);
-                    }
-                }
+                deleteEvent(sockfd, kq, EVFILT_WRITE);
             }
         }
     }
