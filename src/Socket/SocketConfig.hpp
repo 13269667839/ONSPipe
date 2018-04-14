@@ -49,6 +49,8 @@ public:
     static int addressFamilyRawValue(AddressFamily &family);
 
     static socklen_t addressLen(sockaddr_storage &addr);
+
+    static bool setNonBlocking(int sockfd);
 };
 
 #endif

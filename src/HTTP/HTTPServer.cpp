@@ -61,6 +61,11 @@ void HTTPServer::setSocket()
     {
         throwError("listen fd is -1");
     }
+
+    if (!SocketConfig::setNonBlocking(listenfd)) 
+    {
+        throwError("set none blocking error : " + std::string(gai_strerror(errno)));
+    }
 }
 
 void HTTPServer::runAndLoop(RunAndLoopCallback callback)
@@ -106,6 +111,11 @@ void HTTPServer::kqueueAccept(long count, int kq)
         auto clientfd = sock->accept();
         if (clientfd > 0)
         {
+            if (!SocketConfig::setNonBlocking(clientfd)) 
+            {
+                throwError("set none blocking error : " + std::string(gai_strerror(errno)));
+            }
+
             struct kevent changelist[2];
             EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
             EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, nullptr);

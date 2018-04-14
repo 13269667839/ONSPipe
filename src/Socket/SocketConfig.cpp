@@ -1,6 +1,7 @@
 #include "SocketConfig.hpp"
 #include <cstring>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 addrinfo * SocketConfig::getAddressInfo(std::string address, std::string port, AddressFamily family, SocketType socktype)
 {
@@ -16,7 +17,7 @@ addrinfo * SocketConfig::getAddressInfo(std::string address, std::string port, A
     hints.ai_family = _family;
 
     auto _socktype = SocketConfig::socketTypeRawValue(socktype);
-    if (_socktype == -1) 
+    if (_socktype == -1)
     {
         throwError("error socket type");
         return nullptr;
@@ -108,16 +109,16 @@ int SocketConfig::socketTypeRawValue(SocketType &type)
 {
     auto res = -1;
 
-    switch (type) 
+    switch (type)
     {
-        case SocketType::TCP:
-            res = SOCK_STREAM;
-            break;
-        case SocketType::UDP:
-            res = SOCK_DGRAM;
-            break;
-        default:
-            break;
+    case SocketType::TCP:
+        res = SOCK_STREAM;
+        break;
+    case SocketType::UDP:
+        res = SOCK_DGRAM;
+        break;
+    default:
+        break;
     }
 
     return res;
@@ -128,19 +129,19 @@ int SocketConfig::addressFamilyRawValue(AddressFamily &family)
 {
     auto res = -1;
 
-    switch (family) 
+    switch (family)
     {
-        case AddressFamily::Default:
-            res = AF_UNSPEC;
-            break;
-        case AddressFamily::IPV4:
-            res = AF_INET;
-            break;
-        case AddressFamily::IPV6:
-            res = AF_INET6;
-            break;
-        default:
-            break;
+    case AddressFamily::Default:
+        res = AF_UNSPEC;
+        break;
+    case AddressFamily::IPV4:
+        res = AF_INET;
+        break;
+    case AddressFamily::IPV6:
+        res = AF_INET6;
+        break;
+    default:
+        break;
     }
 
     return res;
@@ -148,7 +149,7 @@ int SocketConfig::addressFamilyRawValue(AddressFamily &family)
 
 socklen_t SocketConfig::addressLen(sockaddr_storage &addr)
 {
-    if (addr.ss_family == AF_INET) 
+    if (addr.ss_family == AF_INET)
     {
         return sizeof(sockaddr_in);
     }
@@ -157,4 +158,15 @@ socklen_t SocketConfig::addressLen(sockaddr_storage &addr)
         return sizeof(sockaddr_in6);
     }
     return 0;
+}
+
+bool SocketConfig::setNonBlocking(int sockfd)
+{
+    auto flag = fcntl(sockfd, F_GETFL);
+    if (flag == -1)
+    {
+        return false;
+    }
+
+    return fcntl(sockfd, F_SETFL, flag | O_NONBLOCK) != -1;
 }
