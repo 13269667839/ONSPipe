@@ -93,7 +93,7 @@ bool Socket::bind()
 #ifdef DEBUG
         if (res)
         {
-            std::cout << "bind to " << Socket::netAddressToHostAddress(*addr->ai_addr) << std::endl;
+            std::cout << "bind to " << SocketConfig::netAddressToHostAddress(*addr->ai_addr) << std::endl;
         }
 #endif
         return res;
@@ -421,7 +421,7 @@ int Socket::accept()
     }
 
 #ifdef DEBUG
-    std::cout << "connect from " << Socket::netAddressToHostAddress(*((sockaddr *)&visitorAddr)) << std::endl;
+    std::cout << "connect from " << SocketConfig::netAddressToHostAddress(*((sockaddr *)&visitorAddr)) << std::endl;
 #endif
 
     return new_fd;
@@ -444,7 +444,7 @@ bool Socket::connect()
 #ifdef DEBUG
         if (res)
         {
-            std::cout << "connect to " << Socket::netAddressToHostAddress(*addr->ai_addr) << std::endl;
+            std::cout << "connect to " << SocketConfig::netAddressToHostAddress(*addr->ai_addr) << std::endl;
         }
 #endif
         return res;
