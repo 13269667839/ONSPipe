@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 
 namespace STLExtern
 {
@@ -60,6 +61,26 @@ void releaseMap(std::map<keyType, valueType> *dic)
         if (ite->second != nullptr)
         {
             delete ite->second;
+            ite->second = nullptr;
+        }
+    }
+
+    dic->clear();
+}
+
+template <typename keyType, typename valueType>
+void releaseMap(std::map<keyType, std::shared_ptr<valueType>> *dic)
+{
+    if (!dic || dic->empty())
+    {
+        return;
+    }
+
+    for (auto ite = dic->begin(); ite != dic->end(); ++ite)
+    {
+        if (ite->second != nullptr)
+        {
+            ite->second.reset();
             ite->second = nullptr;
         }
     }

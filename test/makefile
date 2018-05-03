@@ -18,7 +18,7 @@ ifeq ($(OS),Darwin)
 	openssl_include = /usr/local/Cellar/openssl/1.0.2o_1/include
 	openssl_flag = $(openssl_lib)/*.a -L $(openssl_lib) -I $(openssl_include)
 
-	cpp_flag = -std=c++14 -g -W -lz
+	cpp_flag = -std=c++14 -g -Wall -lz
 
 	extra_flag = $(openssl_flag)
 endif
@@ -26,7 +26,7 @@ endif
 ifeq ($(OS),Linux)
 	CC = g++
 
-	cpp_flag = -std=c++14 -g -W -lz -lssl -lcrypto
+	cpp_flag = -std=c++14 -g -Wall -lz -lssl -lcrypto
 endif
 
 build:

@@ -1,45 +1,6 @@
 #include "Util.hpp"
 #include <cstring>
 
-std::map<std::string,std::string> Utility::Argv2Map(const char * argv[],int len,const std::map<std::string,int> rule)
-{
-    auto dic = std::map<std::string,std::string>();
-
-    for (int i = 0;i < len;++i)
-    {
-        auto arg = argv[i];
-
-        if (!arg || strlen(arg) == 0)
-        {
-            continue;
-        }
-
-        auto ite = rule.find(arg);
-        if (ite == rule.end())
-        {
-            continue;
-        }
-
-        auto count = ite->second;
-        auto content = std::string();
-
-        auto j = i;
-        for (;j < i + count && j < len;++j)
-        {
-            if (!content.empty())
-            {
-                content += " ";
-            }
-            content += argv[j];
-        }
-        i = j;
-
-        dic[arg] = content;
-    }
-
-    return dic;
-}
-
 std::vector<Util::byte> Utility::zlib_compress(Util::byte *bytes,size_t len)
 {
     if (!bytes || len == 0) 
