@@ -12,6 +12,11 @@ HTTPResponse::HTTPResponse()
     body = std::basic_string<Util::byte>();
 }
 
+bool HTTPResponse::isInit() 
+{
+    return version.empty() && statusCode == 0 && reason.empty();
+}
+
 void HTTPResponse::initParameter()
 {
     version.clear();

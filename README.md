@@ -31,3 +31,18 @@ if (document)
     cout<<*document<<endl;
 }
 ```
+
+## server
+```
+#include <HTTPServer.hpp>
+auto server = HTTPServer(8080);
+server.loop([](HTTPRequest &request, HTTPResponse &response) 
+{
+    cout << request << endl;
+
+    response.setResponseLine("HTTP/1.1", 200, "OK");
+    response.body = (unsigned char *)"Hello World!\n";
+    response.addResponseHead("Content-Type", "text/plain");
+    response.addResponseHead("Content-Length", to_string(response.body.size()));
+});
+```

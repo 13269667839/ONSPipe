@@ -3,8 +3,8 @@
 
 #include "HTTPRequest.hpp"
 #include "HTTPResponse.hpp"
-#include "../Socket/Socket.hpp"
 #include "../Utility/HTTPReqMsgParser.hpp"
+#include "../Socket/TCPSocket.hpp"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #define Kqueue
@@ -12,7 +12,7 @@
     #define Epoll
 #endif
 
-using RunAndLoopCallback = std::function<void (HTTPRequest &request,HTTPResponse &response)>;
+using LoopCallback = std::function<void (HTTPRequest &request,HTTPResponse &response)>;
 
 class HTTPServer
 {
@@ -20,25 +20,24 @@ public:
     HTTPServer(int port);
     ~HTTPServer();
     
-    void runAndLoop(RunAndLoopCallback callback);
+    void loop(LoopCallback callback);
 private:
     int port;
-    Socket *sock;
-
+    TCPSocket *sock;
     int listenfd;
+    std::map<int,std::shared_ptr<TCPSocket>> *dict;
 private:
     void setSocket();
     void disconnect(int sockfd);
     
 #ifdef Kqueue
-    void kqueueLoop(RunAndLoopCallback &callback);
+    void kqueueLoop(const LoopCallback &callback);
     int setupKqueue();
     void kqueueAccept(long count, int kq);
     void deleteEvent(int sockfd, int kq, int eventType);
-    //0 : normal 1 : empty 2 : error
     int kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd);
 #elif defined(Epoll)
-    void epollLoop(const RunAndLoopCallback &callback);
+    void epollLoop(const LoopCallback &callback);
 #endif
 };
 

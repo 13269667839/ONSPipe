@@ -6,7 +6,7 @@ using namespace std;
 void server()
 {
     auto server = HTTPServer(8080);
-    server.runAndLoop([](HTTPRequest &request, HTTPResponse &response) {
+    server.loop([](HTTPRequest &request, HTTPResponse &response) {
         cout << request << endl;
 
         response.setResponseLine("HTTP/1.1", 200, "OK");

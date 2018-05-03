@@ -19,56 +19,85 @@ HTTPServer::HTTPServer(int port)
     this->port = port;
     sock = nullptr;
     listenfd = -1;
+    dict = new std::map<int, std::shared_ptr<TCPSocket>>();
 }
 
 HTTPServer::~HTTPServer()
 {
     if (sock)
     {
-        sock->close();
         delete sock;
         sock = nullptr;
+    }
+
+    if (dict)
+    {
+        STLExtern::releaseMap(dict);
+        delete dict;
+        dict = nullptr;
     }
 }
 
 void HTTPServer::disconnect(int sockfd)
 {
-    if (sock && sockfd > 0)
+    auto iter = dict->find(sockfd);
+    if (iter == dict->end())
     {
-        sock->close(sockfd);
+        return;
+    }
+
+    auto client = iter->second;
+    dict->erase(sockfd);
+    if (client != nullptr)
+    {
+        client.reset();
     }
 }
 
 void HTTPServer::setSocket()
 {
-    if (sock)
+    auto address = std::string();
+    auto family = AddressFamily::IPV4;
+
+    auto addressList = SocketConfig::getAddressInfo(address, std::to_string(port), family, SocketType::TCP);
+    if (!addressList)
     {
+        throwError("getAddressInfo() return null");
         return;
     }
 
-    sock = new Socket("", port);
+    auto domain = addressList->ai_family;
+    freeaddrinfo(addressList);
+    addressList = nullptr;
+
+    sock = new TCPSocket(domain, family);
 
     int yes = 1;
-    sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-
-    if (!(sock->bind() && sock->listen()))
+    if (!sock->setSocketOpt(SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)))
     {
-        throwError("some error occur on bind or listen function");
+        throwError("set SO_REUSEADDR flag error");
+        return;
     }
 
-    listenfd = sock->socketfd;
-    if (listenfd == -1)
+    if (!sock->bind(address, port))
     {
-        throwError("listen fd is -1");
+        throwError("bind() error " + std::string(gai_strerror(errno)));
+        return;
     }
 
-    if (!SocketConfig::setNonBlocking(listenfd)) 
+    if (!sock->listen())
+    {
+        throwError("listen() error " + std::string(gai_strerror(errno)));
+    }
+
+    listenfd = sock->sockfd();
+    if (!SocketConfig::setNonBlocking(listenfd))
     {
         throwError("set none blocking error : " + std::string(gai_strerror(errno)));
     }
 }
 
-void HTTPServer::runAndLoop(RunAndLoopCallback callback)
+void HTTPServer::loop(LoopCallback callback)
 {
     if (!callback)
     {
@@ -108,19 +137,29 @@ void HTTPServer::kqueueAccept(long count, int kq)
 {
     for (auto i = 0; i < count; ++i)
     {
-        auto clientfd = sock->accept();
-        if (clientfd > 0)
+        auto client = sock->accept();
+        if (!client)
         {
-            if (!SocketConfig::setNonBlocking(clientfd)) 
-            {
-                throwError("set none blocking error : " + std::string(gai_strerror(errno)));
-            }
-
-            struct kevent changelist[2];
-            EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
-            EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, nullptr);
-            kevent(kq, changelist, 2, nullptr, 0, nullptr);
+            continue;
         }
+
+        auto clientfd = client->sockfd();
+        if (clientfd <= 0)
+        {
+            continue;
+        }
+
+        if (!SocketConfig::setNonBlocking(clientfd))
+        {
+            throwError("set none blocking error : " + std::string(gai_strerror(errno)));
+        }
+
+        struct kevent changelist[2];
+        EV_SET(&changelist[0], clientfd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, nullptr);
+        EV_SET(&changelist[1], clientfd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, nullptr);
+        kevent(kq, changelist, 2, nullptr, 0, nullptr);
+
+        dict->insert(std::make_pair(clientfd, client));
     }
 }
 
@@ -135,6 +174,13 @@ void HTTPServer::deleteEvent(int sockfd, int kq, int eventType)
 int HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &parser, long totalLength, int sockfd)
 {
     int status = 0;
+
+    auto iter = dict->find(sockfd);
+    if (iter == dict->end() || iter->second == nullptr)
+    {
+        return 2;
+    }
+    auto client = iter->second;
 
     request.initParameter();
     parser.initParams();
@@ -151,7 +197,7 @@ int HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &p
 
         try
         {
-            auto buff = sock->receive(sockfd);
+            auto buff = client->receive();
             recvBuf.insert(recvBuf.end(), buff.begin(), buff.end());
         }
         catch (std::logic_error error)
@@ -186,16 +232,16 @@ int HTTPServer::kqueueParseRecvRequest(HTTPRequest &request, HTTPReqMsgParser &p
     return status;
 }
 
-void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
+void HTTPServer::kqueueLoop(const LoopCallback &callback)
 {
     auto kq = setupKqueue();
     auto request = HTTPRequest();
     auto response = HTTPResponse();
     auto parser = HTTPReqMsgParser();
-    struct kevent eventlist[MaxEventCount];
-    
+
     while (true)
     {
+        struct kevent eventlist[MaxEventCount];
         auto activeEventCount = kevent(kq, nullptr, 0, eventlist, MaxEventCount, nullptr);
 
         for (auto i = 0; i < activeEventCount; i++)
@@ -230,15 +276,6 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
                 {
                     response.initParameter();
                     callback(request, response);
-
-                    auto message = response.toResponseMessage();
-                    sock->sendAll(const_cast<char *>(message.c_str()), message.size(), false, sockfd);
-
-                    if (request.header->find("Connection")->second == "Close")
-                    {
-                        deleteEvent(sockfd, kq, EVFILT_READ);
-                        disconnect(sockfd);
-                    }
                 }
                 break;
                 case 1 ... 2:
@@ -251,7 +288,25 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
             }
             else if (event.filter == EVFILT_WRITE) //write event
             {
-                deleteEvent(sockfd, kq, EVFILT_WRITE);
+                auto iter = dict->find(sockfd);
+                if (iter == dict->end() || !iter->second || response.isInit())
+                {
+                    deleteEvent(sockfd, kq, EVFILT_READ);
+                    disconnect(sockfd);
+                    break;
+                }
+
+                auto client = iter->second;
+                auto message = response.toResponseMessage();
+                client->sendAll(const_cast<char *>(message.c_str()), message.size());
+                if (request.header->find("Connection")->second == "Close")
+                {
+                    deleteEvent(sockfd, kq, EVFILT_READ);
+                    disconnect(sockfd);
+                }
+
+                request.initParameter();
+                response.initParameter();
             }
         }
     }
@@ -260,7 +315,7 @@ void HTTPServer::kqueueLoop(RunAndLoopCallback &callback)
 
 #pragma mark-- Epoll
 #ifdef Epoll
-void HTTPServer::epollLoop(const RunAndLoopCallback &callback)
+void HTTPServer::epollLoop(const LoopCallback &callback)
 {
     //用于回传要处理的事件
     epoll_event events[20];
