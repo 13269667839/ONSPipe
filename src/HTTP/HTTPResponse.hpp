@@ -19,8 +19,6 @@ public:
     
     void addResponseHead(std::string key,std::string value);
     void setResponseLine(std::string version,int statusCode,std::string reason);
-
-    bool isInit();
 public:
     std::string version;
     int statusCode;

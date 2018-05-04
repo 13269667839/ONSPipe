@@ -95,6 +95,15 @@ void HTTPServer::setSocket()
     {
         throwError("set none blocking error : " + std::string(gai_strerror(errno)));
     }
+
+#ifdef __APPLE__
+    yes = 1;
+    if (!sock->setSocketOpt(SOL_SOCKET, SO_NOSIGPIPE, &yes, sizeof(yes)))
+    {
+        throwError("set SO_NOSIGPIPE flag error");
+        return;
+    }
+#endif
 }
 
 void HTTPServer::loop(LoopCallback callback)
@@ -238,10 +247,10 @@ void HTTPServer::kqueueLoop(const LoopCallback &callback)
     auto request = HTTPRequest();
     auto response = HTTPResponse();
     auto parser = HTTPReqMsgParser();
+    struct kevent eventlist[MaxEventCount];
 
     while (true)
     {
-        struct kevent eventlist[MaxEventCount];
         auto activeEventCount = kevent(kq, nullptr, 0, eventlist, MaxEventCount, nullptr);
 
         for (auto i = 0; i < activeEventCount; i++)
@@ -270,43 +279,59 @@ void HTTPServer::kqueueLoop(const LoopCallback &callback)
             if (event.filter == EVFILT_READ) //read event
             {
                 auto status = kqueueParseRecvRequest(request, parser, event.data, sockfd);
-                switch (status)
-                {
-                case 0:
+                if (status == 0)
                 {
                     response.initParameter();
                     callback(request, response);
                 }
-                break;
-                case 1 ... 2:
+                else if (status == 1 && status == 2)
+                {
                     deleteEvent(sockfd, kq, EVFILT_READ);
-                    disconnect(sockfd);
-                    break;
-                default:
-                    break;
+                    if (i + 1 == activeEventCount)
+                    {
+                        deleteEvent(sockfd, kq, EVFILT_WRITE);
+                        disconnect(sockfd);
+                    }
                 }
             }
             else if (event.filter == EVFILT_WRITE) //write event
             {
                 auto iter = dict->find(sockfd);
-                if (iter == dict->end() || !iter->second || response.isInit())
+                if (iter == dict->end() || iter->second == nullptr)
                 {
-                    deleteEvent(sockfd, kq, EVFILT_READ);
-                    disconnect(sockfd);
-                    break;
+                    deleteEvent(sockfd, kq, EVFILT_WRITE);
+                    if (i + 1 == activeEventCount)
+                    {
+                        disconnect(sockfd);
+                    }
+                    continue;
                 }
 
-                auto client = iter->second;
-                auto message = response.toResponseMessage();
-                client->sendAll(const_cast<char *>(message.c_str()), message.size());
+                try
+                {
+                    auto client = iter->second;
+                    auto message = response.toResponseMessage();
+                    client->sendAll(const_cast<char *>(message.c_str()), message.size());
+                }
+                catch (std::logic_error error)
+                {
+                    auto code = errno;
+                    if (code != 32)
+                    {
+                        deleteEvent(sockfd, kq, EVFILT_READ);
+                        deleteEvent(sockfd, kq, EVFILT_WRITE);
+                        disconnect(sockfd);
+                    }
+                    continue;
+                }
+
                 if (request.header->find("Connection")->second == "Close")
                 {
                     deleteEvent(sockfd, kq, EVFILT_READ);
+                    deleteEvent(sockfd, kq, EVFILT_WRITE);
                     disconnect(sockfd);
+                    break;
                 }
-
-                request.initParameter();
-                response.initParameter();
             }
         }
     }
