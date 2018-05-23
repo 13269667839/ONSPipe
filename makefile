@@ -1,13 +1,13 @@
 OS = $(shell uname -s)
 
-entry = test.cpp
+entry = ./test/test.cpp
 
-socket = ../src/Socket/*.cpp
-http = ../src/HTTP/*.cpp
-utility = ../src/Utility/*.cpp
-json = ../src/JSON/*.cpp
-xml = ../src/XML/*.cpp
-websocket = ../src/WebSocket/*.cpp
+socket = ./src/Socket/*.cpp
+http = ./src/HTTP/*.cpp
+utility = ./src/Utility/*.cpp
+json = ./src/JSON/*.cpp
+xml = ./src/XML/*.cpp
+websocket = ./src/WebSocket/*.cpp
 
 file_flag = $(socket) $(http) $(utility) $(json) $(xml) $(sqlite) $(websocket)
 
