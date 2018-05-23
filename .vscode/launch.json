@@ -8,7 +8,7 @@
             "name": "LLDB Debugger",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceFolder}/test/a.out",
+            "program": "${workspaceFolder}/a.out",
             "args": [],
             "cwd": "${workspaceFolder}"
         },
@@ -16,7 +16,7 @@
             "name": "Microsoft CPP Tool LLDB Debugger",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/test/a.out",
+            "program": "${workspaceFolder}/a.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
