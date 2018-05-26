@@ -6,19 +6,13 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "cd test && make build",
+            "command": "make build",
             "problemMatcher": []
         },
         {
             "label": "clean",
             "type": "shell",
-            "command": "cd test && make clean",
-            "problemMatcher": []
-        },
-        {
-            "label": "run",
-            "type": "shell",
-            "command": "cd test && ./a.out",
+            "command": "make clean",
             "problemMatcher": []
         }
     ]
