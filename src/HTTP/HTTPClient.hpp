@@ -4,8 +4,7 @@
 #include "URL.hpp"
 #include "HTTPResponse.hpp"
 #include "HTTPRequest.hpp"
-#include "../Socket/Socket.hpp"
-#include <memory>
+#include "../Socket/TCPSocket.hpp"
 
 enum class HTTPMethod
 {
@@ -41,12 +40,14 @@ public:
     ~HTTPClient();
 private:
     void setHttpRequest();
-    void setSocketConfig(Socket &socket);
     std::string methodStr();
 
-    void checkParams();
-    void sendMsg(Socket &socket);
-    HTTPResponse * recvMsg(Socket &socket);
+    std::unique_ptr<HTTPResponse> requestByTCPSocket();
+
+    void sendMsg(TCPSocket &socket);
+    std::unique_ptr<HTTPResponse> recvMsg(TCPSocket &socket);
+
+    void setSocketConfig(TCPSocket &socket);
 private:
     HTTPMethod method;
     URL *url;

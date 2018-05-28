@@ -1,11 +1,10 @@
 #include "HTTPClient.hpp"
 #include "../Utility/HTTPRecvMsgParser.hpp"
 
-#ifdef DEBUG 
-    #include <cerrno>
-    #include <cstdio>
+#ifdef DEBUG
+#include <cerrno>
+#include <cstdio>
 #endif
-
 
 HTTPClient::HTTPClient(std::string _url, HTTPMethod _method)
 {
@@ -30,7 +29,7 @@ HTTPClient::~HTTPClient()
         delete url;
         url = nullptr;
     }
-    
+
     if (httpRequest)
     {
         delete httpRequest;
@@ -38,27 +37,15 @@ HTTPClient::~HTTPClient()
     }
 }
 
-void HTTPClient::setRequestHeader(std::string key,std::string value)
+void HTTPClient::setRequestHeader(std::string key, std::string value)
 {
     if (httpRequest)
     {
-        httpRequest->addRequestHeader(key,value);
+        httpRequest->addRequestHeader(key, value);
     }
 }
 
-void HTTPClient::checkParams()
-{
-    if (!httpRequest)
-    {
-        throwError("http request is not set");
-    }
-    else if (!url || url->path.empty())
-    {
-        throwError("url is null");
-    }
-}
-
-void HTTPClient::sendMsg(Socket &socket)
+void HTTPClient::sendMsg(TCPSocket &socket)
 {
     auto clientMsg = httpRequest->toRequestMessage();
     if (clientMsg.empty())
@@ -66,17 +53,17 @@ void HTTPClient::sendMsg(Socket &socket)
         throwError("http request message is null");
         return;
     }
-    socket.sendAll(const_cast<char *>(clientMsg.c_str()), clientMsg.size(), https);
+    socket.sendAll(const_cast<char *>(clientMsg.c_str()), clientMsg.size());
 }
 
-HTTPResponse * HTTPClient::recvMsg(Socket &socket)
+std::unique_ptr<HTTPResponse> HTTPClient::recvMsg(TCPSocket &socket)
 {
     HTTPResponse *res = nullptr;
     auto parser = HTTPRecvMsgParser();
     parser.method = methodStr();
     while (1)
     {
-        auto recvbuf = https ? (socket.ssl_read()) : (socket.receive());
+        auto recvbuf = socket.receive();
         parser.addToCache(recvbuf);
         if (recvbuf.empty() || parser.is_parse_msg())
         {
@@ -84,49 +71,57 @@ HTTPResponse * HTTPClient::recvMsg(Socket &socket)
             break;
         }
     }
-    return res;
+    return std::unique_ptr<HTTPResponse>(res);
 }
 
-std::unique_ptr<HTTPResponse> HTTPClient::request()
+std::unique_ptr<HTTPResponse> HTTPClient::requestByTCPSocket()
 {
-    checkParams();
-    
-    auto socket = Socket(url->host, url->portNumber);
-    
-    if (https)
+    auto host = url->host;
+    auto family = AddressFamily::IPV4;
+    auto port = std::to_string(url->portNumber);
+
+    auto addressList = SocketConfig::getAddressInfo(host, port, family, SocketType::TCP);
+    if (!addressList)
     {
-        socket.ssl_config(0);
+        throwError("getAddressInfo() return null");
+        return nullptr;
     }
 
-    if (!socket.connect())
-    {
-        throwError("can not connect to server");
-    }
-    
+    auto domain = addressList->ai_family;
+    auto address = SocketConfig::netAddressToHostAddress(*(addressList->ai_addr));
+    freeaddrinfo(addressList);
+    addressList = nullptr;
+
+    auto socket = TCPSocket(domain, family);
     setSocketConfig(socket);
 
-    if (https) 
+    if (!socket.connect(address, url->portNumber))
     {
-        socket.ssl_set_fd(socket.socketfd);
-        socket.ssl_connect();
-
 #ifdef DEBUG
-        socket.ssl_certification_info();
+        perror("connect() error : ");
 #endif
+        return nullptr;
     }
 
     sendMsg(socket);
 
-    HTTPResponse *res = recvMsg(socket);
-    return std::unique_ptr<HTTPResponse>(res);
+    return recvMsg(socket);
 }
 
-void HTTPClient::setSocketConfig(Socket &socket)
+std::unique_ptr<HTTPResponse> HTTPClient::request()
+{
+    if (https)
+    {
+    }
+    return requestByTCPSocket();
+}
+
+void HTTPClient::setSocketConfig(TCPSocket &socket)
 {
     //recv buff size
     int recvBufSize = 1024 * 10;
     socket.recvBuffSize = recvBufSize;
-    if (socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize)) == -1)
+    if (!socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize)))
     {
 #ifdef DEBUG
         perror("set recv buff error : ");
@@ -135,7 +130,7 @@ void HTTPClient::setSocketConfig(Socket &socket)
 
     //timeout
     struct timeval timeout = {.tv_sec = timeoutSeconds, .tv_usec = 0};
-    if (socket.setSocketOpt(SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) == -1)
+    if (!socket.setSocketOpt(SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)))
     {
 #ifdef DEBUG
         perror("set timeout error : ");
@@ -150,23 +145,23 @@ void HTTPClient::setHttpRequest()
         throwError("url is null");
         return;
     }
-    
+
     if (!httpRequest)
     {
         httpRequest = new HTTPRequest();
     }
-    
+
     //=== line ===
     httpRequest->method = methodStr();
-    
+
     httpRequest->path = url->path;
     if (!url->query.empty())
     {
         httpRequest->path += "?" + url->query;
     }
-    
+
     httpRequest->version = "HTTP/1.1";
-    
+
     //=== header ===
     if (url->host.empty())
     {
@@ -177,20 +172,18 @@ void HTTPClient::setHttpRequest()
 
 std::string HTTPClient::methodStr()
 {
-    auto res = std::string();
-    switch (method)
+    if (method == HTTPMethod::GET)
     {
-        case HTTPMethod::GET:
-            res += "GET";
-            break;
-        case HTTPMethod::POST:
-            res += "POST";
-            break;
-        case HTTPMethod::HEAD:
-            res += "HEAD";
-            break;
-        default:
-            break;
+        return "GET";
     }
-    return res;
+    else if (method == HTTPMethod::POST)
+    {
+        return "POST";
+    }
+    else if (method == HTTPMethod::HEAD)
+    {
+        return "HEAD";
+    }
+
+    return std::string();
 }
