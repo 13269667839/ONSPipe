@@ -11,6 +11,8 @@ HTTPClient::HTTPClient(std::string _url, HTTPMethod _method)
     url = nullptr;
     httpRequest = nullptr;
     timeoutSeconds = 10;
+    socket = nullptr;
+    isConnect = false;
 
     if (!_url.empty())
     {
@@ -33,6 +35,8 @@ HTTPClient::~HTTPClient()
         delete httpRequest;
         httpRequest = nullptr;
     }
+
+    closeConnection();
 }
 
 void HTTPClient::setRequestHeader(std::string key, std::string value)
@@ -43,94 +47,9 @@ void HTTPClient::setRequestHeader(std::string key, std::string value)
     }
 }
 
-void HTTPClient::sendMsg(TCPSocket &socket)
-{
-    auto clientMsg = httpRequest->toRequestMessage();
-    if (clientMsg.empty())
-    {
-        throwError("http request message is null");
-        return;
-    }
-    socket.sendAll(const_cast<char *>(clientMsg.c_str()), clientMsg.size());
-}
-
-std::unique_ptr<HTTPResponse> HTTPClient::recvMsg(TCPSocket &socket)
-{
-    HTTPResponse *res = nullptr;
-    auto parser = HTTPRecvMsgParser();
-    parser.method = methodStr();
-    while (1)
-    {
-        auto recvbuf = socket.receive();
-        parser.addToCache(recvbuf);
-        if (recvbuf.empty() || parser.is_parse_msg())
-        {
-            res = parser.msg2res();
-            break;
-        }
-    }
-    return std::unique_ptr<HTTPResponse>(res);
-}
-
-std::unique_ptr<HTTPResponse> HTTPClient::requestByTCPSocket()
-{
-    auto host = url->host;
-    auto family = AddressFamily::IPV4;
-    auto port = std::to_string(url->portNumber);
-
-    auto addressList = SocketConfig::getAddressInfo(host, port, family, SocketType::TCP);
-    if (!addressList)
-    {
-        throwError("getAddressInfo() return null");
-        return nullptr;
-    }
-
-    auto domain = addressList->ai_family;
-    auto address = SocketConfig::netAddressToHostAddress(*(addressList->ai_addr));
-    freeaddrinfo(addressList);
-    addressList = nullptr;
-
-    auto socket = TCPSocket(domain, family);
-    setSocketConfig(socket);
-
-    if (!socket.connect(address, url->portNumber))
-    {
-#ifdef DEBUG
-        perror("connect() error : ");
-#endif
-        return nullptr;
-    }
-
-    sendMsg(socket);
-
-    return recvMsg(socket);
-}
-
 std::unique_ptr<HTTPResponse> HTTPClient::request()
 {
     return requestByTCPSocket();
-}
-
-void HTTPClient::setSocketConfig(TCPSocket &socket)
-{
-    //recv buff size
-    int recvBufSize = 1024 * 10;
-    socket.recvBuffSize = recvBufSize;
-    if (!socket.setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize)))
-    {
-#ifdef DEBUG
-        perror("set recv buff error : ");
-#endif
-    }
-
-    //timeout
-    struct timeval timeout = {.tv_sec = timeoutSeconds, .tv_usec = 0};
-    if (!socket.setSocketOpt(SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)))
-    {
-#ifdef DEBUG
-        perror("set timeout error : ");
-#endif
-    }
 }
 
 void HTTPClient::setHttpRequest()
@@ -181,4 +100,163 @@ std::string HTTPClient::methodStr()
     }
 
     return std::string();
+}
+
+#pragma mark-- http request
+std::unique_ptr<HTTPResponse> HTTPClient::requestByTCPSocket()
+{
+    auto address = setSocketParams();
+    if (address == "-1")
+    {
+        throwError("ip address is invalid");
+        return nullptr;
+    }
+    if (!socket)
+    {
+        throwError("socket is null");
+        return nullptr;
+    }
+
+    if (!isConnect)
+    {
+        auto port = url->portNumber;
+        if (!socket->connect(address, port))
+        {
+#ifdef DEBUG
+            perror("connect() error : ");
+#endif
+            return nullptr;
+        }
+        isConnect = true;
+    }
+
+    try
+    {
+        sendMsg();
+    }
+    catch (const std::exception &e)
+    {
+#ifdef DEBUG
+        std::cerr << e.what() << std::endl;
+#endif
+        isConnect = false;
+        return nullptr;
+    }
+
+    auto response = recvMsg();
+
+    auto isKeepAlive = false;
+    if (response != nullptr && response->header && !response->header->empty())
+    {
+        auto iter = response->header->find("Connection");
+        if (iter != response->header->end() && iter->second == "Keep-Alive")
+        {
+            isKeepAlive = true;
+        }
+    }
+
+    if (!isKeepAlive)
+    {
+        isConnect = false;
+        closeConnection();
+    }
+
+    return response;
+}
+
+std::string HTTPClient::setSocketParams()
+{
+    auto address = std::string();
+
+    if (!socket)
+    {
+        auto host = url->host;
+        auto family = AddressFamily::IPV4;
+        auto port = std::to_string(url->portNumber);
+
+        auto addressList = SocketConfig::getAddressInfo(host, port, family, SocketType::TCP);
+        if (!addressList)
+        {
+            throwError("getAddressInfo() return null");
+            return "-1";
+        }
+
+        auto domain = addressList->ai_family;
+        address = SocketConfig::netAddressToHostAddress(*(addressList->ai_addr));
+        freeaddrinfo(addressList);
+        addressList = nullptr;
+
+        socket = new TCPSocket(domain, family);
+
+        setSocketOptions();
+    }
+
+    return address;
+}
+
+void HTTPClient::setSocketOptions()
+{
+    if (!socket)
+    {
+        throwError("socket is null");
+        return;
+    }
+
+    //recv buff size
+    int recvBufSize = 1024 * 10;
+    socket->recvBuffSize = recvBufSize;
+    if (!socket->setSocketOpt(SOL_SOCKET, SO_RCVBUF, &recvBufSize, sizeof(recvBufSize)))
+    {
+#ifdef DEBUG
+        perror("set recv buff error : ");
+#endif
+        return;
+    }
+
+    //timeout
+    struct timeval timeout = {.tv_sec = timeoutSeconds, .tv_usec = 0};
+    if (!socket->setSocketOpt(SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)))
+    {
+#ifdef DEBUG
+        perror("set timeout error : ");
+#endif
+    }
+}
+
+void HTTPClient::sendMsg()
+{
+    auto clientMsg = httpRequest->toRequestMessage();
+    if (clientMsg.empty())
+    {
+        throwError("http request message is null");
+        return;
+    }
+    socket->sendAll(const_cast<char *>(clientMsg.c_str()), clientMsg.size());
+}
+
+std::unique_ptr<HTTPResponse> HTTPClient::recvMsg()
+{
+    HTTPResponse *res = nullptr;
+    auto parser = HTTPRecvMsgParser();
+    parser.method = methodStr();
+    while (1)
+    {
+        auto recvbuf = socket->receive();
+        parser.addToCache(recvbuf);
+        if (recvbuf.empty() || parser.is_parse_msg())
+        {
+            res = parser.msg2res();
+            break;
+        }
+    }
+    return std::unique_ptr<HTTPResponse>(res);
+}
+
+void HTTPClient::closeConnection()
+{
+    if (socket)
+    {
+        delete socket;
+        socket = nullptr;
+    }
 }

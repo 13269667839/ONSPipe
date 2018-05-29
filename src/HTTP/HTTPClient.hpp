@@ -43,15 +43,18 @@ private:
     std::string methodStr();
 
     std::unique_ptr<HTTPResponse> requestByTCPSocket();
-
-    void sendMsg(TCPSocket &socket);
-    std::unique_ptr<HTTPResponse> recvMsg(TCPSocket &socket);
-
-    void setSocketConfig(TCPSocket &socket);
+    std::string setSocketParams();
+    void setSocketOptions();
+    void sendMsg();
+    std::unique_ptr<HTTPResponse> recvMsg();
+    void closeConnection();
+    
 private:
     HTTPMethod method;
     URL *url;
     HTTPRequest *httpRequest;
+    TCPSocket *socket;
+    bool isConnect;
 };
 
 #endif
