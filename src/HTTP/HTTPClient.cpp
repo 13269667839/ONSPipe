@@ -10,14 +10,12 @@ HTTPClient::HTTPClient(std::string _url, HTTPMethod _method)
 {
     url = nullptr;
     httpRequest = nullptr;
-    https = false;
     timeoutSeconds = 10;
 
     if (!_url.empty())
     {
         method = _method;
         url = new URL(_url);
-        https = url->scheme == "https";
         setHttpRequest();
     }
 }
@@ -110,9 +108,6 @@ std::unique_ptr<HTTPResponse> HTTPClient::requestByTCPSocket()
 
 std::unique_ptr<HTTPResponse> HTTPClient::request()
 {
-    if (https)
-    {
-    }
     return requestByTCPSocket();
 }
 

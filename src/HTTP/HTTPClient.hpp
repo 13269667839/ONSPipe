@@ -52,7 +52,6 @@ private:
     HTTPMethod method;
     URL *url;
     HTTPRequest *httpRequest;
-    bool https;
 };
 
 #endif
