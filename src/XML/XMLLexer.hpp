@@ -2,8 +2,8 @@
 #define XMLLexer_hpp
 
 #include <fstream>
-#include "../Utility/Util.hpp"
 #include "XMLTok.hpp"
+#include "../Utility/UtilConstant.hpp"
 
 class XMLLex
 {

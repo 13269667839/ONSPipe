@@ -1,6 +1,7 @@
 #include "XMLDocument.hpp"
 #include <deque>
-#include "../Utility/Util.hpp"
+#include "../Utility/UtilConstant.hpp"
+#include "../Utility/STLExtern.hpp"
 
 void XMLDocument::addChildNode(XMLDocument *obj)
 {

@@ -1,5 +1,6 @@
 #include "XMLTok.hpp"
 #include <cctype>
+#include "../Utility/UtilConstant.hpp"
 
 XMLTok::XMLTok(std::string _content,TokType _type)
 {

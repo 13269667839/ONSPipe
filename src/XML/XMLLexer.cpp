@@ -1,5 +1,6 @@
 #include "XMLLexer.hpp"
 #include <cctype>
+#include "../Utility/Strings.hpp"
 
 XMLLex::XMLLex(std::string _input,InputType _type)
 {

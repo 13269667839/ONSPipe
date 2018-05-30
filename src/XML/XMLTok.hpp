@@ -2,7 +2,8 @@
 #define XMLTok_hpp
 
 #include <ostream>
-#include "../Utility/Util.hpp"
+#include <string>
+#include <map>
 
 enum class TokType
 {

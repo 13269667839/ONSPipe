@@ -1,6 +1,6 @@
 #include "XMLParser.hpp"
-#include "../Utility/Util.hpp"
 #include <algorithm>
+#include "../Utility/Strings.hpp"
 
 XMLParser::XMLParser(std::string _input,InputType _type,bool isHTML)
 {
