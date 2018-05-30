@@ -145,20 +145,23 @@ std::unique_ptr<HTTPResponse> HTTPClient::requestByTCPSocket()
 
     auto response = recvMsg();
 
-    auto isKeepAlive = false;
-    if (response != nullptr && response->header && !response->header->empty())
+    if (isConnect)
     {
-        auto iter = response->header->find("Connection");
-        if (iter != response->header->end() && iter->second == "Keep-Alive")
+        auto isKeepAlive = false;
+        if (response != nullptr && response->header && !response->header->empty())
         {
-            isKeepAlive = true;
+            auto iter = response->header->find("Connection");
+            if (iter != response->header->end() && iter->second == "Keep-Alive")
+            {
+                isKeepAlive = true;
+            }
         }
-    }
 
-    if (!isKeepAlive)
-    {
-        isConnect = false;
-        closeConnection();
+        if (!isKeepAlive)
+        {
+            isConnect = false;
+            closeConnection();
+        }
     }
 
     return response;
@@ -243,9 +246,17 @@ std::unique_ptr<HTTPResponse> HTTPClient::recvMsg()
     {
         auto recvbuf = socket->receive();
         parser.addToCache(recvbuf);
-        if (recvbuf.empty() || parser.is_parse_msg())
+        auto isEmpty = recvbuf.empty();
+        if (isEmpty || parser.is_parse_msg())
         {
             res = parser.msg2res();
+
+            if (isEmpty)
+            {
+                isConnect = false;
+                closeConnection();
+            }
+
             break;
         }
     }
