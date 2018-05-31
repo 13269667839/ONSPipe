@@ -57,6 +57,7 @@
         "__hash_table": "cpp",
         "set": "cpp",
         "__mutex_base": "cpp",
-        "cerrno": "cpp"
+        "cerrno": "cpp",
+        "queue": "cpp"
     }
 }
