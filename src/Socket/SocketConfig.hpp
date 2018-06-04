@@ -50,6 +50,26 @@ namespace SocketConfig
     extern socklen_t addressLen(sockaddr_storage &addr);
 
     extern bool setNonBlocking(int sockfd);
+
+    template <typename SockPtrType,typename ByteType>
+    void sendAll(SockPtrType socket,ByteType bytes,size_t size)
+    {
+        if (!socket)
+        {
+            return;
+        }
+
+        size_t sendBytes = 0;
+        while (sendBytes < size) 
+        {
+            auto _sendBytes = socket->send(&bytes[sendBytes],size - sendBytes);
+            if (_sendBytes == 0) 
+            {
+                break;
+            }
+            sendBytes += _sendBytes;
+        }
+    }
 };
 
 #endif

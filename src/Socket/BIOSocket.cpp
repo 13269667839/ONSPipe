@@ -120,7 +120,7 @@ bool BIOSocket::connect(std::string host, std::string port)
 
 ssize_t BIOSocket::send(void *buffer, size_t len)
 {
-    if (!buffer || len == 0)
+    if (!buffer || len <= 0)
     {
         return 0;
     }
