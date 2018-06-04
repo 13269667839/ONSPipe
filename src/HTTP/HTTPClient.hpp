@@ -5,6 +5,7 @@
 #include "HTTPResponse.hpp"
 #include "HTTPRequest.hpp"
 #include "../Socket/TCPSocket.hpp"
+#include "../Socket/BIOSocket.hpp"
 
 enum class HTTPMethod
 {
@@ -12,19 +13,6 @@ enum class HTTPMethod
     POST,
     HEAD
 };
-
-/*
-ssl client procedure
-
-meth = SSLv23_client_method();
-ctx = SSL_CTX_new (meth); 
-ssl = SSL_new(ctx);
-fd = socket();
-connect();
-SSL_set_fd(ssl,fd);
-SSL_connect(ssl); 
-SSL_write(ssl,"Hello world",strlen("Hello World!"));
-*/ 
     
 class HTTPClient
 {
@@ -48,13 +36,19 @@ private:
     void sendMsg();
     std::unique_ptr<HTTPResponse> recvMsg();
     void closeConnection();
+
+    std::unique_ptr<HTTPResponse> requestViaSSL();
     
 private:
     HTTPMethod method;
     URL *url;
     HTTPRequest *httpRequest;
+
     TCPSocket *socket;
     bool isConnect;
+
+    BIOSocket *socketViaSSL;
+    bool isViaSSL;
 };
 
 #endif
