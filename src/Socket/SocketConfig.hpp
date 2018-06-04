@@ -19,9 +19,8 @@ enum class AddressFamily : int
     IPV6    = AF_INET6
 };
 
-class SocketConfig 
+namespace SocketConfig 
 {
-public:
     /**
      * DNS or server name query
      * @param   address      ip or domain name
@@ -30,27 +29,27 @@ public:
      * @param   socktype     socket type 
      * @return  address info linked list
     */
-    static addrinfo * getAddressInfo(std::string address,std::string port,AddressFamily family,SocketType socktype);
+    extern addrinfo * getAddressInfo(std::string address,std::string port,AddressFamily family,SocketType socktype);
 
     ///net address to host address
-    static std::string netAddressToHostAddress(sockaddr addr);
+    extern std::string netAddressToHostAddress(sockaddr addr);
 
     ///machine byte order
-    static std::string byteOrder();
+    extern std::string byteOrder();
 
-    static bool isIPV4Address(const std::string &address);
+    extern bool isIPV4Address(const std::string &address);
 
-    static bool isIPV6Address(const std::string &address);
-
-    //-1 is error
-    static int socketTypeRawValue(SocketType &type);
+    extern bool isIPV6Address(const std::string &address);
 
     //-1 is error
-    static int addressFamilyRawValue(AddressFamily &family);
+    extern int socketTypeRawValue(SocketType &type);
 
-    static socklen_t addressLen(sockaddr_storage &addr);
+    //-1 is error
+    extern int addressFamilyRawValue(AddressFamily &family);
 
-    static bool setNonBlocking(int sockfd);
+    extern socklen_t addressLen(sockaddr_storage &addr);
+
+    extern bool setNonBlocking(int sockfd);
 };
 
 #endif
