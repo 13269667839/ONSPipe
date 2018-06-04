@@ -149,3 +149,16 @@ std::vector<Util::byte> BIOSocket::receive(int recvBufSize)
 
     return std::vector<Util::byte>(buffer, buffer + bytes);
 }
+
+bool BIOSocket::setSocketOpt(int item, int opt, const void *val, socklen_t len)
+{
+    int fd = 0;
+    int code = BIO_get_fd(socketBIO,&fd);
+
+    if (code < 0 || fd <= 0) 
+    {
+        return false;
+    }
+
+    return setsockopt(fd, item, opt, val, len) == 0;
+}

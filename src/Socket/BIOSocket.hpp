@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "../Utility/UtilConstant.hpp"
+#include <sys/socket.h>
 
 class BIOSocket 
 {
@@ -17,6 +18,8 @@ public:
     ssize_t send(void *buffer,size_t len);
     std::vector<Util::byte> receive(int recvBufSize = 512);
     bool close();
+
+    bool setSocketOpt(int item, int opt, const void *val, socklen_t len);
 private:
     SSL *ssl;
     SSL_CTX *sslCtx;
