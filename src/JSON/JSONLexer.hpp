@@ -1,10 +1,10 @@
 #ifndef JSONLexer_hpp
 #define JSONLexer_hpp
 
-#include "../Utility/Util.hpp"
 #include <string>
 #include <fstream>
 #include <deque>
+#include "../Utility/UtilConstant.hpp"
 
 enum class TokenType
 {
