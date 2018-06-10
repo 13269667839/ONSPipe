@@ -21,6 +21,20 @@ std::ostream & operator << (std::ostream &os,JSObject *obj);
 
 std::ostream & operator << (std::ostream &os,JSObject &obj);
 
+class JSNumber : public JSObject
+{
+public:
+    JSNumber(std::string _str,TokenType _type);
+
+    std::string toString() override;
+    union 
+    {
+        long intVal;
+        double floatVal;
+        bool boolVal;
+    } numberVal;
+};
+
 class JSString : public JSObject
 {
 public:

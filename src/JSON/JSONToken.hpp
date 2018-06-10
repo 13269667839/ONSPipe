@@ -36,6 +36,7 @@ public:
     
     bool isElementType();
     bool isContainer();
+    bool isNumberType();
 };
 
 #endif

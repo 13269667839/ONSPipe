@@ -27,6 +27,52 @@ std::ostream & operator << (std::ostream &os,JSObject &obj)
     return os;
 }
 
+#pragma mark -- JSNumber
+JSNumber::JSNumber(std::string _str,TokenType _type)
+{
+    if (_type == TokenType::Integer)
+    {
+        objectType = _type;
+        numberVal.intVal = atol(_str.c_str());
+    }
+    else if (_type == TokenType::Float)
+    {
+        objectType = _type;
+        numberVal.floatVal = atof(_str.c_str());
+    }
+    else if (_type == TokenType::Boolean)
+    {
+        objectType = _type;
+        numberVal.boolVal = _str == "true";
+    }
+    else 
+    {
+        throwError("unexcept JSNumber initial params");
+    }
+}
+
+std::string JSNumber::toString()
+{
+    auto strRef = std::string();
+
+    switch (objectType)
+    {
+        case TokenType::Integer:
+            strRef += std::to_string(numberVal.intVal);
+            break;
+        case TokenType::Float:
+            strRef += std::to_string(numberVal.floatVal);
+            break;
+        case TokenType::Boolean:
+            strRef += numberVal.boolVal ? "true" : "false";
+            break;
+        default:
+            break;
+    }
+
+    return strRef;
+}
+
 #pragma mark -- JSString
 JSString::JSString(std::string _str,TokenType _type)
 {
