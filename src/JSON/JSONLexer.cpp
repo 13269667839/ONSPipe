@@ -47,74 +47,66 @@ JSONLexer::~JSONLexer()
 
 int16_t JSONLexer::nextChar()
 {
-    int16_t ch = EOF;
-    
     if (cache && !cache->empty())
     {
-        ch = *(std::begin(*cache));
+        auto ch = cache->at(0);
         cache->pop_front();
+        return ch;
     }
-    else
+
+    if (type == InputType::File)
     {
-        if (type == InputType::File)
+        return stream->get();
+    }
+    
+    if (type == InputType::Text)
+    {
+        if (index < content.length())
         {
-            if (stream)
-            {
-                ch = stream->get();
-            }
-        }
-        else if (type == InputType::Text)
-        {
-            if (index < content.length())
-            {
-                ch = content[index++];
-            }
+            auto ch = content[index];
+            index += 1;
+            return ch;
         }
     }
-    return ch;
+
+    return EOF;
 }
 
 JSONToken * JSONLexer::getNextToken()
 {
-    int16_t ch = EOF;
     JSONToken *tok = nullptr;
     
-    while (1)
+    while (!tok)
     {
-        ch = nextChar();
+        auto ch = nextChar();
         if (ch == EOF)
         {
             break;
         }
         
-        if (state == LexerState::Init)
+        switch (state) 
         {
-            tok = initState(ch);
-        }
-        else if (state == LexerState::Number)
-        {
-            tok = numberState(ch);
-            state = LexerState::Init;
-        }
-        else if (state == LexerState::String)
-        {
-            tok = stringState(ch);
-            state = LexerState::Init;
-        }
-        else if (state == LexerState::Bool)
-        {
-            tok = booleanState(ch);
-            state = LexerState::Init;
-        }
-        else if (state == LexerState::Null)
-        {
-            tok = nullState(ch);
-            state = LexerState::Init;
-        }
-        
-        if (tok)
-        {
-            break;
+            case LexerState::Init:
+                tok = initState(ch);
+                break;
+            case LexerState::Number:
+                tok = numberState(ch);
+                state = LexerState::Init;
+                break;
+            case LexerState::String:
+                tok = stringState(ch);
+                state = LexerState::Init;
+                break;
+            case LexerState::Bool:
+                tok = booleanState(ch);
+                state = LexerState::Init;
+                break;
+            case LexerState::Null:
+                tok = nullState(ch);
+                state = LexerState::Init;
+                break;
+            default:
+                break;
         }
     }
     
