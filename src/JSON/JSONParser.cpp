@@ -19,9 +19,27 @@ JSONToken * JSONParser::nextToken()
     return lex->getNextToken();
 }
 
-JSString * JSONParser::elementObject(JSONToken *tok)
+JSObject * JSONParser::elementObject(JSONToken *tok)
 {
-    return new JSString(tok->content,tok->type);
+    if (!tok) 
+    {
+        return nullptr;
+    }
+
+    if (tok->isNumberType())
+    {
+        return new JSNumber(tok->content,tok->type);
+    }
+    else if (tok->type == TokenType::String)
+    {
+        return new JSString(tok->content,tok->type);
+    }
+    else if (tok->type == TokenType::Null)
+    {
+        return new JSObject();
+    }
+
+    return nullptr;
 }
 
 JSArray * JSONParser::arrayObject()
@@ -96,28 +114,26 @@ JSMap * JSONParser::mapObject()
 
         if (flag == 0)
         {
-            if (tok->type == TokenType::String)
+            if (tok->type != TokenType::String)
             {
-                flag = 1;
-                key = tok->content;
-                delete tok;
+                throwError("key of a map must be string type");
+                break;
             }
-            else
-            {
-                throwError("key must be string type");
-            }
+
+            flag = 1;
+            key = std::move(tok->content);
+            delete tok;
         }
         else if (flag == 1)
         {
-            if (tok->type == TokenType::Colon)
-            {
-                flag = 2;
-                delete tok;
-            }
-            else
+            if (tok->type != TokenType::Colon)
             {
                 throwError("miss : between key and value");
+                break;
             }
+
+            flag = 2;
+            delete tok;
         }
         else if (flag == 2)
         {
@@ -143,11 +159,7 @@ JSMap * JSONParser::mapObject()
                         obj = mapObject();
                     }
 
-                    if (obj)
-                    {
-                        map->setObjectAndKey(key, obj);
-                    }
-
+                    map->setObjectAndKey(key, obj);
                     delete tok;
                 }
             }

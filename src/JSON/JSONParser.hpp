@@ -15,7 +15,7 @@ public:
     std::unique_ptr<JSObject> token2Object();
 private:
     JSONToken * nextToken();
-    JSString * elementObject(JSONToken *tok);
+    JSObject * elementObject(JSONToken *tok);
     JSArray * arrayObject();
     JSMap * mapObject();
     
