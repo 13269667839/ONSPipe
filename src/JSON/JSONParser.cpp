@@ -34,40 +34,36 @@ JSArray * JSONParser::arrayObject()
         if (!tok)
         {
             throwError("except ] before array end");
+            break;
         }
         else if (tok->type == TokenType::RightBracket)
         {
             delete tok;
             break;
         }
-        else
+
+        if (!arr)
         {
-            if (!arr)
-            {
-                arr = new JSArray();
-            }
-            
-            JSObject *obj = nullptr;
-            if (tok->isElementType())
-            {
-                obj = elementObject(tok);
-            }
-            else if (tok->type == TokenType::LeftBracket)
-            {
-                obj = arrayObject();
-            }
-            else if (tok->type == TokenType::LeftBrace)
-            {
-                obj = mapObject();
-            }
-            
-            if (obj)
-            {
-                arr->addObject(obj);
-            }
-            
-            delete tok;
+            arr = new JSArray();
         }
+
+        JSObject *obj = nullptr;
+        if (tok->isElementType())
+        {
+            obj = elementObject(tok);
+        }
+        else if (tok->type == TokenType::LeftBracket)
+        {
+            obj = arrayObject();
+        }
+        else if (tok->type == TokenType::LeftBrace)
+        {
+            obj = mapObject();
+        }
+
+        arr->addObject(obj);
+
+        delete tok;
     }
     
     return arr;
@@ -85,86 +81,85 @@ JSMap * JSONParser::mapObject()
         if (!tok)
         {
             throwError("except } before map end");
+            break;
         }
         else if (tok->type == TokenType::RightBrace)
         {
             delete tok;
             break;
         }
-        else
+
+        if (!map)
         {
-            if (!map)
+            map = new JSMap();
+        }
+
+        if (flag == 0)
+        {
+            if (tok->type == TokenType::String)
             {
-                map = new JSMap();
+                flag = 1;
+                key = tok->content;
+                delete tok;
             }
-            
-            if (flag == 0)
+            else
             {
-                if (tok->type == TokenType::String)
+                throwError("key must be string type");
+            }
+        }
+        else if (flag == 1)
+        {
+            if (tok->type == TokenType::Colon)
+            {
+                flag = 2;
+                delete tok;
+            }
+            else
+            {
+                throwError("miss : between key and value");
+            }
+        }
+        else if (flag == 2)
+        {
+            if (tok->isElementType() || tok->isContainer())
+            {
+                if (key.empty())
                 {
-                    flag = 1;
-                    key = tok->content;
-                    delete tok;
+                    throwError("key is empty");
                 }
                 else
                 {
-                    throwError("key must be string type");
-                }
-            }
-            else if (flag == 1)
-            {
-                if (tok->type == TokenType::Colon)
-                {
-                    flag = 2;
-                    delete tok;
-                }
-                else
-                {
-                    throwError("miss : between key and value");
-                }
-            }
-            else if (flag == 2)
-            {
-                if (tok->isElementType() || tok->isContainer())
-                {
-                    if (key.empty())
+                    JSObject *obj = nullptr;
+                    if (tok->isElementType())
                     {
-                        throwError("key is empty");
+                        obj = elementObject(tok);
                     }
-                    else
+                    else if (tok->type == TokenType::LeftBracket)
                     {
-                        JSObject *obj = nullptr;
-                        if (tok->isElementType())
-                        {
-                            obj = elementObject(tok);
-                        }
-                        else if (tok->type == TokenType::LeftBracket)
-                        {
-                            obj = arrayObject();
-                        }
-                        else if (tok->type == TokenType::LeftBrace)
-                        {
-                            obj = mapObject();
-                        }
-                        
-                        if (obj)
-                        {
-                            map->setObjectAndKey(key, obj);
-                        }
-                        
-                        delete tok;
+                        obj = arrayObject();
                     }
-                }
-                else if (tok->type == TokenType::Comma)
-                {
-                    flag = 0;
-                    key.clear();
+                    else if (tok->type == TokenType::LeftBrace)
+                    {
+                        obj = mapObject();
+                    }
+
+                    if (obj)
+                    {
+                        map->setObjectAndKey(key, obj);
+                    }
+
                     delete tok;
                 }
-                else
-                {
-                    throwError("unexcept token at map parser function");
-                }
+            }
+            else if (tok->type == TokenType::Comma)
+            {
+                flag = 0;
+                key.clear();
+                delete tok;
+            }
+            else
+            {
+                throwError("unexcept token at map parser function");
             }
         }
     }
@@ -207,8 +202,8 @@ std::unique_ptr<JSObject> JSONParser::token2Object()
         }
         else 
         {
-            throwError("unexcept token");
             delete tok;
+            throwError("unexcept token");
         }
     }
     

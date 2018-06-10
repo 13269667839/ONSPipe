@@ -83,11 +83,17 @@ JSArray::~JSArray()
 
 void JSArray::addObject(JSObject *obj)
 {
+    if (!obj) 
+    {
+        return;
+    }
+
     if (!arrayRef)
     {
         arrayRef = new std::vector<JSObject *>();
     }
-    arrayRef->push_back(obj);
+    
+    arrayRef->emplace_back(obj);
 }
 
 std::string JSArray::toString()
@@ -129,11 +135,17 @@ JSMap::~JSMap()
 
 void JSMap::setObjectAndKey(std::string key,JSObject *obj)
 {
+    if (key.empty() || !obj) 
+    {
+        return;
+    }
+
     if (!mapRef)
     {
         mapRef = new std::map<std::string,JSObject *>();
     }
-    mapRef->insert(std::make_pair(key, obj));
+
+    mapRef->emplace(std::make_pair(key, obj));
 }
 
 std::string JSMap::toString()
