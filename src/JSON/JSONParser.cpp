@@ -16,7 +16,7 @@ JSONParser::~JSONParser()
 
 JSONToken * JSONParser::nextToken()
 {
-    return lex?lex->getNextToken():nullptr;
+    return lex->getNextToken();
 }
 
 JSString * JSONParser::elementObject(JSONToken *tok)
@@ -177,6 +177,7 @@ std::unique_ptr<JSObject> JSONParser::token2Object()
     if (!lex)
     {
         throwError("lexer is null");
+        return nullptr;
     }
     
     JSObject *obj = nullptr;
@@ -186,11 +187,6 @@ std::unique_ptr<JSObject> JSONParser::token2Object()
         auto tok = nextToken();
         if (!tok)
         {
-            break;
-        }
-        else if (obj && tok)
-        {
-            throwError("unexcept token");
             break;
         }
         
@@ -208,6 +204,11 @@ std::unique_ptr<JSObject> JSONParser::token2Object()
         {
             delete tok;
             obj = arrayObject();
+        }
+        else 
+        {
+            throwError("unexcept token");
+            delete tok;
         }
     }
     
