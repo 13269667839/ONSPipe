@@ -297,29 +297,33 @@ JSONToken * JSONLexer::stringState(int16_t ch)
 
 JSONToken * JSONLexer::booleanState(int16_t ch)
 {
-    char str[4] = {'\0','\0','\0','\0'};
-    const int len = ch == 't'?3:4;
+    auto length = (ch == 't')?3:((ch == 'f')?4:0);
+    if (length == 0) 
+    {
+        throwError("except 't' or 'f' at the boolean state");
+        return nullptr;
+    }
+
+    auto boolVal = std::string();
+    boolVal += ch;
     
-    for (auto i = 0;i < len;++i)
+    for (auto i = 0;i < length;++i)
     {
         auto _ch = nextChar();
         if (_ch == EOF)
         {
             break;
         }
-        str[i] = _ch;
+        boolVal += _ch;
     }
 
-    auto isTrue = ch == 't' && strncmp(str,"rue",3) == 0;
-    auto isFalse = ch == 'f' && strncmp(str,"alse",4) == 0;
-
-    if (!isTrue && !isFalse)
+    if (boolVal != "true" && boolVal != "false") 
     {
         throwError("invalid boolean literal");
         return nullptr;
     }
 
-    return new JSONToken(TokenType::Boolean,isTrue?"true":"false");
+    return new JSONToken(TokenType::Boolean,std::move(boolVal));
 }
 
 JSONToken * JSONLexer::nullState(int16_t ch)
