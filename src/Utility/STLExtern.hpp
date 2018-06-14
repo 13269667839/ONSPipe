@@ -48,6 +48,27 @@ void releaseVector(std::vector<ValueType> *vec)
     std::vector<ValueType>().swap(*vec);
 }
 
+template <typename ValueType>
+void releaseVector(std::vector<std::shared_ptr<ValueType>> *vec)
+{
+    if (!vec || vec->empty())
+    {
+        return;
+    }
+
+    for (auto ite = vec->begin(); ite != vec->end(); ++ite)
+    {
+        auto val = *ite;
+        if (val != nullptr)
+        {
+            val.reset();
+            val = nullptr;
+        }
+    }
+
+    std::vector<std::shared_ptr<ValueType>>().swap(*vec);
+}
+
 template <typename keyType, typename valueType>
 void releaseMap(std::map<keyType, valueType> *dic)
 {

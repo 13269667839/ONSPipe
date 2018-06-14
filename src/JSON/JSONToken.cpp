@@ -20,3 +20,8 @@ bool JSONToken::isNumberType()
 {
     return type == TokenType::Integer || type == TokenType::Float || type == TokenType::Boolean;
 }
+
+bool JSONToken::isValueType()
+{
+    return isContainer() || isElementType();
+}
