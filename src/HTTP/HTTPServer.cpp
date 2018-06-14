@@ -5,6 +5,8 @@
 constexpr int MaxEventCount = 10;
 
 #include <sys/event.h>
+#include <vector>
+#include "../Utility/STLExtern.hpp"
 
 #elif defined(Epoll)
 #include <sys/epoll.h>

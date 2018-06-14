@@ -1,6 +1,7 @@
 #include "URL.hpp"
-#include "../Utility/Util.hpp"
 #include <cstdlib>
+#include "../Utility/UtilConstant.hpp"
+#include "../Utility/Strings.hpp"
 
 URL::URL(std::string str)
 {

@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include "../Utility/UtilConstant.hpp"
 
 BasicSocket::BasicSocket(int _domain,SocketType _socktype, AddressFamily _family)
 {

@@ -3,7 +3,7 @@
 
 #include <deque>
 #include "../HTTP/HTTPResponse.hpp"
-#include "Util.hpp"
+#include "../Utility/UtilConstant.hpp"
 
 class HTTPRecvMsgParser
 {

@@ -1,10 +1,9 @@
 #ifndef SocketConfig_hpp
 #define SocketConfig_hpp
 
-#include "../Utility/Util.hpp"
-
 #include <netdb.h>
 #include <sys/socket.h>
+#include <string>
 
 enum class SocketType : int
 {

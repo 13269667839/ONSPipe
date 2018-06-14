@@ -2,6 +2,7 @@
 #include <cstring>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include "../Utility/UtilConstant.hpp"
 
 addrinfo * SocketConfig::getAddressInfo(std::string address, std::string port, AddressFamily family, SocketType socktype)
 {

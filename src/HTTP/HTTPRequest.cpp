@@ -1,5 +1,5 @@
 #include "HTTPRequest.hpp"
-#include "../Utility/Util.hpp"
+#include "../Utility/UtilConstant.hpp"
 
 HTTPRequest::HTTPRequest()
 {

@@ -2,6 +2,7 @@
 #define TCPSocket_hpp
 
 #include "BasicSocket.hpp"
+#include "../Utility/UtilConstant.hpp"
 #include <memory>
 
 class TCPSocket : public BasicSocket

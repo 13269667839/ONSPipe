@@ -2,6 +2,7 @@
 #define UDPSocket_hpp
 
 #include "BasicSocket.hpp"
+#include "../Utility/UtilConstant.hpp"
 
 class UDPSocket : public BasicSocket 
 {

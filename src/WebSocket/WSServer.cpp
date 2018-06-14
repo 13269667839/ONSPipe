@@ -2,9 +2,11 @@
 #include <sys/select.h>
 #include <sys/errno.h>
 #include <algorithm>
+#include <vector>
 
 #include "../Utility/HTTPReqMsgParser.hpp"
 #include "../HTTP/HTTPResponse.hpp"
+#include "../Utility/Crypto.hpp"
 
 WSServer::WSServer(int port)
 {

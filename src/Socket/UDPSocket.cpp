@@ -1,6 +1,7 @@
 #include "UDPSocket.hpp"
 #include <cstring>
 #include <cerrno>
+#include <vector>
 
 UDPSocket::RecvObjType UDPSocket::recvFrom()
 {

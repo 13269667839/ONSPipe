@@ -1,8 +1,10 @@
 #ifndef WSServer_hpp
 #define WSServer_hpp
 
+#include "../Utility/UtilConstant.hpp"
 #include "../Socket/TCPSocket.hpp"
-#include "../Utility/Util.hpp"
+#include <string>
+#include <functional>
 
 struct WSClientMsg
 {

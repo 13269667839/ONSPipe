@@ -1,5 +1,6 @@
 #include "HTTPReqMsgParser.hpp"
 #include <cctype>
+#include <vector>
 
 HTTPReqMsgParser::HTTPReqMsgParser()
 {

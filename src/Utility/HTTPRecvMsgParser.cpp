@@ -2,6 +2,7 @@
 #include <cctype>
 #include <algorithm>
 #include <initializer_list>
+#include "../Utility/Zlib.hpp"
 
 HTTPRecvMsgParser::~HTTPRecvMsgParser()
 {
