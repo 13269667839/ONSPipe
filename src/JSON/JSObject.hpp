@@ -38,7 +38,7 @@ public:
 class JSString : public JSObject
 {
 public:
-    JSString(std::string _str,TokenType _type);
+    JSString(std::string _str);
     ~JSString() override;
     
     std::string toString() override;
@@ -51,9 +51,9 @@ public:
     JSArray();
     ~JSArray() override;
     
-    void addObject(JSObject *obj);
+    void addObject(std::shared_ptr<JSObject> obj);
     std::string toString() override;
-    std::vector<JSObject *> *arrayRef;
+    std::vector<std::shared_ptr<JSObject>> *arrayRef;
 };
 
 class JSMap : public JSObject
@@ -63,8 +63,8 @@ public:
     ~JSMap() override;
     
     std::string toString() override;
-    void setObjectAndKey(std::string key,JSObject *obj);
-    std::map<std::string,JSObject *> *mapRef;
+    void setObjectAndKey(std::string key,std::shared_ptr<JSObject> value);
+    std::map<std::string,std::shared_ptr<JSObject>> *mapRef;
 };
 
 #endif

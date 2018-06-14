@@ -74,15 +74,10 @@ std::string JSNumber::toString()
 }
 
 #pragma mark -- JSString
-JSString::JSString(std::string _str,TokenType _type)
+JSString::JSString(std::string _str)
 {
-    if (_type == TokenType::Array || _type == TokenType::Map)
-    {
-        throwError("can not convert to string");
-    }
-    
     strRef = _str.empty()?nullptr:new std::string(_str);
-    objectType = _type;
+    objectType = TokenType::String;
 }
 
 JSString::~JSString()
@@ -127,7 +122,7 @@ JSArray::~JSArray()
     }
 }
 
-void JSArray::addObject(JSObject *obj)
+void JSArray::addObject(std::shared_ptr<JSObject> obj)
 {
     if (!obj) 
     {
@@ -136,7 +131,7 @@ void JSArray::addObject(JSObject *obj)
 
     if (!arrayRef)
     {
-        arrayRef = new std::vector<JSObject *>();
+        arrayRef = new std::vector<std::shared_ptr<JSObject>>();
     }
     
     arrayRef->emplace_back(obj);
@@ -179,19 +174,19 @@ JSMap::~JSMap()
     }
 }
 
-void JSMap::setObjectAndKey(std::string key,JSObject *obj)
+void JSMap::setObjectAndKey(std::string key,std::shared_ptr<JSObject> value)
 {
-    if (key.empty() || !obj) 
+    if (key.empty() || !value) 
     {
         return;
     }
 
     if (!mapRef)
     {
-        mapRef = new std::map<std::string,JSObject *>();
+        mapRef = new std::map<std::string,std::shared_ptr<JSObject>>();
     }
 
-    mapRef->emplace(std::make_pair(key, obj));
+    mapRef->emplace(std::make_pair(key, value));
 }
 
 std::string JSMap::toString()
