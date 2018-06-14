@@ -324,26 +324,27 @@ JSONToken * JSONLexer::booleanState(int16_t ch)
 
 JSONToken * JSONLexer::nullState(int16_t ch)
 {
-    auto len = 2;
-    char str[3];
-    str[0] = ch;
+    auto nullStr = std::string("n");
+    nullStr += ch;
 
-    while (len > 0)
+    auto count = 2;
+    while (count > 0)
     {
         auto _ch = nextChar();
         if (_ch == EOF)
         {
             break;
         }
-        str[3 - len] = _ch;
-        len--;
+
+        nullStr += _ch;
+        count--;
     }
-    
-    if (strncmp(str,"ull",3) != 0)
+
+    if (nullStr != "null")
     {
         throwError("invalid literal null");
         return nullptr;
     }
-    
-    return new JSONToken(TokenType::Null,"null");
+
+    return new JSONToken(TokenType::Null, std::move(nullStr));
 }
