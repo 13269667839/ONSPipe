@@ -1,223 +1,164 @@
 #include "JSONParser.hpp"
 
-JSONParser::JSONParser(InputType _type,std::string _content)
+JSONParser::JSONParser(InputType _type, std::string _content)
 {
-    lex = new JSONLexer(_type,_content);
+    lexer = std::make_shared<JSONLexer>(_type, _content);
 }
 
-JSONParser::~JSONParser()
+std::shared_ptr<JSONToken> JSONParser::nextToken()
 {
-    if (lex)
+    return std::shared_ptr<JSONToken>(lexer->getNextToken());
+}
+
+std::shared_ptr<JSObject> JSONParser::tokenToJSObject()
+{
+    if (!lexer)
     {
-        delete lex;
-        lex = nullptr;
-    }
-}
-
-JSONToken * JSONParser::nextToken()
-{
-    return lex->getNextToken();
-}
-
-JSObject * JSONParser::elementObject(JSONToken *tok)
-{
-    if (!tok) 
-    {
+        throwError("lexer is nullptr");
         return nullptr;
     }
 
-    if (tok->isNumberType())
-    {
-        return new JSNumber(tok->content,tok->type);
-    }
-    else if (tok->type == TokenType::String)
-    {
-        return new JSString(tok->content,tok->type);
-    }
-    else if (tok->type == TokenType::Null)
-    {
-        return new JSObject();
-    }
-
-    return nullptr;
+    auto token = nextToken();
+    return parserMainLoop(token);
 }
 
-JSArray * JSONParser::arrayObject()
+std::shared_ptr<JSObject> JSONParser::parserMainLoop(std::shared_ptr<JSONToken> &token)
 {
-    JSArray *arr = nullptr;
-    
-    while (1)
+    std::shared_ptr<JSObject> ptr = nullptr;
+
+    if (!token)
     {
-        auto tok = nextToken();
-        if (!tok)
-        {
-            throwError("except ] before array end");
-            break;
-        }
-        else if (tok->type == TokenType::RightBracket)
-        {
-            delete tok;
-            break;
-        }
-
-        if (!arr)
-        {
-            arr = new JSArray();
-        }
-
-        JSObject *obj = nullptr;
-        if (tok->isElementType())
-        {
-            obj = elementObject(tok);
-        }
-        else if (tok->type == TokenType::LeftBracket)
-        {
-            obj = arrayObject();
-        }
-        else if (tok->type == TokenType::LeftBrace)
-        {
-            obj = mapObject();
-        }
-
-        arr->addObject(obj);
-
-        delete tok;
+        return ptr;
     }
-    
-    return arr;
+
+    switch (token->type)
+    {
+    case TokenType::LeftBrace:
+        ptr = tokenToJSMap();
+        break;
+    case TokenType::LeftBracket:
+        ptr = tokenToJSArray();
+        break;
+    case TokenType::Null:
+    case TokenType::String:
+    case TokenType::Integer:
+    case TokenType::Float:
+    case TokenType::Boolean:
+        ptr = tokenToPrimitive(token);
+        break;
+    default:
+        throwError("unexcept token");
+        break;
+    }
+
+    return ptr;
 }
 
-JSMap * JSONParser::mapObject()
+std::shared_ptr<JSObject> JSONParser::tokenToPrimitive(std::shared_ptr<JSONToken> &token)
 {
-    JSMap *map = nullptr;
-    std::string key;
-    int flag = 0;
-    
-    while (1)
+    std::shared_ptr<JSObject> ptr = nullptr;
+
+    switch (token->type)
     {
-        auto tok = nextToken();
-        if (!tok)
+    case TokenType::Integer:
+    case TokenType::Float:
+    case TokenType::Boolean:
+        ptr = std::make_shared<JSNumber>(token->content, token->type);
+        break;
+    case TokenType::Null:
+        ptr = std::make_shared<JSObject>();
+        break;
+    case TokenType::String:
+        ptr = std::make_shared<JSString>(token->content);
+        break;
+    default:
+        break;
+    }
+
+    return ptr;
+}
+
+std::shared_ptr<JSArray> JSONParser::tokenToJSArray()
+{
+    std::shared_ptr<JSArray> arrayRef = nullptr;
+
+    auto token = nextToken();
+    while (token && token->type != TokenType::RightBracket)
+    {
+        if (token->isValueType())
         {
-            throwError("except } before map end");
-            break;
-        }
-        else if (tok->type == TokenType::RightBrace)
-        {
-            delete tok;
-            break;
+            if (!arrayRef)
+            {
+                arrayRef = std::make_shared<JSArray>();
+            }
+
+            auto object = parserMainLoop(token);
+            arrayRef->addObject(object);
         }
 
-        if (!map)
-        {
-            map = new JSMap();
-        }
+        token = nextToken();
+    }
 
-        if (flag == 0)
+    return arrayRef;
+}
+
+std::shared_ptr<JSMap> JSONParser::tokenToJSMap()
+{
+    std::shared_ptr<JSMap> mapRef = nullptr;
+
+    auto key = std::string();
+    auto flag = 0;
+    auto token = nextToken();
+    while (token && token->type != TokenType::RightBrace)
+    {
+        if (flag == 0) //key
         {
-            if (tok->type != TokenType::String)
+            if (token->type != TokenType::String)
             {
                 throwError("key of a map must be string type");
                 break;
             }
 
+            if (token->content.empty())
+            {
+                throwError("key is empty of a pair in map");
+                break;
+            }
+
             flag = 1;
-            key = std::move(tok->content);
-            delete tok;
+            key = std::move(token->content);
         }
-        else if (flag == 1)
+        else if (flag == 1) //:
         {
-            if (tok->type != TokenType::Colon)
+            if (token->type != TokenType::Colon)
             {
                 throwError("miss : between key and value");
                 break;
             }
 
             flag = 2;
-            delete tok;
         }
-        else if (flag == 2)
+        else if (flag == 2) //value
         {
-            if (tok->isElementType() || tok->isContainer())
-            {
-                if (key.empty())
-                {
-                    throwError("key is empty");
-                }
-                else
-                {
-                    JSObject *obj = nullptr;
-                    if (tok->isElementType())
-                    {
-                        obj = elementObject(tok);
-                    }
-                    else if (tok->type == TokenType::LeftBracket)
-                    {
-                        obj = arrayObject();
-                    }
-                    else if (tok->type == TokenType::LeftBrace)
-                    {
-                        obj = mapObject();
-                    }
-
-                    map->setObjectAndKey(key, obj);
-                    delete tok;
-                }
-            }
-            else if (tok->type == TokenType::Comma)
+            if (token->type == TokenType::Comma)
             {
                 flag = 0;
                 key.clear();
-                delete tok;
             }
             else
             {
-                throwError("unexcept token at map parser function");
+                auto value = parserMainLoop(token);
+
+                if (!mapRef)
+                {
+                    mapRef = std::make_shared<JSMap>();
+                }
+                mapRef->setObjectAndKey(key, value);
             }
         }
-    }
-    
-    return map;
-}
 
-std::unique_ptr<JSObject> JSONParser::token2Object()
-{
-    if (!lex)
-    {
-        throwError("lexer is null");
-        return nullptr;
+        token = nextToken();
     }
-    
-    JSObject *obj = nullptr;
-    
-    while (1)
-    {
-        auto tok = nextToken();
-        if (!tok)
-        {
-            break;
-        }
-        
-        if (tok->isElementType())
-        {
-            obj = elementObject(tok);
-            delete tok;
-        }
-        else if (tok->type == TokenType::LeftBrace)
-        {
-            delete tok;
-            obj = mapObject();
-        }
-        else if (tok->type == TokenType::LeftBracket)
-        {
-            delete tok;
-            obj = arrayObject();
-        }
-        else 
-        {
-            delete tok;
-            throwError("unexcept token");
-        }
-    }
-    
-    return std::unique_ptr<JSObject>(obj);
+
+    return mapRef;
 }

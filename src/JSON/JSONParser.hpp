@@ -10,16 +10,18 @@ class JSONParser
 {
 public:
     JSONParser(InputType _type,std::string _content);
-    ~JSONParser();
-    
-    std::unique_ptr<JSObject> token2Object();
+public:
+    std::shared_ptr<JSObject> tokenToJSObject();
 private:
-    JSONToken * nextToken();
-    JSObject * elementObject(JSONToken *tok);
-    JSArray * arrayObject();
-    JSMap * mapObject();
-    
-    JSONLexer *lex;
+    std::shared_ptr<JSONToken> nextToken();
+
+    std::shared_ptr<JSObject>   tokenToPrimitive(std::shared_ptr<JSONToken> &token);
+    std::shared_ptr<JSArray>    tokenToJSArray();
+    std::shared_ptr<JSMap>      tokenToJSMap();
+
+    std::shared_ptr<JSObject> parserMainLoop(std::shared_ptr<JSONToken> &token);
+private:
+    std::shared_ptr<JSONLexer> lexer;
 };
 
 #endif
