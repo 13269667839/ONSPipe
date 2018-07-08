@@ -43,7 +43,7 @@ JSNumber::JSNumber(std::string _str,TokenType _type)
     else if (_type == TokenType::Boolean)
     {
         objectType = _type;
-        numberVal.boolVal = _str == "true";
+        numberVal.intVal = _str == "true" ? 1 : 0;
     }
     else 
     {
@@ -64,7 +64,7 @@ std::string JSNumber::toString()
             strRef += std::to_string(numberVal.floatVal);
             break;
         case TokenType::Boolean:
-            strRef += numberVal.boolVal ? "true" : "false";
+            strRef += numberVal.intVal == 1 ? "true" : "false";
             break;
         default:
             break;

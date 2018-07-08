@@ -31,7 +31,6 @@ public:
     {
         long intVal;
         double floatVal;
-        bool boolVal;
     } numberVal;
 };
 
