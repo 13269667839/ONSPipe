@@ -2,7 +2,6 @@
 
 #include "JSONLexer.hpp"
 #include <cctype>
-#include <regex>
 #include <cstring>
 
 JSONLexer::JSONLexer(InputType _type,std::string _content)
@@ -18,6 +17,8 @@ JSONLexer::JSONLexer(InputType _type,std::string _content)
     index = 0;
     state = LexerState::Init;
     cache = new std::deque<int16_t>();
+    integerRegex = new std::regex("([1-9]\\d+)|(\\d)");
+    floatRegex =  new std::regex("(([1-9]\\d+)|(\\d)).\\d+");
     
     if (type == InputType::File)
     {
@@ -44,6 +45,18 @@ JSONLexer::~JSONLexer()
     if (cache)
     {
         delete cache;
+    }
+
+    if (integerRegex) 
+    {
+        delete integerRegex;
+        integerRegex = nullptr;
+    }
+
+    if (floatRegex)
+    {
+        delete floatRegex;
+        floatRegex = nullptr;
     }
 }
 
@@ -212,13 +225,11 @@ JSONToken * JSONLexer::numberState(char ch)
 
     auto type = TokenType::Null;
 
-    auto integerRegex = std::regex("([1-9]\\d+)|(\\d)");
-    auto floatRegex = std::regex("(([1-9]\\d+)|(\\d)).\\d+");
-    if (std::regex_match(numberStr, integerRegex))
+    if (std::regex_match(numberStr, *integerRegex))
     {
         type = TokenType::Integer;
     }
-    else if (std::regex_match(numberStr, floatRegex))
+    else if (std::regex_match(numberStr, *floatRegex))
     {
         type = TokenType::Float;
     }

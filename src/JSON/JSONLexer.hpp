@@ -46,6 +46,7 @@ public:
 
 #include <fstream>
 #include <deque>
+#include <regex>
 #include "../Utility/UtilConstant.hpp"
 
 enum class LexerState
@@ -82,6 +83,9 @@ private:
     LexerState state;
     
     std::deque<int16_t> *cache;
+
+    std::regex *integerRegex;
+    std::regex *floatRegex;
 };
 
 #endif 
