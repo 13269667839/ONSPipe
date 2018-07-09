@@ -181,82 +181,67 @@ JSONToken * JSONLexer::initState(int16_t ch)
 
 JSONToken * JSONLexer::numberState(char ch)
 {
-    std::string numberStr = std::string();
-    if (ch != '-')
+    auto numberStr = std::string();
+    if (isdigit(ch))
     {
         numberStr += ch;
     }
-    bool isDot = false;
-    
+
     while (1)
     {
-        char tmp = nextChar();
-        if (isdigit(tmp) || tmp == '.')
+        auto next_char = nextChar();
+
+        if (isdigit(next_char) || next_char == '.')
         {
-            numberStr += tmp;
-            if (tmp == '.')
-            {
-                isDot = true;
-            }
+            numberStr += static_cast<char>(next_char);
         }
         else
         {
-            if (tmp != EOF)
+            if (next_char != EOF)
             {
-                cache->push_back(tmp);
+                cache->push_back(next_char);
             }
             break;
         }
     }
-    
-    JSONToken *tok = nullptr;
-    std::string convertStr;
-    if (isDot && *(numberStr.end() - 1) != '.')
+
+    if (numberStr.empty())
     {
-        double doubleVal = atof(numberStr.c_str());
-        if (ch == '-')
-        {
-            doubleVal = -doubleVal;
-        }
-        convertStr = std::to_string(doubleVal);
+        return nullptr;
     }
-    else
+
+    auto type = TokenType::Null;
+
+    auto integerRegex = std::regex("([1-9]\\d+)|(\\d)");
+    auto floatRegex = std::regex("(([1-9]\\d+)|(\\d)).\\d+");
+    if (std::regex_match(numberStr, integerRegex))
     {
-        long longVal = atol(numberStr.c_str());
-        if (ch == '-')
-        {
-            longVal = -longVal;
-        }
-        convertStr = std::to_string(longVal);
+        type = TokenType::Integer;
     }
-    
-    if (!convertStr.empty())
+    else if (std::regex_match(numberStr, floatRegex))
     {
-        auto integerReg = std::regex("([1-9][0-9]{1,})|([0-9])");
-        auto floatReg = std::regex("(([1-9][0-9]{1,})|([0-9])).[0-9]*");
-        if (std::regex_match(convertStr,integerReg))
-        {
-            tok = new JSONToken(TokenType::Integer,convertStr);
-        }
-        else if (std::regex_match(convertStr,floatReg))
-        {
-            tok = new JSONToken(TokenType::Float,convertStr);
-        }
+        type = TokenType::Float;
     }
-    
-    return tok;
+
+    if (type == TokenType::Null)
+    {
+        throwError("except a number type's input");
+        return nullptr;
+    }
+
+    if (ch == '-')
+    {
+        numberStr = ch + numberStr;
+    }
+
+    return new JSONToken(type, numberStr);
 }
 
 JSONToken * JSONLexer::stringState(int16_t ch)
 {
-    if (ch == EOF)
+    if (ch == '"')
     {
-        throwError("excepr \" at the end of string");
-        return nullptr;
-    }
-    else if (ch == '"')
-    {
-        return new JSONToken(TokenType::String,"");
+        return new JSONToken(TokenType::String, "");
     }
 
     auto str = std::string();
@@ -267,20 +252,20 @@ JSONToken * JSONLexer::stringState(int16_t ch)
         auto _ch = nextChar();
         if (_ch == EOF)
         {
-            throwError("excepr \" at the end of string");
+            throwError("except \" at the end of string");
             return nullptr;
         }
 
         if (_ch == '"')
-        {
+        { //is escape character
             auto count = 0;
-            for (auto rite = str.rbegin();rite != str.rend();++rite)
+            for (auto rite = str.rbegin(); rite != str.rend(); ++rite)
             {
                 if (*rite == '\\')
                 {
                     count++;
                 }
-                else 
+                else
                 {
                     break;
                 }
@@ -290,11 +275,11 @@ JSONToken * JSONLexer::stringState(int16_t ch)
                 break;
             }
         }
-        
+
         str += _ch;
     }
 
-    return new JSONToken(TokenType::String,str);
+    return new JSONToken(TokenType::String, str);
 }
 
 JSONToken * JSONLexer::booleanState(int16_t ch)
