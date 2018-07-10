@@ -87,11 +87,11 @@ int16_t JSONLexer::nextChar()
     return EOF;
 }
 
-JSONToken * JSONLexer::getNextToken()
+std::shared_ptr<JSONToken> JSONLexer::getNextToken()
 {
-    JSONToken *tok = nullptr;
+    std::shared_ptr<JSONToken> token = nullptr;
     
-    while (!tok)
+    while (!token)
     {
         auto ch = nextChar();
         if (ch == EOF)
@@ -102,22 +102,22 @@ JSONToken * JSONLexer::getNextToken()
         switch (state) 
         {
             case LexerState::Init:
-                tok = initState(ch);
+                token = initState(ch);
                 break;
             case LexerState::Number:
-                tok = numberState(ch);
+                token = numberState(ch);
                 state = LexerState::Init;
                 break;
             case LexerState::String:
-                tok = stringState(ch);
+                token = stringState(ch);
                 state = LexerState::Init;
                 break;
             case LexerState::Bool:
-                tok = booleanState(ch);
+                token = booleanState(ch);
                 state = LexerState::Init;
                 break;
             case LexerState::Null:
-                tok = nullState(ch);
+                token = nullState(ch);
                 state = LexerState::Init;
                 break;
             default:
@@ -125,12 +125,12 @@ JSONToken * JSONLexer::getNextToken()
         }
     }
     
-    return tok;
+    return token;
 }
 
-JSONToken * JSONLexer::initState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::initState(int16_t ch)
 {
-    JSONToken *tok = nullptr;
+    std::shared_ptr<JSONToken> token = nullptr;
     
     if (ch == '"')
     {
@@ -143,23 +143,23 @@ JSONToken * JSONLexer::initState(int16_t ch)
     }
     else if (ch == '[')
     {
-        tok = new JSONToken(TokenType::LeftBracket,"[");
+        token = std::make_shared<JSONToken>(TokenType::LeftBracket,"[");
     }
     else if (ch == ']')
     {
-        tok = new JSONToken(TokenType::RightBracket,"]");
+        token = std::make_shared<JSONToken>(TokenType::RightBracket,"]");
     }
     else if (ch == '{')
     {
-        tok = new JSONToken(TokenType::LeftBrace,"{");
+        token = std::make_shared<JSONToken>(TokenType::LeftBrace,"{");
     }
     else if (ch == '}')
     {
-        tok = new JSONToken(TokenType::RightBrace,"}");
+        token = std::make_shared<JSONToken>(TokenType::RightBrace,"}");
     }
     else if (ch == ':')
     {
-        tok = new JSONToken(TokenType::Colon,":");
+        token = std::make_shared<JSONToken>(TokenType::Colon,":");
     }
     else if (isdigit(ch))
     {
@@ -186,13 +186,13 @@ JSONToken * JSONLexer::initState(int16_t ch)
     }
     else if (ch == ',')
     {
-        tok = new JSONToken(TokenType::Comma,",");
+        token = std::make_shared<JSONToken>(TokenType::Comma,",");
     }
     
-    return tok;
+    return token;
 }
 
-JSONToken * JSONLexer::numberState(char ch)
+std::shared_ptr<JSONToken> JSONLexer::numberState(char ch)
 {
     auto numberStr = std::string();
     if (isdigit(ch))
@@ -245,14 +245,14 @@ JSONToken * JSONLexer::numberState(char ch)
         numberStr = ch + numberStr;
     }
 
-    return new JSONToken(type, numberStr);
+    return std::make_shared<JSONToken>(type, numberStr);
 }
 
-JSONToken * JSONLexer::stringState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)
 {
     if (ch == '"')
     {
-        return new JSONToken(TokenType::String, "");
+        return std::make_shared<JSONToken>(TokenType::String, "");
     }
 
     auto str = std::string();
@@ -290,10 +290,10 @@ JSONToken * JSONLexer::stringState(int16_t ch)
         str += _ch;
     }
 
-    return new JSONToken(TokenType::String, str);
+    return std::make_shared<JSONToken>(TokenType::String, str);
 }
 
-JSONToken * JSONLexer::booleanState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::booleanState(int16_t ch)
 {
     auto length = (ch == 't')?3:((ch == 'f')?4:0);
     if (length == 0) 
@@ -321,10 +321,10 @@ JSONToken * JSONLexer::booleanState(int16_t ch)
         return nullptr;
     }
 
-    return new JSONToken(TokenType::Boolean,std::move(boolVal));
+    return std::make_shared<JSONToken>(TokenType::Boolean,std::move(boolVal));
 }
 
-JSONToken * JSONLexer::nullState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::nullState(int16_t ch)
 {
     auto nullStr = std::string("n");
     nullStr += ch;
@@ -348,7 +348,7 @@ JSONToken * JSONLexer::nullState(int16_t ch)
         return nullptr;
     }
 
-    return new JSONToken(TokenType::Null, std::move(nullStr));
+    return std::make_shared<JSONToken>(TokenType::Null, std::move(nullStr));
 }
 
 #pragma mark -- JSONToken

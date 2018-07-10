@@ -5,11 +5,6 @@ JSONParser::JSONParser(InputType _type, std::string _content)
     lexer = std::make_shared<JSONLexer>(_type, _content);
 }
 
-std::shared_ptr<JSONToken> JSONParser::nextToken()
-{
-    return std::shared_ptr<JSONToken>(lexer->getNextToken());
-}
-
 std::shared_ptr<JSObject> JSONParser::tokenToJSObject()
 {
     if (!lexer)
@@ -18,7 +13,7 @@ std::shared_ptr<JSObject> JSONParser::tokenToJSObject()
         return nullptr;
     }
 
-    auto token = nextToken();
+    auto token = lexer->getNextToken();
     return parserMainLoop(token);
 }
 
@@ -82,7 +77,7 @@ std::shared_ptr<JSArray> JSONParser::tokenToJSArray()
 {
     std::shared_ptr<JSArray> arrayRef = nullptr;
 
-    auto token = nextToken();
+    auto token = lexer->getNextToken();
     while (token && token->type != TokenType::RightBracket)
     {
         if (token->isValueType())
@@ -96,7 +91,7 @@ std::shared_ptr<JSArray> JSONParser::tokenToJSArray()
             arrayRef->addObject(object);
         }
 
-        token = nextToken();
+        token = lexer->getNextToken();
     }
 
     return arrayRef;
@@ -108,7 +103,7 @@ std::shared_ptr<JSMap> JSONParser::tokenToJSMap()
 
     auto key = std::string();
     auto flag = 0;
-    auto token = nextToken();
+    auto token = lexer->getNextToken();
     while (token && token->type != TokenType::RightBrace)
     {
         if (flag == 0) //key
@@ -157,7 +152,7 @@ std::shared_ptr<JSMap> JSONParser::tokenToJSMap()
             }
         }
 
-        token = nextToken();
+        token = lexer->getNextToken();
     }
 
     return mapRef;

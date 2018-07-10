@@ -47,6 +47,7 @@ public:
 #include <fstream>
 #include <deque>
 #include <regex>
+#include <memory>
 #include "../Utility/UtilConstant.hpp"
 
 enum class LexerState
@@ -64,15 +65,15 @@ public:
     JSONLexer(InputType _type,std::string _content);
     ~JSONLexer();
 public:
-    JSONToken * getNextToken();
+    std::shared_ptr<JSONToken> getNextToken();
 private:
     int16_t nextChar();
     
-    JSONToken * initState(int16_t ch);
-    JSONToken * numberState(char ch);
-    JSONToken * stringState(int16_t ch);
-    JSONToken * booleanState(int16_t ch);
-    JSONToken * nullState(int16_t ch);
+    std::shared_ptr<JSONToken> initState(int16_t ch);
+    std::shared_ptr<JSONToken> numberState(char ch);
+    std::shared_ptr<JSONToken> stringState(int16_t ch);
+    std::shared_ptr<JSONToken> booleanState(int16_t ch);
+    std::shared_ptr<JSONToken> nullState(int16_t ch);
 private:
     InputType type;
     std::string content;

@@ -13,8 +13,6 @@ public:
 public:
     std::shared_ptr<JSObject> tokenToJSObject();
 private:
-    std::shared_ptr<JSONToken> nextToken();
-
     std::shared_ptr<JSObject>   tokenToPrimitive(std::shared_ptr<JSONToken> &token);
     std::shared_ptr<JSArray>    tokenToJSArray();
     std::shared_ptr<JSMap>      tokenToJSMap();
