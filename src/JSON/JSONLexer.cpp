@@ -17,8 +17,6 @@ JSONLexer::JSONLexer(InputType _type,std::string _content)
     index = 0;
     state = LexerState::Init;
     cache = new std::deque<int16_t>();
-    integerRegex = new std::regex("([1-9]\\d+)|(\\d)");
-    floatRegex =  new std::regex("(([1-9]\\d+)|(\\d)).\\d+");
     
     if (type == InputType::File)
     {
@@ -45,18 +43,6 @@ JSONLexer::~JSONLexer()
     if (cache)
     {
         delete cache;
-    }
-
-    if (integerRegex) 
-    {
-        delete integerRegex;
-        integerRegex = nullptr;
-    }
-
-    if (floatRegex)
-    {
-        delete floatRegex;
-        floatRegex = nullptr;
     }
 }
 
@@ -225,11 +211,11 @@ std::shared_ptr<JSONToken> JSONLexer::numberState(char ch)
 
     auto type = TokenType::Null;
 
-    if (std::regex_match(numberStr, *integerRegex))
+    if (isInteger(numberStr))
     {
         type = TokenType::Integer;
     }
-    else if (std::regex_match(numberStr, *floatRegex))
+    else if (isFloat(numberStr))
     {
         type = TokenType::Float;
     }
@@ -246,6 +232,73 @@ std::shared_ptr<JSONToken> JSONLexer::numberState(char ch)
     }
 
     return std::make_shared<JSONToken>(type, numberStr);
+}
+
+bool JSONLexer::isInteger(std::string &content)
+{
+    auto size = content.size();
+    if (size == 0)
+    {
+        return false;
+    }
+
+    auto firstChar = content[0];
+    if (size == 1)
+    {
+        return isdigit(firstChar);
+    }
+
+    if (!(firstChar >= '1' && firstChar <= '9'))
+    {
+        return false;
+    }
+
+    auto result = true;
+    for (auto i = 1; i < size; ++i)
+    {
+        if (!isdigit(content[i]))
+        {
+            result = false;
+            break;
+        }
+    }
+
+    return result;
+}
+
+bool JSONLexer::isFloat(std::string &content)
+{
+    auto size = content.size();
+    if (size < 3)
+    {
+        return false;
+    }
+
+    auto index = content.rfind(".");
+    if (index == std::string::npos)
+    {
+        return false;
+    }
+
+    auto integer = content.substr(0, index);
+    if (!isInteger(integer))
+    {
+        return false;
+    }
+
+    auto decimal = content.substr(index + 1, size - index);
+    auto result = true;
+
+    for (auto ch : decimal)
+    {
+        if (!isdigit(ch))
+        {
+            result = false;
+            break;
+        }
+    }
+
+    return result;
 }
 
 std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)

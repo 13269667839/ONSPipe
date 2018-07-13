@@ -74,6 +74,9 @@ private:
     std::shared_ptr<JSONToken> stringState(int16_t ch);
     std::shared_ptr<JSONToken> booleanState(int16_t ch);
     std::shared_ptr<JSONToken> nullState(int16_t ch);
+
+    bool isInteger(std::string &content);
+    bool isFloat(std::string &content);
 private:
     InputType type;
     std::string content;
@@ -84,9 +87,6 @@ private:
     LexerState state;
     
     std::deque<int16_t> *cache;
-
-    std::regex *integerRegex;
-    std::regex *floatRegex;
 };
 
 #endif 
