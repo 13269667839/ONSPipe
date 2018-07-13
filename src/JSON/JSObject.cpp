@@ -108,7 +108,7 @@ std::string JSString::toString()
 #pragma mark -- JSArray
 JSArray::JSArray()
 {
-    arrayRef = nullptr;
+    arrayRef = new std::vector<std::shared_ptr<JSObject>>();
     objectType = TokenType::Array;
 }
 
@@ -124,17 +124,10 @@ JSArray::~JSArray()
 
 void JSArray::addObject(std::shared_ptr<JSObject> obj)
 {
-    if (!obj) 
+    if (obj)
     {
-        return;
+        arrayRef->emplace_back(obj);
     }
-
-    if (!arrayRef)
-    {
-        arrayRef = new std::vector<std::shared_ptr<JSObject>>();
-    }
-    
-    arrayRef->emplace_back(obj);
 }
 
 std::string JSArray::toString()
@@ -160,7 +153,7 @@ std::string JSArray::toString()
 #pragma mark -- JSMap
 JSMap::JSMap()
 {
-    mapRef = nullptr;
+    mapRef = new std::map<std::string,std::shared_ptr<JSObject>>();
     objectType = TokenType::Map;
 }
 
@@ -174,19 +167,13 @@ JSMap::~JSMap()
     }
 }
 
-void JSMap::setObjectAndKey(std::string key,std::shared_ptr<JSObject> value)
+void JSMap::setObjectAndKey(std::string key, std::shared_ptr<JSObject> value)
 {
-    if (key.empty() || !value) 
+    if (!key.empty() && value)
     {
-        return;
+        auto pair = std::make_pair(key, value);
+        mapRef->emplace(pair);
     }
-
-    if (!mapRef)
-    {
-        mapRef = new std::map<std::string,std::shared_ptr<JSObject>>();
-    }
-
-    mapRef->emplace(std::make_pair(key, value));
 }
 
 std::string JSMap::toString()
