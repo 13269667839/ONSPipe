@@ -59,7 +59,7 @@ int16_t JSONLexer::nextChar()
     {
         return stream->get();
     }
-    
+
     if (type == InputType::Text)
     {
         if (index < content.length())
@@ -313,34 +313,28 @@ std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)
 
     while (1)
     {
-        auto _ch = nextChar();
-        if (_ch == EOF)
+        auto u8_ch = nextChar();
+        if (u8_ch == EOF)
         {
             throwError("except \" at the end of string");
             return nullptr;
         }
-
-        if (_ch == '"')
-        { //is escape character
+        else if (u8_ch == '"')
+        {
+            //is escape character
             auto count = 0;
-            for (auto rite = str.rbegin(); rite != str.rend(); ++rite)
+            for (auto ite = std::rbegin(str); ite != std::rend(str) && *ite == '\\'; ++ite)
             {
-                if (*rite == '\\')
-                {
-                    count++;
-                }
-                else
-                {
-                    break;
-                }
+                count++;
             }
+
             if (count % 2 == 0)
             {
                 break;
             }
         }
 
-        str += _ch;
+        str += u8_ch;
     }
 
     return std::make_shared<JSONToken>(TokenType::String, str);
