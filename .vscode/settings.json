@@ -58,6 +58,7 @@
         "set": "cpp",
         "__mutex_base": "cpp",
         "cerrno": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "sstream": "cpp"
     }
 }

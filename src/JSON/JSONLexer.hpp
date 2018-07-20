@@ -67,13 +67,13 @@ public:
 public:
     std::shared_ptr<JSONToken> getNextToken();
 private:
-    int16_t nextChar();
+    char nextChar();
     
-    std::shared_ptr<JSONToken> initState(int16_t ch);
+    std::shared_ptr<JSONToken> initState(char ch);
     std::shared_ptr<JSONToken> numberState(char ch);
-    std::shared_ptr<JSONToken> stringState(int16_t ch);
-    std::shared_ptr<JSONToken> booleanState(int16_t ch);
-    std::shared_ptr<JSONToken> nullState(int16_t ch);
+    std::shared_ptr<JSONToken> stringState(char ch);
+    std::shared_ptr<JSONToken> booleanState(char ch);
+    std::shared_ptr<JSONToken> nullState(char ch);
 
     bool isInteger(std::string &content);
     bool isFloat(std::string &content);
@@ -83,10 +83,11 @@ private:
     
     std::ifstream *stream;
     std::string::size_type index;
+    std::string::size_type contentLength;
     
     LexerState state;
     
-    std::deque<int16_t> *cache;
+    std::deque<char> *cache;
 };
 
 #endif 

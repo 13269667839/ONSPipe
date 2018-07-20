@@ -4,27 +4,31 @@
 #include <cctype>
 #include <cstring>
 
-JSONLexer::JSONLexer(InputType _type,std::string _content)
+JSONLexer::JSONLexer(InputType _type, std::string _content)
 {
-    if (_content.empty())
-    {
-        throwError("input is empty");
-    }
-    
     type = _type;
-    content = _content;
+    content = std::move(_content);
     stream = nullptr;
     index = 0;
     state = LexerState::Init;
-    cache = new std::deque<int16_t>();
-    
+    cache = new std::deque<char>();
+    contentLength = 0;
+
     if (type == InputType::File)
     {
-        stream = new std::ifstream(_content);
+        stream = new std::ifstream(content);
         if (!stream->is_open())
         {
             delete stream;
             throwError("file open error");
+        }
+    }
+    else if (type == InputType::Text)
+    {
+        contentLength = content.length();
+        if (contentLength == 0) 
+        {
+            throwError("input is empty");
         }
     }
 }
@@ -46,7 +50,7 @@ JSONLexer::~JSONLexer()
     }
 }
 
-int16_t JSONLexer::nextChar()
+char JSONLexer::nextChar()
 {
     if (cache && !cache->empty())
     {
@@ -57,16 +61,15 @@ int16_t JSONLexer::nextChar()
 
     if (type == InputType::File)
     {
-        return stream->get();
+        char ch = EOF;
+        stream->get(ch);
+        return ch;
     }
-
-    if (type == InputType::Text)
+    else if (type == InputType::Text)
     {
-        if (index < content.length())
+        if (index < contentLength)
         {
-            auto ch = content[index];
-            index += 1;
-            return ch;
+            return content[index++];
         }
     }
 
@@ -114,7 +117,7 @@ std::shared_ptr<JSONToken> JSONLexer::getNextToken()
     return token;
 }
 
-std::shared_ptr<JSONToken> JSONLexer::initState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::initState(char ch)
 {
     std::shared_ptr<JSONToken> token = nullptr;
     
@@ -189,17 +192,17 @@ std::shared_ptr<JSONToken> JSONLexer::numberState(char ch)
     while (1)
     {
         auto next_char = nextChar();
-
         if (isdigit(next_char) || next_char == '.')
         {
-            numberStr += static_cast<char>(next_char);
+            numberStr += next_char;
+        }
+        else if (next_char == EOF)
+        {
+            break;
         }
         else
         {
-            if (next_char != EOF)
-            {
-                cache->push_back(next_char);
-            }
+            cache->push_back(next_char);
             break;
         }
     }
@@ -301,7 +304,7 @@ bool JSONLexer::isFloat(std::string &content)
     return result;
 }
 
-std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::stringState(char ch)
 {
     if (ch == '"')
     {
@@ -323,9 +326,16 @@ std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)
         {
             //is escape character
             auto count = 0;
-            for (auto ite = std::rbegin(str); ite != std::rend(str) && *ite == '\\'; ++ite)
+            int i = str.length() - 1;
+            while (i >= 0) 
             {
+                auto r_ch = str[i];
+                if (r_ch != '\\') 
+                {
+                    break;
+                }
                 count++;
+                i--;
             }
 
             if (count % 2 == 0)
@@ -340,10 +350,10 @@ std::shared_ptr<JSONToken> JSONLexer::stringState(int16_t ch)
     return std::make_shared<JSONToken>(TokenType::String, str);
 }
 
-std::shared_ptr<JSONToken> JSONLexer::booleanState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::booleanState(char ch)
 {
-    auto length = (ch == 't')?3:((ch == 'f')?4:0);
-    if (length == 0) 
+    auto length = (ch == 't') ? 3 : ((ch == 'f') ? 4 : 0);
+    if (length == 0)
     {
         throwError("except 't' or 'f' at the boolean state");
         return nullptr;
@@ -351,8 +361,8 @@ std::shared_ptr<JSONToken> JSONLexer::booleanState(int16_t ch)
 
     auto boolVal = std::string();
     boolVal += ch;
-    
-    for (auto i = 0;i < length;++i)
+
+    for (auto i = 0; i < length; ++i)
     {
         auto _ch = nextChar();
         if (_ch == EOF)
@@ -362,16 +372,16 @@ std::shared_ptr<JSONToken> JSONLexer::booleanState(int16_t ch)
         boolVal += _ch;
     }
 
-    if (boolVal != "true" && boolVal != "false") 
+    if (boolVal != "true" && boolVal != "false")
     {
         throwError("invalid boolean literal");
         return nullptr;
     }
 
-    return std::make_shared<JSONToken>(TokenType::Boolean,std::move(boolVal));
+    return std::make_shared<JSONToken>(TokenType::Boolean, std::move(boolVal));
 }
 
-std::shared_ptr<JSONToken> JSONLexer::nullState(int16_t ch)
+std::shared_ptr<JSONToken> JSONLexer::nullState(char ch)
 {
     auto nullStr = std::string("n");
     nullStr += ch;
